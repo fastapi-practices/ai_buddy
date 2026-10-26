@@ -1,0 +1,77 @@
+networks:
+  ai_buddy_sandbox:
+    name: ai_buddy_sandbox
+    driver: bridge
+
+volumes:
+  ai_buddy_qdrant:
+    name: ai_buddy_qdrant
+  ai_buddy_rustfs:
+    name: ai_buddy_rustfs
+  ai_buddy_opensandbox:
+    name: ai_buddy_opensandbox
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ai_buddy_qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ai_buddy_qdrant:/qdrant/storage
+    networks:
+      - ai_buddy_sandbox
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: ai_buddy_rustfs
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - TZ=Asia/Shanghai
+      - RUSTFS_ACCESS_KEY=rustfsadmin
+      - RUSTFS_SECRET_KEY=rustfsadmin
+      - RUSTFS_ADDRESS=:9000
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_CONSOLE_ADDRESS=:9001
+    volumes:
+      - ai_buddy_rustfs:/data
+    command:
+      - /data
+    networks:
+      - ai_buddy_sandbox
+
+  opensandbox-server:
+    image: opensandbox/server:release-1.1.1
+    container_name: ai_buddy_opensandbox
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./config.toml:/etc/opensandbox/config.toml:ro
+      - ai_buddy_opensandbox:/root/.opensandbox
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Asia/Shanghai
+      - SANDBOX_CONFIG_PATH=/etc/opensandbox/config.toml
+    networks:
+      - ai_buddy_sandbox
+
+  # 编码任务镜像，不常驻；先 build 再给 OpenSandbox 使用
+  ai_buddy_sandbox:
+    build:
+      context: .
+      dockerfile: sandbox.Dockerfile
+    image: fba-ai-buddy-sandbox:latest
+    profiles:
+      - image
+    networks:
+      - ai_buddy_sandbox

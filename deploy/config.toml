@@ -1,0 +1,32 @@
+[server]
+host = "0.0.0.0"
+port = 8090
+api_key = "ai-buddy-opensandbox-local"
+
+[proxy]
+# 服务在 compose 网络内，沙箱走 Docker bridge；SDK 经 server proxy 访问 execd
+resolve_internal = false
+
+[log]
+level = "INFO"
+
+[runtime]
+type = "docker"
+execd_image = "opensandbox/execd:release-1.1.1"
+
+[egress]
+image = "opensandbox/egress:release-1.1.1"
+mode = "dns+nft"
+
+[docker]
+network_mode = "bridge"
+# 容器内 OpenSandbox 用此主机名回指宿主机已发布端口，不要改成 127.0.0.1
+host_ip = "host.docker.internal"
+port_range_min = 40000
+port_range_max = 60000
+drop_capabilities = ["AUDIT_WRITE", "MKNOD", "NET_ADMIN", "NET_RAW", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_TIME", "SYS_TTY_CONFIG"]
+no_new_privileges = true
+pids_limit = 4096
+
+[ingress]
+mode = "direct"

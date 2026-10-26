@@ -1,0 +1,32 @@
+from typing import Any
+
+import sqlalchemy as sa
+
+from sqlalchemy.orm import Mapped, mapped_column
+
+from backend.common.model import Base, UniversalText, id_key
+
+
+class AIBuddyMcp(Base):
+    """AI MCP 表"""
+
+    __tablename__ = 'ai_buddy_mcp'
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'name', 'deleted', name='uk_ai_buddy_mcp_user_id_name_deleted'),
+        {'comment': 'AI MCP 表'},
+    )
+
+    id: Mapped[id_key] = mapped_column(init=False)
+    user_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='用户 ID')
+    name: Mapped[str] = mapped_column(sa.String(64), comment='MCP 名称')
+    command: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='MCP 命令')
+    type: Mapped[int] = mapped_column(default=0, comment='MCP 类型（0stdio 1sse 2streamable_http）')
+    description: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='MCP 描述')
+    url: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='MCP 端点链接')
+    headers: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='请求 MCP 端点时的请求头')
+    args: Mapped[list[str] | None] = mapped_column(sa.JSON(), default=None, comment='MCP 命令参数')
+    env: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='MCP 环境变量')
+    timeout: Mapped[float] = mapped_column(default=5, comment='客户端初始化超时时间（秒）')
+    read_timeout: Mapped[float] = mapped_column(default=5 * 60, comment='等待新消息的最长时间（秒）')
+    tool_prefix: Mapped[str | None] = mapped_column(sa.String(64), default=None, comment='MCP 工具名称前缀')
+    include_instructions: Mapped[bool] = mapped_column(default=False, comment='是否注入 MCP 服务说明')
