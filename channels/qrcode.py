@@ -89,6 +89,12 @@ class _FeishuPendingLogFilter(logging.Filter):
 
     @staticmethod
     def filter(record: logging.LogRecord) -> bool:
+        """
+        过滤飞书设备码等待阶段的预期错误日志
+
+        :param record: 日志记录
+        :return:
+        """
         message = record.getMessage()
         if 'oauth/v1/app/registration' not in message:
             return True
@@ -279,6 +285,12 @@ def _map_wechat_status(raw: str) -> AIBuddyChannelQrcodeStatus:
 
 
 async def _cancel_task(task: asyncio.Task[Any]) -> None:
+    """
+    取消并等待指定后台任务结束
+
+    :param task: 后台任务
+    :return:
+    """
     if task.done():
         return
     task.cancel()
@@ -304,6 +316,12 @@ async def _run_feishu_register(  # ruff: ignore[complex-structure]
     accepting_qr = True
 
     def on_qr_code(info: dict[str, Any]) -> None:
+        """
+        接收飞书二维码并更新扫码会话
+
+        :param info: 二维码信息
+        :return:
+        """
         url = str(info.get('url') or '')
         expire_in = int(info.get('expire_in') or info.get('expireIn') or 300)
 
@@ -320,6 +338,7 @@ async def _run_feishu_register(  # ruff: ignore[complex-structure]
                 ready.set()
 
         def schedule_qr() -> None:
+            """调度飞书应用注册二维码生成"""
             if accepting_qr:
                 qr_tasks.append(asyncio.create_task(_save_and_ready()))
 
@@ -413,6 +432,12 @@ async def start_feishu_qrcode(*, session_id: str) -> tuple[str, int]:  # ruff: i
     _FEISHU_TASKS[session_id] = task
 
     def on_finished(finished: asyncio.Task[None]) -> None:
+        """
+        处理飞书扫码后台任务完成状态
+
+        :param finished: 完成任务
+        :return:
+        """
         if _FEISHU_TASKS.get(session_id) is finished:
             _FEISHU_TASKS.pop(session_id, None)
         if not finished.cancelled() and (exc := finished.exception()) is not None:

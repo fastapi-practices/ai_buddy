@@ -190,7 +190,7 @@ class AIBuddyObjectService:
         登记引用，重复登记同一引用方不会增加计数，墓碑对象会因新引用恢复
 
         :param db: 数据库会话
-        :param obj: 对象
+        :param obj: 对象记录
         :param owner_type: 引用方类型
         :param owner_id: 引用方 ID
         :param actor_id: 操作用户 ID
@@ -223,7 +223,7 @@ class AIBuddyObjectService:
         移除引用，引用归零后对象进入墓碑，宽限期结束才允许物理删除
 
         :param db: 数据库会话
-        :param obj: 对象
+        :param obj: 对象记录
         :param owner_type: 引用方类型
         :param owner_id: 引用方 ID
         :param actor_id: 操作用户 ID
@@ -404,7 +404,7 @@ class AIBuddyObjectService:
         从存储中清除对象，以 / 结尾的对象键按目录前缀整体清除，非云端对象由所属客户端清理，服务端只记录删除结果
 
         :param db: 数据库会话
-        :param obj: 对象
+        :param obj: 对象记录
         :return:
         """
         if obj.location != AIBuddyObjectLocation.s3.value:

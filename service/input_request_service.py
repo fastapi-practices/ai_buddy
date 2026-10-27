@@ -44,7 +44,7 @@ class AIBuddyInputRequestService:
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
         :param request_id: 输入请求 ID
-        :param obj: 请求参数
+        :param obj: 输入请求答复参数
         :return:
         """
         await ai_buddy_conversation_service.get_owned_conversation(

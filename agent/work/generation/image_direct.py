@@ -219,7 +219,7 @@ class DirectImageGenerationModel(Model):
 
         :param messages: 模型消息列表
         :param model_settings: 对话模型设置，独立生图不使用
-        :param model_request_parameters: 请求参数
+        :param model_request_parameters: 模型请求参数
         :return:
         """
         _model_settings, model_request_parameters = self.prepare_request(model_settings, model_request_parameters)
@@ -238,7 +238,7 @@ class DirectImageGenerationModel(Model):
 
         :param messages: 模型消息列表
         :param model_settings: 对话模型设置，独立生图不使用
-        :param model_request_parameters: 请求参数
+        :param model_request_parameters: 模型请求参数
         :param run_context: 运行上下文，独立生图不使用
         :return:
         """

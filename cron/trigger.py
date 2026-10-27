@@ -22,6 +22,12 @@ def parse_cron(expr: str) -> TzAwareCrontab:
 
 
 def _with_default_timezone(run_date: dt.datetime) -> dt.datetime:
+    """
+    为调度时间补充默认时区
+
+    :param run_date: 计划执行时间
+    :return:
+    """
     return run_date.replace(tzinfo=timezone.tz_info) if run_date.tzinfo is None else run_date
 
 

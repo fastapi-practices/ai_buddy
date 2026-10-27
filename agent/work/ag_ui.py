@@ -77,7 +77,12 @@ class BuddyAGUIEventStream(AGUIEventStream):
 
     @override
     def encode_event(self, event: BaseEvent) -> str:
-        """统一校验工作和生图事件的线协议"""
+        """
+        统一校验工作和生图事件的线协议
+
+        :param event: 执行事件
+        :return:
+        """
         match event:
             case StateSnapshotEvent() if self.deps is not None:
                 self.deps.state = deepcopy(event.snapshot)

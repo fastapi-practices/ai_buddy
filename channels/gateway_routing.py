@@ -15,6 +15,12 @@ class _GatewayGroupContextManager(GroupContextManager):
 
     @staticmethod
     def _conversation_id(message: InboundMessage) -> str:
+        """
+        从网关消息提取对话 ID
+
+        :param message: 网关消息
+        :return:
+        """
         if _SESSION_FIELD in message.metadata:
             session_id = message.metadata[_SESSION_FIELD]
             return session_id if isinstance(session_id, str) else ''
@@ -25,6 +31,14 @@ class GatewayRoutingMixin(BaseChannel):
     """保留原生发送契约，并隔离应用会话与本次回复的路由快照"""
 
     def __init__(self, processor: MessageProcessor, *, config: ChannelConfig, **kwargs: Any) -> None:
+        """
+        初始化网关消息处理器并绑定通道配置
+
+        :param processor: 消息处理器
+        :param config: 通道配置
+        :param kwargs: 额外关键字参数
+        :return:
+        """
         super().__init__(processor, config=config, **kwargs)
         context_config = replace(config.group_context, groups=dict(config.group_context.groups))
         self._group_context = _GatewayGroupContextManager(context_config)

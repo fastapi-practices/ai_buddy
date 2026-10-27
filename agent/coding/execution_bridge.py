@@ -45,7 +45,7 @@ async def create_bridge(*, user_id: int, obj: CreateAIBuddyExecutionBridgeParam)
     """创建用户专属的一次性桌面执行凭证
 
     :param user_id: 用户 ID
-    :param obj: 请求参数
+    :param obj: 创建桥接参数
     :return:
     """
     bridge_id, ticket = uuid4().hex, secrets.token_urlsafe(32)
@@ -282,7 +282,7 @@ class ExecutionBridge:
         """保存桌面连接状态与独占凭据
 
         :param bridge_id: 桥接连接 ID
-        :param record: 数据记录
+        :param record: 桥接连接记录
         :param claim: 独占凭据
         :return:
         """

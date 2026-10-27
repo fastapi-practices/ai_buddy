@@ -28,7 +28,13 @@ _PREVIEW_CHARS = 12000
 
 
 def _unavailable_result(*, command: str, reason: AIBuddyCommandReason) -> AIBuddyCommandResult:
-    """缺失最终响应时仅记录已知状态，不伪造退出码或进程输出"""
+    """
+    缺失最终响应时仅记录已知状态，不伪造退出码或进程输出
+
+    :param command: 测试命令
+    :param reason: 结果缺失原因
+    :return:
+    """
     return AIBuddyCommandResult(
         command=command,
         exit_code=None,

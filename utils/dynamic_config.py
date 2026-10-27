@@ -89,7 +89,12 @@ def _document_extract_backend(value: str) -> str:
 
 
 def _embedding_backend(value: str) -> str:
-    """将向量化方式解析为 remote 或 onnx"""
+    """
+    将向量化方式解析为 remote 或 onnx
+
+    :param value: 配置原文
+    :return:
+    """
     text = (value or '').strip().lower()
     try:
         return AIBuddyEmbeddingBackend(text).value
@@ -112,7 +117,12 @@ def _ocr_backend(value: str) -> str:
 
 
 def _execution_backend(value: str) -> str:
-    """校验默认执行后端，未知值使用本机并要求桌面连接"""
+    """
+    校验默认执行后端，未知值使用本机并要求桌面连接
+
+    :param value: 配置原文
+    :return:
+    """
     text = (value or '').strip().lower()
     try:
         return AIBuddyExecutionBackend(text).value

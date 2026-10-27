@@ -68,7 +68,7 @@ class CRUDAIBuddyObject(CRUDPlus[AIBuddyObject]):
         创建对象
 
         :param db: 数据库会话
-        :param obj: 对象
+        :param obj: 对象记录
         :return:
         """
         db.add(obj)

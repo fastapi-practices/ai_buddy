@@ -27,6 +27,12 @@ from backend.plugin.ai_buddy.utils.media_store import decode_model_message_paylo
 
 
 def _run_record(row: AIBuddyStepRun) -> RunRecord:
+    """
+    将步骤运行记录转换为 SDK 运行记录
+
+    :param row: 步骤运行记录
+    :return:
+    """
     return RunRecord(
         run_id=row.run_id,
         conversation_id=row.conversation_id,
@@ -39,6 +45,12 @@ def _run_record(row: AIBuddyStepRun) -> RunRecord:
 
 
 def _step_event(row: AIBuddyStepEvent) -> StepEvent:
+    """
+    将步骤事件记录转换为 SDK 步骤事件
+
+    :param row: 步骤事件记录
+    :return:
+    """
     return StepEvent(
         run_id=row.run_id,
         kind=row.kind,
@@ -56,6 +68,12 @@ def _step_event(row: AIBuddyStepEvent) -> StepEvent:
 
 
 def _tool_effect(row: AIBuddyStepToolEffect) -> ToolEffectRecord:
+    """
+    将工具效果记录转换为 SDK 工具效果记录
+
+    :param row: 工具效果记录
+    :return:
+    """
     return ToolEffectRecord(
         tool_call_id=row.tool_call_id,
         tool_name=row.tool_name,

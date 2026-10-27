@@ -23,6 +23,7 @@ def build_tool_args_validator(schema: dict[str, Any]) -> ArgsValidatorFunc[Any, 
         """
         把参数错误交回模型修正
 
+        :param _ctx: 运行上下文
         :param arguments: 工具参数
         :return:
         """

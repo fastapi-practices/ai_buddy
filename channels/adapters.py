@@ -10,6 +10,12 @@ from backend.plugin.ai_buddy.enums import AIBuddyChannelType
 
 
 def _text(*candidates: Any) -> str:
+    """
+    从候选内容中提取首个非空文本
+
+    :param candidates: 候选内容
+    :return:
+    """
     for item in candidates:
         if isinstance(item, str) and item.strip():
             return item.strip()
@@ -28,6 +34,12 @@ def _text(*candidates: Any) -> str:
 
 
 def _id(*candidates: Any) -> str:
+    """
+    从候选值中提取首个非空标识
+
+    :param candidates: 候选内容
+    :return:
+    """
     for item in candidates:
         if not isinstance(item, str | int) or isinstance(item, bool):
             continue

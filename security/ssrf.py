@@ -97,6 +97,7 @@ class _PublicHTTPTransport(httpx2.AsyncHTTPTransport):
     """保留原始 Host 和 TLS 主机名，仅替换底层 TCP 地址解析"""
 
     def __init__(self) -> None:
+        """初始化仅允许公网地址解析的 HTTP 客户端"""
         super().__init__(trust_env=False)
         # HTTPX 未暴露 network_backend 参数，复用其协议适配并注入受限连接池
         self._pool = httpcore2.AsyncConnectionPool(

@@ -237,6 +237,12 @@ def join_knowledge_text_segments(segments: Sequence[KnowledgeSegment]) -> str:
 
 
 def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignore[complex-structure]
+    """
+    从 PDF 页面提取文档知识片段
+
+    :param data: PDF 文件字节
+    :return:
+    """
     try:
         from pypdf import PdfReader
     except ImportError as exc:

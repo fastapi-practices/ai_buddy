@@ -140,9 +140,11 @@ async def _get_knowledge(ctx: AgentRunContext, arguments: dict[str, Any]) -> str
 
 
 async def _list_skills(ctx: AgentRunContext, _arguments: dict[str, Any]) -> str:
-    """列出用户可访问的技能
+    """
+    列出用户可访问的技能
 
     :param ctx: 运行上下文
+    :param _arguments: 工具参数
     :return:
     """
     async with async_db_session() as db:
@@ -216,9 +218,11 @@ def _skill_file_tool(ctx: AgentRunContext) -> BoundAgentTool:
 
 
 async def _list_artifacts(ctx: AgentRunContext, _arguments: dict[str, Any]) -> str:
-    """列出当前对话的产物
+    """
+    列出当前对话的产物
 
     :param ctx: 运行上下文
+    :param _arguments: 工具参数
     :return:
     """
     async with async_db_session() as db:

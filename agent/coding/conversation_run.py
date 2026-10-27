@@ -155,8 +155,10 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
         return run.cancellation_token.cancelled
 
     async def wait_approval(_reason: str, call: AgentToolCall) -> bool:
-        """等待本轮工具调用的用户审批
+        """
+        等待本轮工具调用的用户审批
 
+        :param _reason: 审批原因
         :param call: 工具调用
         :return:
         """

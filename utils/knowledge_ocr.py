@@ -101,12 +101,19 @@ def get_ocr_onnx_download_status() -> dict[str, object]:
 
 
 def _set_ocr_download_state(**kwargs: object) -> None:
+    """
+    在锁保护下更新 RapidOCR 下载状态
+
+    :param kwargs: 额外关键字参数
+    :return:
+    """
     with _ocr_download_lock:
         for key, value in kwargs.items():
             setattr(_ocr_download_state, key, value)
 
 
 def _run_ocr_onnx_download() -> None:
+    """在后台线程下载 RapidOCR ONNX 模型"""
     try:
         os.nice(10)
     except OSError:
@@ -224,12 +231,19 @@ def get_paddleocr_download_status() -> dict[str, object]:
 
 
 def _set_paddleocr_download_state(**kwargs: object) -> None:
+    """
+    在锁保护下更新 PaddleOCR 下载状态
+
+    :param kwargs: 额外关键字参数
+    :return:
+    """
     with _paddleocr_download_lock:
         for key, value in kwargs.items():
             setattr(_paddleocr_download_state, key, value)
 
 
 def _create_paddleocr_engine() -> object:
+    """创建固定模型目录下的 PaddleOCR 引擎"""
     from paddleocr import PaddleOCR
 
     root = paddleocr_models_dir()
@@ -239,6 +253,7 @@ def _create_paddleocr_engine() -> object:
 
 
 def _run_paddleocr_download() -> None:
+    """在后台线程下载 PaddleOCR 模型"""
     global _paddleocr_engine
     try:
         os.nice(10)

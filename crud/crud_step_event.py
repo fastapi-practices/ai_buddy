@@ -38,7 +38,7 @@ class CRUDAIBuddyStepEvent(CRUDPlus[AIBuddyStepEvent]):
         追加事件
 
         :param db: 数据库会话
-        :param obj: 事件
+        :param obj: 步骤事件记录
         :return:
         """
         db.add(obj)

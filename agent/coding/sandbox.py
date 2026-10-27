@@ -48,7 +48,13 @@ _LIVE: dict[str, CodingSandbox] = {}
 
 
 def _git_command(operation: Literal['status', 'diff'], *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
-    """构建限定当前目录仓库的只读 Git 命令"""
+    """
+    构建限定当前目录仓库的只读 Git 命令
+
+    :param operation: Git 操作
+    :param scope: 差异范围
+    :return:
+    """
     if scope not in ('all', 'staged', 'unstaged'):
         raise errors.RequestError(msg='Git 差异范围无效')
     prefix = (
@@ -132,7 +138,13 @@ class CodingSandbox(Protocol):
         ...
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
-        """将用户输入附件写入工作区 inbound 目录"""
+        """
+        将用户输入附件写入工作区 inbound 目录
+
+        :param path: 工作区相对路径
+        :param content: 文件内容
+        :return:
+        """
         ...
 
     async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
@@ -180,15 +192,22 @@ class CodingSandbox(Protocol):
         ...
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """执行显式测试命令并返回结构化事实
+        """
+        执行显式测试命令并返回结构化事实
 
         :param command: 已确认的测试命令
+        :param timeout: 执行时限
         :return:
         """
         ...
 
     async def git_diff(self, *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
-        """按范围读取工作区未提交差异"""
+        """
+        按范围读取工作区未提交差异
+
+        :param scope: 差异范围
+        :return:
+        """
         ...
 
     async def run_background(self, *, command: str, env: dict[str, str] | None = None) -> str:
@@ -430,9 +449,11 @@ class DesktopBridgeWorkspace:
         return AIBuddyCommandResult.model_validate(result)
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """只向已协商能力的桌面端请求结构化测试执行
+        """
+        只向已协商能力的桌面端请求结构化测试执行
 
         :param command: 已确认的测试命令
+        :param timeout: 执行时限
         :return:
         """
         params = AIBuddyCommandParam(command=command)
@@ -444,7 +465,12 @@ class DesktopBridgeWorkspace:
         return AIBuddyCommandResult.model_validate(result)
 
     async def git_diff(self, *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
-        """按范围读取桌面工作区未提交差异"""
+        """
+        按范围读取桌面工作区未提交差异
+
+        :param scope: 差异范围
+        :return:
+        """
         if scope not in ('all', 'staged', 'unstaged'):
             raise errors.RequestError(msg='Git 差异范围无效')
         return await self._text(AIBuddyExecutionMethod.git_diff, {'scope': scope})
@@ -694,9 +720,11 @@ class OpenSandboxWorkspace:
         return await self.run_command(command=command, timeout=timeout)
 
     async def run_command(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """通过 SDK 原生事件有界收集命令输出和退出状态
+        """
+        通过 SDK 原生事件有界收集命令输出和退出状态
 
         :param command: 已确认的命令
+        :param timeout: 执行时限
         :return:
         """
         params = AIBuddyCommandParam(command=command)
@@ -713,12 +741,22 @@ class OpenSandboxWorkspace:
         truncated = False
 
         async def initialized(event: ExecutionInit) -> None:  # ruff: ignore[unused-async]
-            """保留执行标识供限额或取消时中断进程"""
+            """
+            保留执行标识供限额或取消时中断进程
+
+            :param event: 执行事件
+            :return:
+            """
             nonlocal execution_id
             execution_id = event.id
 
         async def capture(message: OutputMessage) -> None:  # ruff: ignore[unused-async]
-            """累计两条输出流的 UTF-8 字节并在超限时停止读取"""
+            """
+            累计两条输出流的 UTF-8 字节并在超限时停止读取
+
+            :param message: 输出消息
+            :return:
+            """
             nonlocal output_bytes, truncated
             encoded = message.text.encode()
             available = COMMAND_OUTPUT_MAX_BYTES - output_bytes
@@ -776,7 +814,12 @@ class OpenSandboxWorkspace:
         )
 
     async def git_diff(self, *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
-        """按范围读取 OpenSandbox 工作区未提交差异"""
+        """
+        按范围读取 OpenSandbox 工作区未提交差异
+
+        :param scope: 差异范围
+        :return:
+        """
         return await self.run_bash(command=_git_command('diff', scope=scope))
 
     async def run_background(self, *, command: str, env: dict[str, str] | None = None) -> str:

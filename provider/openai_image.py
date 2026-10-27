@@ -17,6 +17,13 @@ class _UrlOnlyImageResponse(Exception):  # ruff: ignore[error-suffix-on-exceptio
     """图片响应只有 url 没有 b64_json，需要异步下载后重新解析"""
 
     def __init__(self, prompt: str, response: ImagesResponse) -> None:
+        """
+        保存图片生成提示与原始响应
+
+        :param prompt: 提示内容
+        :param response: 原始响应
+        :return:
+        """
         super().__init__('image response contains url only')
         self.prompt = prompt
         self.response = response

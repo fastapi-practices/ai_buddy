@@ -53,7 +53,7 @@ def _index_key(conversation_id: str) -> str:
 def public_request(record: dict[str, Any]) -> dict[str, Any]:
     """只序列化公开字段，排除答案和加密密钥
 
-    :param record: 数据记录
+    :param record: 输入请求记录
     :return:
     """
     return {key: value for key, value in record.items() if key not in {'run_id', 'response'}}
@@ -100,7 +100,7 @@ async def resolve_input_request(*, conversation_id: str, request_id: str, obj: R
 
     :param conversation_id: 对话 ID
     :param request_id: 请求 ID
-    :param obj: 请求参数
+    :param obj: 输入请求答复参数
     :return:
     """
     client = shared_chat_run_store.client

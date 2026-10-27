@@ -21,16 +21,36 @@ _CATCH_UP_OVERLAP = timedelta(seconds=2)
 
 
 def _encode_cursor(*, change_time: datetime, rank: int, row_id: int) -> str:
+    """
+    编码增量同步游标
+
+    :param change_time: 变更时间
+    :param rank: 排序值
+    :param row_id: 记录 ID
+    :return:
+    """
     micros = (change_time.astimezone(UTC) - _EPOCH) // timedelta(microseconds=1)
     return f'{micros}.{rank}.{row_id}'
 
 
 def _decode_cursor(cursor: str) -> tuple[datetime, int, int]:
+    """
+    解码增量同步游标
+
+    :param cursor: 同步游标
+    :return:
+    """
     micros, rank, row_id = cursor.split('.')
     return _EPOCH + timedelta(microseconds=int(micros)), int(rank), int(row_id)
 
 
 def _change_time(row: AIBuddyConversation | AIBuddyMessage) -> datetime:
+    """
+    从变更记录提取同步时间
+
+    :param row: 对话或消息记录
+    :return:
+    """
     return row.deleted_time or row.updated_time or row.created_time
 
 

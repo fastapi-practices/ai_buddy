@@ -26,6 +26,7 @@ _client: AsyncQdrantClient | None = None
 
 
 def _is_memory_qdrant() -> bool:
+    """判断 Qdrant 是否使用内存模式"""
     url = settings.AI_BUDDY_QDRANT_URL.strip()
     return not url or url == ':memory:'
 

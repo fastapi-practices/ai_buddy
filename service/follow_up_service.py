@@ -97,7 +97,7 @@ class AIBuddyFollowUpService:
         :param db: 数据库会话
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
-        :param obj: 请求参数
+        :param obj: 提交追问参数
         :return:
         """
         conversation = await self._owned(
@@ -195,7 +195,7 @@ class AIBuddyFollowUpService:
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
         :param followup_id: 跟进 ID
-        :param obj: 请求参数
+        :param obj: 更新追问参数
         :return:
         """
         row, queued = await self._editable(

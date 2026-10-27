@@ -164,9 +164,11 @@ class PydanticAICodingSession:
             self._acp_service.set_wait_approval(wait_approval)
 
             async def acp_event(payload: dict[str, Any], _is_last: object) -> None:
-                """将 ACP 执行进度转换为编码运行事件
+                """
+                将 ACP 执行进度转换为编码运行事件
 
                 :param payload: 事件载荷
+                :param _is_last: 是否为末尾事件
                 :return:
                 """
                 nonlocal acp_text
@@ -267,8 +269,10 @@ class PydanticAICodingSession:
             async def events(  # ruff: ignore[complex-structure]
                 _ctx: RunContext[ChatAgentDeps], stream: AsyncIterable[AgentStreamEvent]
             ) -> None:
-                """将模型原生事件转发为编码运行事件
+                """
+                将模型原生事件转发为编码运行事件
 
+                :param _ctx: 运行上下文
                 :param stream: 事件流
                 :return:
                 """

@@ -36,6 +36,13 @@ class S3OverflowStore:
     """按用户隔离工具结果"""
 
     def __init__(self, storage: S3Storage, *, user_id: int) -> None:
+        """
+        绑定用户专属的工具输出溢出存储
+
+        :param storage: S3 存储
+        :param user_id: 当前用户 ID
+        :return:
+        """
         self._storage = storage
         self._user_id = user_id
 
@@ -88,6 +95,7 @@ class S3OverflowStore:
 
 
 async def _load_default_storage() -> S3Storage | None:
+    """读取默认 S3 存储"""
     try:
         async with async_db_session() as db:
             return await s3_storage_dao.get_default(db)
@@ -97,6 +105,12 @@ async def _load_default_storage() -> S3Storage | None:
 
 
 async def _load_storage(storage_id: int) -> S3Storage | None:
+    """
+    按存储 ID 读取 S3 存储
+
+    :param storage_id: 存储 ID
+    :return:
+    """
     try:
         async with async_db_session() as db:
             return await s3_storage_dao.get(db, storage_id)
@@ -119,6 +133,14 @@ async def get_overflow_store(*, user_id: int) -> OverflowStore | None:
 
 
 async def _store_binaries(node: object, *, storage: S3Storage, written: list[dict[str, Any]]) -> object:
+    """
+    递归将内联二进制写入 S3
+
+    :param node: 待处理数据
+    :param storage: S3 存储
+    :param written: 已写入对象记录
+    :return:
+    """
     if isinstance(node, list):
         if not node:
             return []
@@ -138,6 +160,13 @@ async def _store_binaries(node: object, *, storage: S3Storage, written: list[dic
 
 
 async def _restore_binaries(node: object, *, storage: S3Storage) -> object:
+    """
+    递归恢复 S3 二进制内容
+
+    :param node: 待处理数据
+    :param storage: S3 存储
+    :return:
+    """
     if isinstance(node, list):
         if not node:
             return []

@@ -48,12 +48,26 @@ class AIBuddyWorkspaceService:
 
     @staticmethod
     async def get_all(*, db: AsyncSession, user_id: int) -> Sequence[AIBuddyWorkspace]:
-        """获取当前用户所有工作区"""
+        """
+        获取当前用户所有工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :return:
+        """
         return await ai_buddy_workspace_dao.get_all(db, user_id)
 
     @staticmethod
     async def get(*, db: AsyncSession, user_id: int, workspace_id: str, for_update: bool = False) -> AIBuddyWorkspace:
-        """获取当前用户工作区"""
+        """
+        获取当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param for_update: 是否锁定记录
+        :return:
+        """
         normalized_workspace_id = validate_workspace_id(workspace_id.strip())
         workspace = await ai_buddy_workspace_dao.get(db, user_id, normalized_workspace_id, for_update=for_update)
         if workspace is None:
@@ -62,7 +76,14 @@ class AIBuddyWorkspaceService:
 
     @staticmethod
     async def create(*, db: AsyncSession, user_id: int, obj: CreateAIBuddyWorkspaceParam) -> AIBuddyWorkspace:
-        """创建当前用户工作区"""
+        """
+        创建当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param obj: 创建工作区参数
+        :return:
+        """
         workspace_id = obj.workspace_id.strip()
         name = (obj.name or workspace_id).strip()
         if not name:
@@ -118,7 +139,15 @@ class AIBuddyWorkspaceService:
         workspace_id: str,
         obj: UpdateAIBuddyWorkspaceParam,
     ) -> int:
-        """更新当前用户工作区"""
+        """
+        更新当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param obj: 更新工作区参数
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
         self._check_revision(expected=obj.revision, current=workspace.revision, label='工作区')
         payload = obj.model_dump(exclude_unset=True, exclude={'revision'})
@@ -140,12 +169,26 @@ class AIBuddyWorkspaceService:
         return 0
 
     async def delete(self, *, db: AsyncSession, user_id: int, workspace_id: str) -> int:
-        """删除当前用户工作区"""
+        """
+        删除当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
         return await ai_buddy_workspace_dao.delete(db, user_id, workspace.workspace_id)
 
     async def get_files(self, *, db: AsyncSession, user_id: int, workspace_id: str) -> Sequence[AIBuddyWorkspaceFile]:
-        """获取当前用户工作区文件清单"""
+        """
+        获取当前用户工作区文件清单
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id)
         return await ai_buddy_workspace_file_dao.get_all(db, user_id, workspace.workspace_id)
 
@@ -157,7 +200,15 @@ class AIBuddyWorkspaceService:
         workspace_id: str,
         obj: UpsertAIBuddyWorkspaceFileParam,
     ) -> GetAIBuddyWorkspaceFileDetail:
-        """登记或更新当前用户工作区文件清单"""
+        """
+        登记或更新当前用户工作区文件清单
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param obj: 工作区文件登记参数
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
         existing = await ai_buddy_workspace_file_dao.get(db, user_id, workspace.workspace_id, obj.relative_path)
         object_key = self._validate_object_key(
@@ -200,7 +251,19 @@ class AIBuddyWorkspaceService:
         expected_size: int | None = None,
         expected_sha256: str | None = None,
     ) -> GetAIBuddyWorkspaceFileDetail:
-        """上传工作区文件字节并按文件版本提交清单"""
+        """
+        上传工作区文件字节并按文件版本提交清单
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param relative_path: 相对路径
+        :param file: 文件内容
+        :param expected_revision: 期望文件版本
+        :param expected_size: 期望文件大小
+        :param expected_sha256: 期望文件摘要
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
         if workspace.backend != AIBuddyWorkspaceBackend.cloud:
             raise errors.RequestError(msg='本地或沙箱工作区请通过对应执行端读写文件')
@@ -380,7 +443,16 @@ class AIBuddyWorkspaceService:
         relative_path: str,
         expected_revision: int | None = None,
     ) -> tuple[bytes, GetAIBuddyWorkspaceFileDetail]:
-        """下载工作区文件字节并校验清单摘要"""
+        """
+        下载工作区文件字节并校验清单摘要
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param relative_path: 相对路径
+        :param expected_revision: 期望文件版本
+        :return:
+        """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id)
         if workspace.backend != AIBuddyWorkspaceBackend.cloud:
             raise errors.RequestError(msg='本地或沙箱工作区请通过对应执行端读写文件')
@@ -414,13 +486,27 @@ class AIBuddyWorkspaceService:
 
     @staticmethod
     def _check_revision(*, expected: int | None, current: int, label: str) -> None:
-        """校验客户端版本避免覆盖较新的工作区数据"""
+        """
+        校验客户端版本避免覆盖较新的工作区数据
+
+        :param expected: 期望版本
+        :param current: 当前版本
+        :param label: 版本对象名称
+        :return:
+        """
         if expected is not None and expected != current:
             raise errors.ConflictError(msg=f'{label}版本已变化，请刷新后重试')
 
     @staticmethod
     def _validate_object_key(*, object_key: str | None, object_prefix: str, relative_path: str) -> str | None:
-        """校验文件对象键归属于工作区前缀"""
+        """
+        校验文件对象键归属于工作区前缀
+
+        :param object_key: 对象键
+        :param object_prefix: 对象前缀
+        :param relative_path: 相对路径
+        :return:
+        """
         if object_key is None:
             return None
         if len(object_key) > _OBJECT_KEY_MAX_LENGTH:
@@ -442,7 +528,13 @@ class AIBuddyWorkspaceService:
     def _validate_upload_revision(
         self, *, existing: AIBuddyWorkspaceFile | None, expected_revision: int | None
     ) -> None:
-        """校验工作区文件上传的 CAS 版本"""
+        """
+        校验工作区文件上传的 CAS 版本
+
+        :param existing: 已有文件记录
+        :param expected_revision: 期望文件版本
+        :return:
+        """
         if existing is None:
             if expected_revision not in (None, 0):
                 raise errors.ConflictError(msg='新工作区文件版本必须为 0')
@@ -455,7 +547,14 @@ class AIBuddyWorkspaceService:
     async def _read_workspace_file(
         *, file: UploadFile, expected_size: int | None, expected_sha256: str | None
     ) -> tuple[bytes, str]:
-        """读取工作区文件并校验客户端摘要"""
+        """
+        读取工作区文件并校验客户端摘要
+
+        :param file: 文件内容
+        :param expected_size: 期望文件大小
+        :param expected_sha256: 期望文件摘要
+        :return:
+        """
         data = await file.read(settings.S3_UPLOAD_SIZE_MAX + 1)
         if len(data) > settings.S3_UPLOAD_SIZE_MAX:
             raise errors.RequestError(msg='工作区文件超过大小限制')

@@ -37,6 +37,7 @@ class XaiAdapter(ProviderAdapter):
     )
 
     def __init__(self) -> None:
+        """初始化 xAI 供应商适配器"""
         self._clients: dict[int, AsyncClient] = {}
 
     def create_model(

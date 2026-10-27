@@ -17,6 +17,12 @@ _PREVIEW_MAX_CHARS = 256
 
 
 def _user_prompt_text(content: Any) -> str:
+    """
+    从用户消息内容提取纯文本
+
+    :param content: 用户消息内容
+    :return:
+    """
     if isinstance(content, str):
         return content
     if not isinstance(content, list):

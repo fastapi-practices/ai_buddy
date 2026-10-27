@@ -11,6 +11,13 @@ _BANK_CARD = re.compile(r'(?<!\d)(?:\d[ -]*?){13,19}(?!\d)')
 
 
 def _mask_keep_tail(value: str, *, keep: int = 4) -> str:
+    """
+    遮蔽敏感值并保留末尾字符
+
+    :param value: 敏感值
+    :param keep: 保留字符数
+    :return:
+    """
     compact = re.sub(r'[\s-]+', '', value)
     if len(compact) <= keep:
         return '*' * len(compact)
@@ -33,6 +40,12 @@ def redact_pii(text: str) -> str:
 
 
 def _mask_bank_card(match: re.Match[str]) -> str:
+    """
+    校验并遮蔽银行卡号
+
+    :param match: 正则匹配结果
+    :return:
+    """
     digits = re.sub(r'\D', '', match.group(0))
     if (
         not 13 <= len(digits) <= 19
@@ -43,6 +56,12 @@ def _mask_bank_card(match: re.Match[str]) -> str:
 
 
 def _mask_email(match: re.Match[str]) -> str:
+    """
+    遮蔽邮箱用户名
+
+    :param match: 正则匹配结果
+    :return:
+    """
     name, _, domain = match.group(0).partition('@')
     if not name:
         return '***@' + domain
@@ -58,6 +77,12 @@ def compose_text_guard(*guards: Callable[[str], str | GuardrailResult]) -> Calla
     """
 
     def _guard(text: str) -> GuardrailResult:
+        """
+        串联文本处理并返回统一护栏结果
+
+        :param text: 输入文本
+        :return:
+        """
         current = text
         for item in guards:
             outcome = item(current)

@@ -127,6 +127,7 @@ class ACPHostedClient:
         :param options: ACP 提供的权限选项
         :param session_id: ACP 会话 ID
         :param tool_call: ACP 工具调用信息
+        :param _: 额外关键字参数
         :return:
         """
         del session_id
@@ -186,6 +187,7 @@ class ACPHostedClient:
 
         :param session_id: ACP 会话 ID
         :param update: ACP 会话更新内容
+        :param _: 额外关键字参数
         :return:
         """
         from acp.schema import (
@@ -252,6 +254,7 @@ class ACPHostedClient:
         :param path: 请求读取的文件路径
         :param line: 文件起始行号
         :param limit: 最大读取行数
+        :param _: 额外关键字参数
         :return:
         """
         self._unsupported_method('fs/read_text_file')
@@ -263,6 +266,7 @@ class ACPHostedClient:
         :param session_id: ACP 会话 ID
         :param path: 请求写入的文件路径
         :param content: 待写入的文件内容
+        :param _: 额外关键字参数
         :return:
         """
         self._unsupported_method('fs/write_text_file')

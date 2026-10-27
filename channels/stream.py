@@ -103,6 +103,14 @@ async def _iter_filtered_frames(
     show_thinking: bool,
     show_tool_hints: bool,
 ) -> AsyncIterator[str]:
+    """
+    生成过滤思考和工具提示后的流式文本帧
+
+    :param chunks: 文本块流
+    :param show_thinking: 是否展示思考内容
+    :param show_tool_hints: 是否展示工具提示
+    :return:
+    """
     async with aclosing(_iter_sse_frames(chunks)) as frames:
         async for frame in frames:
             if _keep_channel_sse_frame(frame, show_thinking=show_thinking, show_tool_hints=show_tool_hints):

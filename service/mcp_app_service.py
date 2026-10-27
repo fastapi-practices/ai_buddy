@@ -113,7 +113,7 @@ class AIBuddyMcpAppService:
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
         :param is_superuser: 是否为超级管理员
-        :param obj: 请求参数
+        :param obj: MCP 应用工具调用参数
         :return:
         """
         async with self.session(
@@ -140,7 +140,7 @@ class AIBuddyMcpAppService:
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
         :param is_superuser: 是否为超级管理员
-        :param obj: 请求参数
+        :param obj: MCP 应用工具调用参数
         :return:
         """
         async with self.session(

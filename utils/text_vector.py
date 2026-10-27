@@ -37,7 +37,7 @@ def hash_embed(text: str, *, dims: int = _HASH_DIMS) -> list[float]:
     """
     生成可复现的局部哈希向量，供记忆检索使用
 
-    :param text: 文本
+    :param text: 待嵌入文本
     :param dims: 向量维度
     :return:
     """

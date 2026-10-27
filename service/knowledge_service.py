@@ -775,7 +775,12 @@ _PENDING_REINDEX_KEY = 'ai_buddy_knowledge_reindex_pending'
 
 
 def _schedule_committed_reindex(session: Session) -> None:
-    """最外层事务提交后启动重建，保存点提交只合并请求"""
+    """
+    最外层事务提交后启动重建，保存点提交只合并请求
+
+    :param session: 事务会话
+    :return:
+    """
     pending: set[SessionTransaction] | None = session.info.get(_PENDING_REINDEX_KEY)
     if not pending:
         return
@@ -791,7 +796,12 @@ def _schedule_committed_reindex(session: Session) -> None:
 
 
 def _discard_rolled_back_reindex(session: Session) -> None:
-    """丢弃回滚事务内的重建请求"""
+    """
+    丢弃回滚事务内的重建请求
+
+    :param session: 事务会话
+    :return:
+    """
     transaction = session.get_nested_transaction()
     if transaction is None:
         session.info.pop(_PENDING_REINDEX_KEY, None)
@@ -802,6 +812,12 @@ def _discard_rolled_back_reindex(session: Session) -> None:
 
 
 def _clear_finished_reindex(session: Session, transaction: SessionTransaction) -> None:
-    """事务结束后清理请求，避免关闭会话后复用遗留状态"""
+    """
+    事务结束后清理请求，避免关闭会话后复用遗留状态
+
+    :param session: 事务会话
+    :param transaction: 事务
+    :return:
+    """
     if transaction.parent is None:
         session.info.pop(_PENDING_REINDEX_KEY, None)

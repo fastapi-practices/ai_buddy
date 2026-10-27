@@ -80,7 +80,7 @@ def render_event_text(event: dict[str, Any]) -> str | None:
     """
     把 ACP 客户端事件收成工具可见文本
 
-    :param event: 事件
+    :param event: ACP 客户端事件
     :return:
     """
     event_type = str(event.get('type') or '').lower()

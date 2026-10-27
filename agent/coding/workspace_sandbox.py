@@ -206,7 +206,12 @@ class WorkspaceSandbox:
         return await self.run_bash(command=_git_command('status'))
 
     async def git_diff(self, *, scope: str = 'all') -> str:
-        """按范围读取未提交差异"""
+        """
+        按范围读取未提交差异
+
+        :param scope: 差异范围
+        :return:
+        """
         return await self.run_bash(command=_git_command('diff', scope=scope))
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:

@@ -76,7 +76,13 @@ class AIBuddyConversationService:
 
     @staticmethod
     def validate_agent_mode(*, conversation: AIBuddyConversation, forwarded_props: AIBuddyForwardedPropsParam) -> None:
-        """允许对话与工作模式互切，编码会话保持独立"""
+        """
+        允许对话与工作模式互切，编码会话保持独立
+
+        :param conversation: 当前对话
+        :param forwarded_props: 本轮扩展参数
+        :return:
+        """
         if (
             isinstance(forwarded_props, AIBuddyChatForwardedPropsParam)
             and conversation.agent_mode is not None

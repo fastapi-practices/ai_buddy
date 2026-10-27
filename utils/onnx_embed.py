@@ -66,6 +66,12 @@ def _model_cache_dir(model_id: str) -> Path:
 
 
 def _cache_names(model_id: str) -> list[str]:
+    """
+    汇总 ONNX 模型缓存名称
+
+    :param model_id: 模型 ID
+    :return:
+    """
     names = [model_id]
     alias = _ONNX_HF_SOURCE.get(model_id)
     if alias and alias not in names:
@@ -156,12 +162,24 @@ def get_onnx_download_status() -> dict[str, object]:
 
 
 def _set_download_state(**kwargs: object) -> None:
+    """
+    在锁保护下更新 ONNX 模型下载状态
+
+    :param kwargs: 额外关键字参数
+    :return:
+    """
     with _download_lock:
         for key, value in kwargs.items():
             setattr(_download_state, key, value)
 
 
 def _run_onnx_download(model_id: str) -> None:
+    """
+    在后台线程下载 ONNX 向量模型
+
+    :param model_id: 模型 ID
+    :return:
+    """
     try:
         os.nice(10)
     except OSError:

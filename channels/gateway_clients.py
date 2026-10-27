@@ -46,6 +46,7 @@ class AIBuddyWeixinChannel(WeixinChannel):
                 await api._post_json(endpoint, {'base_info': {'channel_version': _CHANNEL_VERSION}})
 
     async def start(self) -> None:
+        """启动微信网关并同步上线通知"""
         try:
             try:
                 await self._notify_lifecycle(endpoint='ilink/bot/msg/notifystart')
@@ -67,6 +68,13 @@ class AIBuddyWeixinChannel(WeixinChannel):
             await self._close_http()
 
     def _dispatch_message(self, account_id: str, msg: WeixinMessage) -> None:
+        """
+        按绑定用户过滤并分发微信消息
+
+        :param account_id: 网关账号 ID
+        :param msg: 微信消息
+        :return:
+        """
         bound_user = str(getattr(self._config, 'bound_user_id', '') or '').strip()
         if bound_user and msg.from_user_id != bound_user:
             return
@@ -157,6 +165,7 @@ class AIBuddyDingTalkChannel(DingTalkChannel):
     """兼容 SDK 阻塞连接申请与取消行为的钉钉原生通道"""
 
     async def _start_stream_client(self) -> None:
+        """启动钉钉流客户端并接管阻塞连接"""
         await super()._start_stream_client()
         initial_task = self._stream_task
         if initial_task is not None:
@@ -171,6 +180,7 @@ class AIBuddyDingTalkChannel(DingTalkChannel):
         )
 
     async def _stop_stream_client(self) -> None:
+        """停止钉钉流任务并清理会话状态"""
         task = self._stream_task
         if task is not None:
             if not task.cancelling():
@@ -189,11 +199,13 @@ class AIBuddyFeishuChannel(FeishuChannel):
     """隔离各账号的 SDK 线程事件循环，并完整回收飞书连接资源"""
 
     async def _start_ws_client(self) -> None:
+        """重置飞书 WebSocket 停止状态并启动客户端"""
         self._ws_stop_requested = False
         self._ws_cleanup_failed = False
         await super()._start_ws_client()
 
     def _run_ws_thread(self) -> None:  # ruff: ignore[complex-structure]
+        """在独立事件循环中运行飞书 WebSocket SDK"""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self._ws_loop = loop
@@ -202,6 +214,12 @@ class AIBuddyFeishuChannel(FeishuChannel):
 
         def run_sdk(awaitable: Any) -> Any:
             # SDK 在两次运行循环之间可能开始新任务，停机后禁止再次进入循环
+            """
+            在网关事件循环中执行 SDK 异步调用
+
+            :param awaitable: SDK 异步调用
+            :return:
+            """
             if self._ws_stop_requested:
                 awaitable.close()
                 raise asyncio.CancelledError
@@ -257,12 +275,14 @@ class AIBuddyFeishuChannel(FeishuChannel):
                 self._ws_loop = None
 
     def _request_ws_thread_shutdown(self) -> None:
+        """请求飞书 WebSocket 线程退出"""
         self._ws_stop_requested = True
         loop = self._ws_loop
         if loop is None or loop.is_closed():
             return
 
         def shutdown() -> None:
+            """在 WebSocket 事件循环中取消剩余任务"""
             if self._ws_client is not None:
                 self._ws_client._auto_reconnect = False
             for task in asyncio.all_tasks(loop):
@@ -275,6 +295,12 @@ class AIBuddyFeishuChannel(FeishuChannel):
                 raise
 
     async def _stop_ws_client(self, *, force: bool = True) -> bool:
+        """
+        停止飞书 WebSocket 并校验资源已释放
+
+        :param force: 是否强制停止
+        :return:
+        """
         self._request_ws_thread_shutdown()
         thread = self._ws_thread
         if thread is not None:
@@ -297,6 +323,7 @@ class AIBuddyFeishuChannel(FeishuChannel):
         return True
 
     async def stop(self) -> None:
+        """停止飞书网关并关闭连接资源"""
         self._running = False
         try:
             await self._cancel_watchdog()

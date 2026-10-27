@@ -19,7 +19,15 @@ class CRUDAIBuddyWorkspace(CRUDPlus[AIBuddyWorkspace]):
     async def get(
         self, db: AsyncSession, user_id: int, workspace_id: str, *, for_update: bool = False
     ) -> AIBuddyWorkspace | None:
-        """获取当前用户工作区"""
+        """
+        获取当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param for_update: 是否锁定记录
+        :return:
+        """
         statement = sa.select(self.model).where(
             self.model.user_id == user_id, self.model.workspace_id == workspace_id, self.model.deleted == 0
         )
@@ -28,19 +36,47 @@ class CRUDAIBuddyWorkspace(CRUDPlus[AIBuddyWorkspace]):
         return await db.scalar(statement)
 
     async def get_all(self, db: AsyncSession, user_id: int) -> Sequence[AIBuddyWorkspace]:
-        """获取当前用户所有工作区"""
+        """
+        获取当前用户所有工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :return:
+        """
         return await self.select_models_order(db, 'id', 'desc', user_id=user_id, deleted=0)
 
     async def create(self, db: AsyncSession, user_id: int, obj: CreateAIBuddyWorkspaceParam) -> AIBuddyWorkspace:
-        """创建工作区"""
+        """
+        创建工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param obj: 创建工作区参数
+        :return:
+        """
         return await self.create_model(db, obj, user_id=user_id, flush=True)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateAIBuddyWorkspaceParam | dict) -> int:
-        """更新工作区"""
+        """
+        更新工作区
+
+        :param db: 数据库会话
+        :param pk: 记录 ID
+        :param obj: 更新工作区参数
+        :return:
+        """
         return await self.update_model_by_column(db, obj, id=pk, deleted=0)
 
     async def update_if_revision(self, db: AsyncSession, pk: int, revision: int, obj: dict[str, object]) -> int:
-        """按工作区版本条件原子更新并递增版本"""
+        """
+        按工作区版本条件原子更新并递增版本
+
+        :param db: 数据库会话
+        :param pk: 记录 ID
+        :param revision: 版本号
+        :param obj: 工作区更新字段
+        :return:
+        """
         payload = {key: value for key, value in obj.items() if key != 'revision'}
         payload['revision'] = self.model.revision + 1
         result = await db.execute(
@@ -52,7 +88,14 @@ class CRUDAIBuddyWorkspace(CRUDPlus[AIBuddyWorkspace]):
         return result.rowcount or 0
 
     async def delete(self, db: AsyncSession, user_id: int, workspace_id: str) -> int:
-        """删除当前用户工作区"""
+        """
+        删除当前用户工作区
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :return:
+        """
         return await self.delete_model_by_column(
             db,
             logical_deletion=True,

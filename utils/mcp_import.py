@@ -112,12 +112,24 @@ def parse_mcp_servers_json(raw: str, *, allow_stdio: bool) -> list[CreateAIBuddy
 
 
 def _normalize_type(value: object) -> str:
+    """
+    规范化 MCP 服务传输类型
+
+    :param value: 传输类型配置值
+    :return:
+    """
     if not isinstance(value, str):
         return ''
     return re.sub(r'[\s_-]', '', value.strip().lower())
 
 
 def _is_server_config(value: object) -> bool:
+    """
+    判断配置项是否为 MCP 服务配置
+
+    :param value: MCP 配置项
+    :return:
+    """
     if not isinstance(value, dict):
         return False
     command = value.get('command')
@@ -134,6 +146,12 @@ def _is_server_config(value: object) -> bool:
 
 
 def _pick_string(value: object) -> str | None:
+    """
+    从 MCP 配置中提取字符串字段
+
+    :param value: MCP 配置值
+    :return:
+    """
     if not isinstance(value, str):
         return None
     trimmed = value.strip()
@@ -141,6 +159,14 @@ def _pick_string(value: object) -> str | None:
 
 
 def _to_object(value: object, field: str, name: str) -> dict[str, Any] | None:
+    """
+    将 MCP 配置字段转换为对象
+
+    :param value: MCP 配置值
+    :param field: 字段定义
+    :param name: 技能名称
+    :return:
+    """
     if value is None or not value:
         return None
     if not isinstance(value, dict):
@@ -149,6 +175,13 @@ def _to_object(value: object, field: str, name: str) -> dict[str, Any] | None:
 
 
 def _to_number(value: object, fallback: float) -> float:
+    """
+    将 MCP 配置字段转换为数值
+
+    :param value: MCP 配置值
+    :param fallback: 默认值
+    :return:
+    """
     if isinstance(value, bool):
         return fallback
     if isinstance(value, int | float) and value >= 0:
