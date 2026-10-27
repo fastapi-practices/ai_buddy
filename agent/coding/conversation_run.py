@@ -28,6 +28,7 @@ from backend.plugin.ai_buddy.agent.work.runs import (
     register_run,
 )
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
+from backend.plugin.ai_buddy.crud.crud_message_error import ai_buddy_message_error_dao
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyMessageRole, AIBuddyMessageStatus
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.utils.media_store import dump_model_message_payloads, encode_model_message_payloads
@@ -262,13 +263,23 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
     except Exception as exc:
         log.exception(f'后台编码任务异常 conversation_id={conversation_id}: {exc}')
         payload = build_run_error_payload(exc)
-        await _write_assistant_message(
-            assistant_message_id=assistant_message_id,
-            conversation_id=conversation_id,
-            model_messages=model_messages,
-            text=''.join(chunks).strip() or payload['message'],
-            status=AIBuddyMessageStatus.error,
-        )
+        error_message = payload['message']
+        error_payload = {
+            **payload,
+            'provider_id': forwarded_props.provider_id,
+            'model_id': forwarded_props.model_id,
+        }
+        try:
+            await _write_assistant_message(
+                assistant_message_id=assistant_message_id,
+                conversation_id=conversation_id,
+                model_messages=model_messages,
+                text=''.join(chunks).strip() or error_message,
+                status=AIBuddyMessageStatus.error,
+                error_payload=error_payload,
+            )
+        except Exception as persist_exc:
+            log.exception(f'回写编码错误消息失败 conversation_id={conversation_id}: {persist_exc}')
         run.publish(stream.encode('error', payload))
     finally:
         monitor_task.cancel()
@@ -315,6 +326,7 @@ async def _write_assistant_message(
     status: str,
     pending_only: bool = False,
     model_messages: list[ModelMessage] | None = None,
+    error_payload: dict[str, Any] | None = None,
 ) -> None:
     """更新编码回复及对应模型消息
 
@@ -324,6 +336,7 @@ async def _write_assistant_message(
     :param status: 状态值
     :param pending_only: 是否仅更新待处理消息
     :param model_messages: 模型消息列表
+    :param error_payload: 结构化错误详情
     :return:
     """
     if pending_only and not text:
@@ -345,6 +358,16 @@ async def _write_assistant_message(
                     {'status': status, 'model_messages': payload},
                 )
             await ai_buddy_conversation_service.refresh_last_message(db=db, conversation_id=conversation_id)
+            if error_payload is not None:
+                await ai_buddy_message_error_dao.upsert(
+                    db,
+                    {
+                        'message_id': assistant_message_id,
+                        'conversation_id': conversation_id,
+                        'message': str(error_payload.get('message') or '生成失败'),
+                        'detail': error_payload,
+                    },
+                )
     except Exception as exc:
         if pending_only:
             log.warning(f'回写编码步骤消息失败: {exc}')
