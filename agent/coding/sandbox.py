@@ -135,6 +135,16 @@ class CodingSandbox(Protocol):
         """将用户输入附件写入工作区 inbound 目录"""
         ...
 
+    async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
+        """
+        读取工作区文件原始字节，超过上限时拒绝读取
+
+        :param path: 文件路径
+        :param max_bytes: 字节数上限
+        :return:
+        """
+        ...
+
     async def edit_file(self, *, path: str, old_text: str, new_text: str) -> str:
         """
         替换工作区文件内容
@@ -367,6 +377,15 @@ class DesktopBridgeWorkspace:
             },
         )
 
+    async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
+        """本机文件已在用户电脑上，不经桌面桥传回服务端
+
+        :param path: 文件路径
+        :param max_bytes: 字节数上限
+        :return:
+        """
+        raise errors.RequestError(msg='本机工作区文件已保存在用户电脑上，无需交付到服务端')
+
     async def edit_file(self, *, path: str, old_text: str, new_text: str) -> str:
         """替换工作区文件中的指定内容
 
@@ -587,6 +606,24 @@ class OpenSandboxWorkspace:
             with contextlib.suppress(Exception):
                 await self._client.files.delete_files([temporary])
         return json.dumps({'path': path, 'size': len(content), 'sha256': digest}, ensure_ascii=False)
+
+    async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
+        """
+        读取工作区文件原始字节，先按元数据拒绝目录和超限文件
+
+        :param path: 相对路径
+        :param max_bytes: 字节数上限
+        :return:
+        """
+        target = resolve_sandbox_path(path)
+        info = (await self._client.files.get_file_info([target])).get(target)
+        if info is None:
+            raise errors.RequestError(msg='文件不存在')
+        if (info.entry_type or '').lower() in {'dir', 'directory'}:
+            raise errors.RequestError(msg='路径是目录，请指定文件')
+        if info.size > max_bytes:
+            raise errors.RequestError(msg='文件超过交付大小上限')
+        return await self._client.files.read_bytes(target)
 
     async def edit_file(self, *, path: str, old_text: str, new_text: str) -> str:
         """

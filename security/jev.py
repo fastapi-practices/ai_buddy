@@ -20,6 +20,7 @@ _JEV_TOOL_RISK = frozenset({
     'bash_background',
     'run_tests',
     'write_artifact',
+    'deliver_file',
     'write_memory',
     'run_code',
     'web_fetch',

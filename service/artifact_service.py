@@ -1,7 +1,14 @@
+import hashlib
+import mimetypes
+import re
+
 from collections.abc import Sequence
+from io import BytesIO
 from typing import Any
 
+from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.datastructures import Headers
 
 from backend.common.exception import errors
 from backend.common.pagination import cursor_paging_data
@@ -25,7 +32,14 @@ from backend.plugin.ai_buddy.schema.artifact import (
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.service.workspace_service import ai_buddy_workspace_service
 from backend.plugin.ai_buddy.utils.object_key import build_object_key
+from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
 from backend.plugin.s3.utils.text_store import read_text, require_storage, write_text
+
+_DELIVERY_WORKSPACE_ID = 'sandbox-outbound'
+_DELIVERY_WORKSPACE_NAME = '沙箱交付文件'
+_FILENAME_UNSAFE = re.compile(r'[\x00-\x1f\x7f/\\]')
+_FILENAME_MAX_LENGTH = 120
+_MEDIA_KINDS = frozenset({'image', 'video', 'audio', 'text'})
 
 
 class AIBuddyArtifactService:
@@ -207,6 +221,68 @@ class AIBuddyArtifactService:
         )
         artifact.content = ''
         return artifact
+
+    async def deliver_file(
+        self,
+        *,
+        db: AsyncSession,
+        user_id: int,
+        conversation_id: str,
+        filename: str,
+        data: bytes,
+        title: str | None,
+        kind: AIBuddyArtifactKind | None,
+    ) -> AIBuddyArtifact:
+        """
+        把服务端沙箱产出的文件字节存入云端交付工作区，并登记为文件产物
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param conversation_id: 来源对话 ID
+        :param filename: 文件名
+        :param data: 文件字节
+        :param title: 产物标题，为空使用文件名
+        :param kind: 产物类型，为空按媒体类型推断
+        :return:
+        """
+        name = _FILENAME_UNSAFE.sub('_', filename).strip()[:_FILENAME_MAX_LENGTH]
+        if name in {'', '.', '..'}:
+            raise errors.RequestError(msg='文件名无效')
+        digest = hashlib.sha256(data).hexdigest()
+        mime_type = mimetypes.guess_type(name)[0] or 'application/octet-stream'
+        major_type = mime_type.split('/', 1)[0]
+        if kind is None:
+            kind = AIBuddyArtifactKind(major_type) if major_type in _MEDIA_KINDS else AIBuddyArtifactKind.other
+        # 路径带内容摘要，同一路径始终对应同一内容，历史消息引用的产物不会被后续交付覆盖
+        relative_path = f'{validate_workspace_id(conversation_id)}/{digest[:16]}/{name}'
+
+        workspace = await ai_buddy_workspace_service.get_or_create_cloud(
+            db=db, user_id=user_id, workspace_id=_DELIVERY_WORKSPACE_ID, name=_DELIVERY_WORKSPACE_NAME
+        )
+        existing = await ai_buddy_workspace_file_dao.get(db, user_id, workspace.workspace_id, relative_path)
+        file = await ai_buddy_workspace_service.upload_bytes(
+            db=db,
+            user_id=user_id,
+            workspace_id=workspace.workspace_id,
+            relative_path=relative_path,
+            file=UploadFile(BytesIO(data), size=len(data), filename=name, headers=Headers({'content-type': mime_type})),
+            expected_revision=None if existing is None else existing.revision,
+        )
+
+        return await self.register_reference(
+            db=db,
+            user_id=user_id,
+            obj=RegisterAIBuddyArtifactParam(
+                title=(title or '').strip()[:256] or name,
+                kind=kind,
+                storage_backend=AIBuddyArtifactStorageBackend.s3,
+                workspace_id=workspace.workspace_id,
+                relative_path=relative_path,
+                mime_type=file.mime_type,
+                size=file.size,
+                sha256=file.sha256,
+            ),
+        )
 
     async def update(self, *, db: AsyncSession, pk: int, user_id: int, obj: UpdateAIBuddyArtifactParam) -> int:
         """

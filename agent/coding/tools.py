@@ -6,9 +6,10 @@ from backend.common.exception import errors
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.agent.coding.attachments import import_input_attachment
 from backend.plugin.ai_buddy.agent.coding.command_idempotency import run_idempotent_command
+from backend.plugin.ai_buddy.agent.coding.delivery import deliver_sandbox_file
 from backend.plugin.ai_buddy.agent.coding.test_report import run_tests_and_archive
 from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext, AgentToolSpec
-from backend.plugin.ai_buddy.enums import AIBuddyArtifactKind, AIBuddyCommandReason
+from backend.plugin.ai_buddy.enums import AIBuddyArtifactKind, AIBuddyCommandReason, AIBuddyExecutionBackend
 from backend.plugin.ai_buddy.schema.artifact import CreateAIBuddyArtifactParam, UpdateAIBuddyArtifactParam
 from backend.plugin.ai_buddy.schema.command import AIBuddyBackgroundTaskDetail
 from backend.plugin.ai_buddy.service.artifact_service import ai_buddy_artifact_service
@@ -269,6 +270,65 @@ async def _write_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> st
             obj=CreateAIBuddyArtifactParam(title=title, kind=kind, content=content),
         )
         return f'已保存产物 #{created.id} {created.title}'
+
+
+def _delivery_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
+    """为服务端沙箱绑定文件交付工具，本机执行的文件已在用户电脑上，不提供
+
+    :param ctx: 运行上下文
+    :return:
+    """
+    if ctx.sandbox is None or ctx.sandbox.execution_backend != AIBuddyExecutionBackend.sandbox:
+        return []
+
+    async def deliver_file(arguments: dict[str, Any]) -> str:
+        """把沙箱工作区文件交付为持久产物
+
+        :param arguments: 工具参数
+        :return:
+        """
+        kind = _string(arguments, 'kind', required=False)
+        return await deliver_sandbox_file(
+            ctx=ctx,
+            path=_string(arguments, 'path'),
+            title=_string(arguments, 'title', required=False).strip() or None,
+            kind=AIBuddyArtifactKind(kind) if kind else None,
+        )
+
+    return [
+        BoundAgentTool(
+            spec=AgentToolSpec(
+                name='deliver_file',
+                description=(
+                    '把沙箱工作区内要交给用户的最终文件保存为持久产物并返回产物 ID；'
+                    '沙箱磁盘可能被回收，依赖、日志和中间文件不要交付'
+                ),
+                parameters={
+                    'type': 'object',
+                    'properties': {
+                        'path': {
+                            'type': 'string',
+                            'minLength': 1,
+                            'description': '工作区内的文件路径，建议放在 outbound/ 目录',
+                        },
+                        'title': {'type': 'string', 'description': '产物标题，默认使用文件名'},
+                        'kind': {
+                            'type': 'string',
+                            'enum': AIBuddyArtifactKind.get_member_values(),
+                            'description': (
+                                '产物类型：image 图片、video 视频、audio 音频、text 文本、document 文档、other 其他，'
+                                '默认按文件类型推断'
+                            ),
+                        },
+                    },
+                    'required': ['path'],
+                    'additionalProperties': False,
+                },
+                mutating=True,
+            ),
+            handler=deliver_file,
+        )
+    ]
 
 
 def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
@@ -627,7 +687,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
             handler=lambda arguments: import_input_attachment(ctx, arguments['attachment_id']),
         ),
     ]
-    return tools
+    return [*tools, *_delivery_tools(ctx)]
 
 
 def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:

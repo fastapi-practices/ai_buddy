@@ -2,7 +2,7 @@ from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
 from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode
 
 _PERMISSION_HINT = {
-    AIBuddyPermissionMode.ask: '写文件、编辑、执行命令和写入产物需要用户批准',
+    AIBuddyPermissionMode.ask: '写文件、编辑、执行命令、写入或交付产物需要用户批准',
     AIBuddyPermissionMode.auto: '工作区内的读、写、编辑和命令会自动批准，不要越出工作区',
     AIBuddyPermissionMode.full: '工作区内工具全部可用；仍然不要尝试逃出工作区',
 }
@@ -36,6 +36,11 @@ def build_agent_system_prompt(ctx: AgentRunContext) -> str:
     elif getattr(ctx.sandbox, 'execution_backend', None) == 'local':
         lines[0] = '你是 Agent，在用户桌面本机的操作系统沙箱中完成任务，文件写入限定在所选工作目录'
         lines.append(f'本轮执行后端：local；桌面工作目录：{ctx.sandbox.cwd}')
+    elif getattr(ctx.sandbox, 'execution_backend', None) == 'sandbox':
+        lines.append(
+            '本轮执行后端：sandbox；沙箱磁盘随时可能被回收，需要留给用户的最终文件请放入 outbound/ 目录'
+            '并调用 deliver_file 交付，依赖、日志和中间文件不要交付'
+        )
     if ctx.project_name:
         lines.append(f'当前项目：{ctx.project_name}')
     if ctx.goal:

@@ -81,6 +81,35 @@ class AIBuddyWorkspaceService:
         except IntegrityError as exc:
             raise errors.ConflictError(msg='工作区已由其他请求创建，请刷新后重试') from exc
 
+    async def get_or_create_cloud(
+        self, *, db: AsyncSession, user_id: int, workspace_id: str, name: str
+    ) -> AIBuddyWorkspace:
+        """
+        获取当前用户的云端工作区，不存在时创建
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :param name: 创建时使用的工作区名称
+        :return:
+        """
+        workspace = await ai_buddy_workspace_dao.get(db, user_id, workspace_id)
+        if workspace is None:
+            try:
+                workspace = await self.create(
+                    db=db,
+                    user_id=user_id,
+                    obj=CreateAIBuddyWorkspaceParam(
+                        workspace_id=workspace_id, name=name, backend=AIBuddyWorkspaceBackend.cloud
+                    ),
+                )
+            except errors.ConflictError:
+                # 并发请求已抢先创建，加锁读取已提交的记录
+                workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
+        if workspace.backend != AIBuddyWorkspaceBackend.cloud:
+            raise errors.RequestError(msg='工作区不是云端后端')
+        return workspace
+
     async def update(
         self,
         *,

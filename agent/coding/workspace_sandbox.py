@@ -152,6 +152,22 @@ class WorkspaceSandbox:
             raise
         return json.dumps({'path': path, 'size': len(content), 'sha256': digest}, ensure_ascii=False)
 
+    async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
+        """
+        读取工作区文件原始字节，先按元数据拒绝目录和超限文件
+
+        :param path: 相对路径
+        :param max_bytes: 字节数上限
+        :return:
+        """
+        target = resolve_sandbox_path(path)
+        entry = await self._call(self._workspace.stat(target))
+        if entry.is_dir:
+            raise errors.RequestError(msg='路径是目录，请指定文件')
+        if (entry.size or 0) > max_bytes:
+            raise errors.RequestError(msg='文件超过交付大小上限')
+        return await self._call(self._workspace.read_bytes(target))
+
     async def edit_file(self, *, path: str, old_text: str, new_text: str) -> str:
         """
         精确替换工作区文件片段
