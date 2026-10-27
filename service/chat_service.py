@@ -145,6 +145,7 @@ class AIBuddyChatService:
                         user_id=user_id,
                         conversation_id=conversation_id,
                         assistant_id=assistant_id,
+                        origin=origin,
                     )
                 current_messages = sanitize_input_messages(
                     agent=agent,
@@ -379,7 +380,15 @@ class AIBuddyChatService:
     async def _resolve_conversation_binding(
         *, db: AsyncSession, user_id: int, conversation_id: str, forwarded_props: AIBuddyChatForwardedPropsParam
     ) -> AIBuddyChatForwardedPropsParam:
-        """校验会话模式、固定工作位置并解析编码工作区绑定"""
+        """
+        校验会话模式、固定工作位置并解析编码工作区绑定
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param conversation_id: 对话 ID
+        :param forwarded_props: 本轮扩展参数
+        :return:
+        """
         conversation = await ai_buddy_conversation_service.get_owned_conversation(
             db=db,
             conversation_id=conversation_id,

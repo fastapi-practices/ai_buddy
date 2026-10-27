@@ -37,3 +37,28 @@ def trigger_is_due(
             timezone.from_datetime(anchor)
         )[0]
     return last_run_time is None and now >= parse_date_trigger(value)
+
+
+def next_run_time(spec: str, *, last_run_time: datetime | None, created_time: datetime | None) -> datetime | None:
+    """
+    估算下次执行时间，仅用于展示，实际触发以每 60 秒一次的扫描为准
+
+    :param spec: 调度表达式
+    :param last_run_time: 最近执行时间
+    :param created_time: 创建时间
+    :return:
+    """
+    try:
+        kind, value = parse_trigger(spec)
+    except errors.RequestError:
+        return None
+    now = timezone.now()
+    if kind == 'cron':
+        start, delta, _ = parse_cron(value).remaining_delta(now)
+        return start + delta
+    if kind == 'interval':
+        anchor = timezone.from_datetime(last_run_time or created_time or now)
+        return max(anchor + timedelta(seconds=int(value)), now)
+    if last_run_time is not None:
+        return None
+    return max(parse_date_trigger(value), now)

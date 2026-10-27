@@ -2,6 +2,8 @@ from backend.common.exception import errors
 
 CRON_PROMPT_MAX_LEN = 2000
 CRON_NAME_MAX_LEN = 80
+CRON_USER_MAX_ENABLED = 10
+CRON_MIN_INTERVAL_SECONDS = 60
 
 
 def require_cron_prompt(prompt: str) -> str:

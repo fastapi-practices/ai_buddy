@@ -26,7 +26,7 @@ from backend.plugin.ai_buddy.dataclasses import (
     CompletionPersistenceContext,
     RegenerationPersistenceContext,
 )
-from backend.plugin.ai_buddy.enums import AIBuddyMessageStatus, AIBuddyModelCapability
+from backend.plugin.ai_buddy.enums import AIBuddyMessageStatus, AIBuddyModelCapability, AIBuddyOrigin
 from backend.plugin.ai_buddy.schema.image import AIBuddyImageForwardedPropsParam
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 from backend.plugin.ai_buddy.utils.http_client import build_retry_http_client
@@ -146,6 +146,7 @@ class AgentSession:
         context_window: int | None = None,
         max_output_tokens: int | None = None,
         catalog_capabilities: frozenset[AIBuddyModelCapability] | None = None,
+        origin: AIBuddyOrigin = AIBuddyOrigin.web,
     ) -> ChatAgent:
         """
         构建聊天代理
@@ -158,6 +159,7 @@ class AgentSession:
         :param context_window: 模型上下文窗口 token 数
         :param max_output_tokens: 模型最大输出 token 上限
         :param catalog_capabilities: 后台配置的模型能力
+        :param origin: 本轮消息来源
         :return:
         """
         await load_ai_buddy_config(db)
@@ -197,6 +199,7 @@ class AgentSession:
             assistant_id=assistant_id,
             context_window=context_window,
             catalog_capabilities=catalog_capabilities,
+            origin=origin,
         )
         model_settings = build_model_settings(
             adapter=self.adapter,

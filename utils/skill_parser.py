@@ -17,6 +17,7 @@ _SKILL_MARKDOWN_NAME = 'skill.md'
 _SKILL_MARKDOWN_MAX_BYTES = 1 * 1024 * 1024
 _SKILL_VERSION_MAX_CHARS = 32
 _DEFAULT_SKILL_VERSION = '0.1.0'
+_BUILTIN_SKILL_ROOT = Path(__file__).resolve().parents[1] / 'builtin_skills'
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +41,67 @@ def skill_markdown_body(content: str) -> str:
     """
     _, body = _split_frontmatter(content.strip())
     return body
+
+
+def build_skill_markdown(*, name: str, description: str, body: str, version: str) -> str:
+    """
+    按 Agent Skills 规范组装 SKILL.md
+
+    :param name: 技能名称
+    :param description: 技能描述
+    :param body: 技能正文
+    :param version: 技能版本
+    :return:
+    """
+    frontmatter = yaml.safe_dump(
+        {'name': name, 'description': description, 'metadata': {'version': version}},
+        allow_unicode=True,
+        sort_keys=False,
+    )
+    return f'---\n{frontmatter}---\n\n{body.strip()}\n'
+
+
+def rewrite_skill_markdown(content: str, *, description: str | None, body: str | None, version: str | None) -> str:
+    """
+    在保留其余 frontmatter 字段的前提下改写 SKILL.md，参数为空表示保持原值
+
+    :param content: 现有 SKILL.md 全文
+    :param description: 新描述
+    :param body: 新正文
+    :param version: 新版本
+    :return:
+    """
+    frontmatter_text, old_body = _split_frontmatter(content.strip())
+    try:
+        parsed: object = yaml.load(frontmatter_text, Loader=yaml.BaseLoader)
+    except yaml.YAMLError:
+        raise errors.RequestError(msg='技能 YAML frontmatter 无效')
+    if not isinstance(parsed, dict):
+        raise errors.RequestError(msg='技能 YAML frontmatter 必须是映射')
+    if description is not None:
+        parsed['description'] = description
+    if version is not None:
+        metadata = parsed.get('metadata')
+        parsed['metadata'] = {**(metadata if isinstance(metadata, dict) else {}), 'version': version}
+    frontmatter = yaml.safe_dump(parsed, allow_unicode=True, sort_keys=False)
+    return f'---\n{frontmatter}---\n\n{(old_body if body is None else body).strip()}\n'
+
+
+def load_builtin_skill_payloads() -> list[list[tuple[str, bytes]]]:
+    """
+    读取随插件发布的内置技能目录，每个技能一组以技能目录名开头的文件
+
+    :return:
+    """
+    return [
+        [
+            (path.relative_to(_BUILTIN_SKILL_ROOT).as_posix(), path.read_bytes())
+            for path in sorted(directory.rglob('*'))
+            if path.is_file()
+        ]
+        for directory in sorted(_BUILTIN_SKILL_ROOT.iterdir())
+        if directory.is_dir()
+    ]
 
 
 def skill_file_guidance(skill_id: int) -> str:
@@ -180,6 +242,12 @@ def _parse_skill_markdown(text: str, *, directory_name: str | None) -> SkillUplo
 
 
 def _split_frontmatter(text: str) -> tuple[str, str]:
+    """
+    拆分技能 YAML frontmatter 与正文
+
+    :param text: 技能 Markdown 原文
+    :return:
+    """
     lines = text.splitlines()
     if not lines or lines[0].strip() != '---':
         raise errors.RequestError(msg='技能必须包含 YAML frontmatter')
@@ -195,6 +263,12 @@ def _split_frontmatter(text: str) -> tuple[str, str]:
 
 
 def _validate_skill_name(name: str) -> str:
+    """
+    校验技能名称格式
+
+    :param name: 技能名称
+    :return:
+    """
     normalized = name.strip()
     if (
         not normalized
@@ -210,4 +284,10 @@ def _validate_skill_name(name: str) -> str:
 
 
 def _ignored_parts(parts: Sequence[str]) -> bool:
+    """
+    判断压缩包路径是否应忽略
+
+    :param parts: 路径片段
+    :return:
+    """
     return any(part == '__MACOSX' or part.startswith('.') for part in parts)

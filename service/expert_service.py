@@ -122,6 +122,7 @@ class AIBuddyExpertService:
         :return:
         """
         obj = self._normalize(obj=obj)
+        await self._validate_relations(db=db, owner_id=user_id, obj=obj)
         if await ai_buddy_expert_dao.get_by_name(db, user_id, obj.name):
             raise errors.ConflictError(msg='专家名称已存在')
         await ai_buddy_expert_dao.create(db, obj, user_id)
@@ -149,6 +150,7 @@ class AIBuddyExpertService:
         if expert.user_id == SYSTEM_EXPERT_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统专家模板不允许修改')
         obj = self._normalize(obj=obj)
+        await self._validate_relations(db=db, owner_id=expert.user_id, obj=obj, expert=expert)
         existed = await ai_buddy_expert_dao.get_by_name(db, expert.user_id, obj.name)
         if existed and existed.id != pk:
             raise errors.ConflictError(msg='专家名称已存在')
@@ -207,6 +209,42 @@ class AIBuddyExpertService:
             'knowledge_ids': list(expert.knowledge_ids or []),
             'starters': list(expert.starters or []),
         }
+
+    @staticmethod
+    async def _validate_relations(
+        *,
+        db: AsyncSession,
+        owner_id: int,
+        obj: CreateAIBuddyExpertParam | UpdateAIBuddyExpertParam,
+        expert: AIBuddyExpert | None = None,
+    ) -> None:
+        """
+        校验新增的 MCP、技能和知识库对专家所有者可见，已有的历史引用不重复校验
+
+        :param db: 数据库会话
+        :param owner_id: 专家所有者 ID
+        :param obj: 创建或更新参数
+        :param expert: 更新前的专家
+        :return:
+        """
+        checks = (
+            ('MCP', obj.mcp_ids, expert.mcp_ids if expert else None, ai_buddy_mcp_dao.get_by_ids),
+            ('技能', obj.skill_ids, expert.skill_ids if expert else None, ai_buddy_skill_dao.get_by_ids),
+            (
+                '知识库',
+                obj.knowledge_ids,
+                expert.knowledge_ids if expert else None,
+                ai_buddy_knowledge_base_dao.get_by_ids,
+            ),
+        )
+        for label, requested, existing, fetch in checks:
+            added = [pk for pk in requested if pk not in set(existing or ())]
+            if not added:
+                continue
+            visible = {item.id for item in await fetch(db, added, owner_id)}
+            missing = [pk for pk in added if pk not in visible]
+            if missing:
+                raise errors.RequestError(msg=f'{label}不存在或不可用: {missing}')
 
     @staticmethod
     def _normalize(

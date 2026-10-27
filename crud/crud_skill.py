@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
 from backend.plugin.ai_buddy.model.skill import AIBuddySkill
-from backend.plugin.ai_buddy.schema.skill import CreateAIBuddySkillParam
+from backend.plugin.ai_buddy.schema.skill import CreateAIBuddySkillParam, UpdateAIBuddySkillParam
 from backend.plugin.ai_buddy.utils.ownership import visible_owner_ids
 from backend.utils.timezone import timezone
 
@@ -122,6 +122,17 @@ class CRUDAIBuddySkill(CRUDPlus[AIBuddySkill]):
         :return:
         """
         return await self.create_model(db, obj, user_id=user_id, flush=True)
+
+    async def update(self, db: AsyncSession, pk: int, obj: UpdateAIBuddySkillParam) -> int:
+        """
+        更新技能
+
+        :param db: 数据库会话
+        :param pk: 技能 ID
+        :param obj: 更新技能参数
+        :return:
+        """
+        return await self.update_model_by_column(db, obj, id=pk, deleted=0)
 
     async def delete(self, db: AsyncSession, pk: int, user_id: int) -> int:
         """

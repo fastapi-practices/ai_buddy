@@ -1,3 +1,5 @@
+import re
+
 from collections.abc import Sequence
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any
@@ -11,10 +13,14 @@ from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_skill import ai_buddy_skill_dao
 from backend.plugin.ai_buddy.enums import AIBuddyObjectKind, AIBuddyObjectLocation
 from backend.plugin.ai_buddy.model.skill import SYSTEM_SKILL_USER_ID, AIBuddySkill
-from backend.plugin.ai_buddy.schema.skill import CreateAIBuddySkillParam, GetAIBuddySkillSearchHit
+from backend.plugin.ai_buddy.schema.skill import (
+    CreateAIBuddySkillParam,
+    GetAIBuddySkillSearchHit,
+    UpdateAIBuddySkillParam,
+)
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.utils.object_key import build_skill_key, skill_markdown_key
-from backend.plugin.ai_buddy.utils.skill_parser import parse_skill_upload
+from backend.plugin.ai_buddy.utils.skill_parser import parse_skill_upload, rewrite_skill_markdown
 from backend.plugin.s3.service.storage_service import s3_storage_service
 from backend.plugin.s3.utils.file_ops import get_operator
 from backend.plugin.s3.utils.text_store import read_text, require_storage, write_bytes
@@ -166,6 +172,23 @@ class AIBuddySkillService:
         :return:
         """
         payloads = [(item.filename, await item.read()) for item in files]
+        await self.create_from_payloads(db=db, user_id=user_id, payloads=payloads)
+
+    async def create_from_payloads(
+        self,
+        *,
+        db: AsyncSession,
+        user_id: int,
+        payloads: Sequence[tuple[str | None, bytes]],
+    ) -> None:
+        """
+        按文件内容创建技能
+
+        :param db: 数据库会话
+        :param user_id: 所属用户 ID
+        :param payloads: 技能目录文件列表，路径以技能目录名开头
+        :return:
+        """
         uploaded = await run_in_threadpool(parse_skill_upload, files=payloads)
         if await ai_buddy_skill_dao.get_by_name(db, user_id, uploaded.name):
             raise errors.ConflictError(msg='技能名称已存在')
@@ -187,6 +210,60 @@ class AIBuddySkillService:
         skill.storage_id = storage.id
         await db.flush()
         await self._track_object(db=db, skill=skill, released=False)
+
+    @staticmethod
+    async def update_content(
+        *,
+        db: AsyncSession,
+        pk: int,
+        user_id: int,
+        description: str | None,
+        body: str | None,
+        version: str | None,
+    ) -> None:
+        """
+        原地改写本人技能的 SKILL.md，技能 ID 和包内其他文件保持不变，参数为空表示保持原值
+
+        :param db: 数据库会话
+        :param pk: 技能 ID
+        :param user_id: 用户 ID
+        :param description: 新描述
+        :param body: 新正文
+        :param version: 新版本
+        :return:
+        """
+        skill = await ai_buddy_skill_dao.get(db, pk)
+        if skill is None or skill.user_id not in {user_id, SYSTEM_SKILL_USER_ID}:
+            raise errors.NotFoundError(msg='技能不存在')
+        if skill.user_id == SYSTEM_SKILL_USER_ID:
+            raise errors.ForbiddenError(msg='系统内置技能不允许修改')
+        key = skill_markdown_key(skill.object_key)
+        current = await read_text(db=db, key=key, storage_id=skill.storage_id)
+        content = rewrite_skill_markdown(current, description=description, body=body, version=version)
+        uploaded = await run_in_threadpool(parse_skill_upload, files=[(f'{skill.name}/SKILL.md', content.encode())])
+        await ai_buddy_skill_dao.update(
+            db,
+            pk,
+            UpdateAIBuddySkillParam(name=skill.name, description=uploaded.description, version=uploaded.version),
+        )
+        await write_bytes(db=db, key=key, data=uploaded.content.encode(), storage_id=skill.storage_id)
+
+    async def sync_builtin(self, *, db: AsyncSession, payloads: Sequence[tuple[str | None, bytes]]) -> bool:
+        """
+        写入或升级随插件发布的内置技能，库中已是同版本或更高版本时跳过
+
+        :param db: 数据库会话
+        :param payloads: 技能目录文件列表，路径以技能目录名开头
+        :return:
+        """
+        uploaded = await run_in_threadpool(parse_skill_upload, files=payloads)
+        existing = await ai_buddy_skill_dao.get_by_name(db, SYSTEM_SKILL_USER_ID, uploaded.name)
+        if existing:
+            if _version_key(existing.version) >= _version_key(uploaded.version):
+                return False
+            await self.delete(db=db, pk=existing.id, user_id=SYSTEM_SKILL_USER_ID, is_superuser=True)
+        await self.create_from_payloads(db=db, user_id=SYSTEM_SKILL_USER_ID, payloads=payloads)
+        return True
 
     async def delete(self, *, db: AsyncSession, pk: int, user_id: int, is_superuser: bool) -> int:
         """
@@ -261,6 +338,16 @@ class AIBuddySkillService:
             raise errors.RequestError(msg='技能文件目录无效')
         filename = '/'.join(parts)
         return f'{prefix}/{filename}', filename
+
+
+def _version_key(version: str) -> tuple[int, ...]:
+    """
+    将技能版本转换为可比较的数字元组
+
+    :param version: 技能版本
+    :return:
+    """
+    return tuple(int(part) for part in re.findall(r'\d+', version))
 
 
 ai_buddy_skill_service: AIBuddySkillService = AIBuddySkillService()

@@ -37,6 +37,7 @@ from backend.plugin.ai_buddy.agent.work.capabilities.memory import build_memory_
 from backend.plugin.ai_buddy.agent.work.capabilities.planning import build_planning_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.project import build_project_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.reminders import build_reminder_capabilities
+from backend.plugin.ai_buddy.agent.work.capabilities.resource_tools import build_resource_tools_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import build_runtime_hooks_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.sandbox import build_sandbox_capabilities
 from backend.plugin.ai_buddy.agent.work.capabilities.search import build_search_capabilities
@@ -53,6 +54,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyChatGenerationType,
     AIBuddyChatThinkingType,
     AIBuddyModelCapability,
+    AIBuddyOrigin,
     AIBuddyProviderType,
 )
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter
@@ -76,6 +78,7 @@ _CAPABILITY_BUILDERS: tuple[CapabilityBuilder, ...] = (
     build_skills_capability,
     build_workspace_capability,
     build_workspace_tools_capability,
+    build_resource_tools_capability,
     build_user_input_capability,
     build_mcp_capability,
     build_runtime_hooks_capability,
@@ -104,6 +107,7 @@ async def assemble_capabilities(
     assistant_id: int | None = None,
     context_window: int | None = None,
     catalog_capabilities: frozenset[AIBuddyModelCapability] = frozenset(),
+    origin: AIBuddyOrigin = AIBuddyOrigin.web,
 ) -> list[AbstractCapability[Any]]:
     """
     按顺序运行 capability 构建器并校验能力组合
@@ -121,6 +125,7 @@ async def assemble_capabilities(
     :param assistant_id: 新建对话时的助手 ID
     :param context_window: 模型上下文窗口 token 数
     :param catalog_capabilities: 后台配置的模型能力
+    :param origin: 本轮消息来源
     :return:
     """
     (
@@ -188,6 +193,7 @@ async def assemble_capabilities(
             assistant_prompt=assistant_prompt,
             context_window=context_window,
             catalog_capabilities=catalog_capabilities,
+            origin=origin,
         )
         outcomes = builder(ctx)
         if isawaitable(outcomes):

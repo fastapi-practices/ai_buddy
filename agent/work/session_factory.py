@@ -11,6 +11,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
     AIBuddyChatGenerationType,
     AIBuddyModelKind,
+    AIBuddyOrigin,
     AIBuddyProviderType,
 )
 from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
@@ -30,6 +31,7 @@ async def open_chat_session(
     user_id: int | None = None,
     conversation_id: str | None = None,
     assistant_id: int | None = None,
+    origin: AIBuddyOrigin = AIBuddyOrigin.web,
 ) -> tuple[AgentSession, ChatAgent]:
     """
     解析供应商与模型，打开会话并构建代理
@@ -39,6 +41,7 @@ async def open_chat_session(
     :param user_id: 用户 ID
     :param conversation_id: 对话 ID
     :param assistant_id: 新建对话时的助手 ID
+    :param origin: 本轮消息来源
     :return:
     """
     provider, model = await ai_buddy_model_service.get_enabled_binding(
@@ -111,6 +114,7 @@ async def open_chat_session(
             context_window=model.context_window,
             max_output_tokens=model.max_output_tokens,
             catalog_capabilities=frozenset(parse_model_capabilities(model.capabilities)),
+            origin=origin,
         )
     except ValueError as exc:
         # 屏蔽取消：任务取消时仍完成客户端关闭，避免连接泄漏

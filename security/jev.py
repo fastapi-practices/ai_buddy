@@ -11,9 +11,9 @@ from pydantic_ai_harness.guardrails import GuardrailResult, InputGuardrail, Tool
 
 from backend.common.log import log
 from backend.core.conf import settings
-from backend.plugin.ai_buddy.security.tool_policy import is_mcp_tool
+from backend.plugin.ai_buddy.security.tool_policy import RESOURCE_WRITE_TOOLS, is_mcp_tool
 
-_JEV_TOOL_RISK = frozenset({
+_JEV_TOOL_RISK = RESOURCE_WRITE_TOOLS | frozenset({
     'write',
     'edit',
     'bash',
@@ -68,6 +68,12 @@ def _build_jev_agent(kind: Literal['input', 'tool'], api_key: str, model: str) -
 
 
 def _jev_agent(kind: Literal['input', 'tool']) -> Agent[None, Any]:
+    """
+    获取按类型缓存的 Jev 判定 Agent
+
+    :param kind: 判定类型
+    :return:
+    """
     return _build_jev_agent(
         kind,
         str(settings.AI_BUDDY_TYPESAFE_API_KEY or '').strip(),
@@ -140,6 +146,12 @@ async def jev_tool_decide_for_run(ctx: RunContext[Any], call: ToolCallInfo) -> G
 
 
 async def _jev_tool_verdict(call: ToolCallInfo) -> GuardrailResult:
+    """
+    使用 Jev 判定高风险工具调用
+
+    :param call: 工具调用信息
+    :return:
+    """
     state = json.dumps({'tool': call.name, 'args': _jsonable(call.args)}, ensure_ascii=False)
     try:
         agent = _jev_agent('tool')
@@ -171,6 +183,12 @@ async def _jev_tool_decide_strict_for_run(ctx: RunContext[Any], call: ToolCallIn
 
 
 def _jsonable(value: object) -> Any:
+    """
+    将任意值递归转换为可 JSON 序列化结构
+
+    :param value: 待序列化值
+    :return:
+    """
     if isinstance(value, dict):
         return {str(key): _jsonable(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):

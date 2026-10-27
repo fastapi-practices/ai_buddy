@@ -8,7 +8,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.native_tools import AbstractNativeTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.plugin.ai_buddy.enums import AIBuddyModelCapability
+from backend.plugin.ai_buddy.enums import AIBuddyModelCapability, AIBuddyOrigin
 from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter
@@ -64,6 +64,7 @@ class CapabilityContext:
     assistant_prompt: str | None = None
     context_window: int | None = None
     catalog_capabilities: frozenset[AIBuddyModelCapability] = frozenset()
+    origin: AIBuddyOrigin = AIBuddyOrigin.web
 
 
 @dataclass(frozen=True, slots=True)

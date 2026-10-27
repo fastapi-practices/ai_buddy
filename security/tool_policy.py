@@ -2,6 +2,19 @@ from pydantic_ai.tools import ToolDefinition
 
 from backend.plugin.ai_buddy.enums import AIBuddyToolPolicy
 
+# 写入持久资源的工具，默认需要用户确认并纳入高风险判定
+RESOURCE_WRITE_TOOLS = frozenset({
+    'create_cron',
+    'set_cron_enabled',
+    'delete_cron',
+    'create_assistant',
+    'update_assistant',
+    'create_expert',
+    'update_expert',
+    'create_skill',
+    'update_skill',
+})
+
 
 def resolve_tool_policy(
     *,

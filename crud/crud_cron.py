@@ -75,6 +75,17 @@ class CRUDAIBuddyCron(CRUDPlus[AIBuddyCron]):
         """
         return await self.update_model_by_column(db, obj, id=pk, deleted=0)
 
+    async def update_status(self, db: AsyncSession, pk: int, status: StatusType) -> int:
+        """
+        更新定时任务启用状态
+
+        :param db: 数据库会话
+        :param pk: 任务 ID
+        :param status: 启用状态
+        :return:
+        """
+        return await self.update_model_by_column(db, {'status': status.value}, id=pk, deleted=0)
+
     async def update_run_result(
         self,
         db: AsyncSession,

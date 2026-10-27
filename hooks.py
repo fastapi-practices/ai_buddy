@@ -17,12 +17,16 @@ from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conver
 from backend.plugin.ai_buddy.service.follow_up_service import ai_buddy_follow_up_service
 from backend.plugin.ai_buddy.service.gateway_channel_service import ai_buddy_gateway_channel_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
+from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
+from backend.plugin.ai_buddy.utils.skill_parser import load_builtin_skill_payloads
 
 _RECONCILE_INTERVAL_SECONDS = 30
 _CRON_INTERVAL_SECONDS = 60
+_BUILTIN_SKILL_RETRY_SECONDS = 300
 
 
 async def _reconcile_stale_pending_loop() -> None:
+    """周期清理长期 pending 的输入请求"""
     while True:
         try:
             chat_count = await ai_buddy_conversation_service.reconcile_stale_pending()
@@ -36,6 +40,7 @@ async def _reconcile_stale_pending_loop() -> None:
 
 
 async def _cron_tick_loop() -> None:
+    """周期触发到期 cron 任务"""
     while True:
         try:
             delivered = await tick_due_crons()
@@ -48,7 +53,29 @@ async def _cron_tick_loop() -> None:
         await asyncio.sleep(_CRON_INTERVAL_SECONDS)
 
 
+async def _builtin_skill_sync_loop() -> None:
+    """周期同步内置技能包"""
+    while True:
+        try:
+            synced = 0
+            for payloads in load_builtin_skill_payloads():
+                async with async_db_session.begin() as db:
+                    if await ai_buddy_skill_service.sync_builtin(db=db, payloads=payloads):
+                        synced += 1
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            # 默认 S3 存储尚未配置时会落到这里，配置完成后自动补齐
+            log.warning(f'同步内置技能失败: {exc}')
+        else:
+            if synced:
+                log.info(f'已写入或升级 {synced} 个内置技能')
+            return
+        await asyncio.sleep(_BUILTIN_SKILL_RETRY_SECONDS)
+
+
 async def _object_gc_loop() -> None:
+    """周期回收过期对象存储内容"""
     interval = settings.AI_BUDDY_OBJECT_GC_INTERVAL_SECONDS
     lock = redis_client.lock(
         f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:object-gc:lock', timeout=max(interval, 60), thread_local=False
@@ -88,6 +115,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         name='ai-chat-stale-pending-reconciler',
     )
     cron_task = asyncio.create_task(_cron_tick_loop(), name='ai-buddy-cron-ticker')
+    builtin_skill_task = asyncio.create_task(_builtin_skill_sync_loop(), name='ai-buddy-builtin-skill-sync')
     follow_up_task = asyncio.create_task(ai_buddy_follow_up_service.run_worker(), name='ai-buddy-follow-up-worker')
     gateway_task = asyncio.create_task(ai_buddy_gateway_channel_service.run_worker(), name='ai-buddy-gateway-worker')
     object_gc_task = (
@@ -95,7 +123,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if settings.AI_BUDDY_OBJECT_GC_INTERVAL_SECONDS > 0
         else None
     )
-    background = [task for task in (reconcile_task, cron_task, follow_up_task, gateway_task, object_gc_task) if task]
+    background = [
+        task
+        for task in (reconcile_task, cron_task, builtin_skill_task, follow_up_task, gateway_task, object_gc_task)
+        if task
+    ]
     try:
         yield
     finally:

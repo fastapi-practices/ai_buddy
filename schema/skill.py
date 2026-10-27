@@ -30,6 +30,10 @@ class CreateAIBuddySkillParam(AIBuddySkillSchemaBase):
     """创建 AI 技能参数"""
 
 
+class UpdateAIBuddySkillParam(AIBuddySkillSchemaBase):
+    """更新 AI 技能参数"""
+
+
 class GetAIBuddySkillSearchHit(AIBuddySkillSchemaBase):
     """技能系统搜索命中"""
 
