@@ -16,7 +16,12 @@ class AIBuddyChatSchemaBase(SchemaBase):
     chat 接口（请求/响应）统一使用小驼峰参数
     """
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra='forbid')
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        extra='forbid',
+        use_enum_values=False,
+    )
 
 
 class AIBuddyRunAgentInput(RunAgentInput):
