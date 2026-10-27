@@ -1,0 +1,17 @@
+name: Plugin Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  update-submodule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update plugin submodule
+        uses: fastapi-practices/plugin-release@v1
+        with:
+          push-to: fastapi-practices/plugins
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
