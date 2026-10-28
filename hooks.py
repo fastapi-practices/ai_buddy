@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from redis.exceptions import LockError
 
 from backend.common.log import log
+from backend.common.redaction import redaction
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.database.redis import redis_client
@@ -100,6 +101,24 @@ async def _object_gc_loop() -> None:
         except Exception as exc:
             log.warning(f'统一对象回收失败: {exc}')
         await asyncio.sleep(interval)
+
+
+def setup(app: FastAPI) -> None:
+    """
+    注册操作日志、访问日志和校验错误的脱敏规则，避免聊天内容与 OAuth 凭据泄露
+
+    :param app: FastAPI 应用
+    :return:
+    """
+    redaction.register(
+        body_paths=[
+            r'/input-requests/',
+            r'/(?:chat/completions|images/generations|mcps/oauth/callback)/?$',
+            r'/mcps/(?:.*/)?oauth(?:/config)?/?$',
+        ],
+        query_paths=[r'/mcps/oauth/callback/?$'],
+        opaque_fields=['messages', 'forwardedprops', 'forwarded_props'],
+    )
 
 
 @asynccontextmanager
