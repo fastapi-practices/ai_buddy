@@ -98,8 +98,8 @@ class AIBuddyModelService:
             db,
             provider_id=provider_id,
             status=StatusType.enable.value,
-            kind=None if kind is None else kind.value,
-            capability=None if capability is None else capability.value,
+            kind=kind,
+            capability=capability,
         )
 
     @staticmethod
@@ -141,8 +141,8 @@ class AIBuddyModelService:
             provider_id,
             model_id,
             status,
-            None if kind is None else kind.value,
-            None if capability is None else capability.value,
+            kind,
+            capability,
         )
         return await paging_data(db, ai_buddy_model_select)
 
