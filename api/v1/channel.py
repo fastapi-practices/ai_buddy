@@ -1,6 +1,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Path, Query, Request
+from starlette.responses import StreamingResponse
 
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
@@ -149,12 +150,12 @@ async def delete_ai_buddy_channel(
     return response_base.fail()
 
 
-@router.post('/{pk}/inbound', summary='通道入站', dependencies=[DependsJwtAuth])
+@router.post('/{pk}/inbound', summary='通道入站', response_model=None, dependencies=[DependsJwtAuth])
 async def inbound_ai_buddy_channel(
     request: Request,
     pk: Annotated[int, Path(description='通道 ID')],
     payload: Annotated[dict[str, Any], Body(default_factory=dict)],
-) -> Any:
+) -> dict[str, Any] | StreamingResponse:
     return await ai_buddy_channel_inbound_service.handle_inbound(
         pk=pk,
         user_id=request.user.id,

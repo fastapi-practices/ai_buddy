@@ -3,8 +3,9 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, UniversalText, id_key
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
-SYSTEM_SUBAGENT_USER_ID = 0
+SYSTEM_SUBAGENT_USER_ID = SYSTEM_OWNER_USER_ID
 
 
 class AIBuddySubagent(Base):

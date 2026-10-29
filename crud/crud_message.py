@@ -175,6 +175,25 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
             deleted=0,
         )
 
+    async def get_latest_user(self, db: AsyncSession, conversation_id: str) -> AIBuddyMessage | None:
+        """
+        获取对话最近一条用户消息
+
+        :param db: 数据库会话
+        :param conversation_id: 对话 ID
+        :return:
+        """
+        return await db.scalar(
+            select(self.model)
+            .where(
+                self.model.conversation_id == conversation_id,
+                self.model.role == 'user',
+                self.model.deleted == 0,
+            )
+            .order_by(self.model.message_index.desc(), self.model.id.desc())
+            .limit(1)
+        )
+
     async def get_by_client_message_id(
         self, db: AsyncSession, conversation_id: str, client_message_id: str
     ) -> AIBuddyMessage | None:

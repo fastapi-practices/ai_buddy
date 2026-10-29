@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.mcp import build_mcp_toolset
-from backend.plugin.ai_buddy.crud.crud_mcp_app import get_latest_mcp_ids
+from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.model.mcp import AIBuddyMcp
 from backend.plugin.ai_buddy.schema.mcp_app import (
     AIBuddyMcpAppScope,
@@ -44,7 +44,12 @@ class AIBuddyMcpAppService:
         await ai_buddy_conversation_service.get_owned_conversation(
             db=db, conversation_id=conversation_id, user_id=user_id
         )
-        if scope.mcp_id not in await get_latest_mcp_ids(db, conversation_id):
+        message = await ai_buddy_message_dao.get_latest_user(db, conversation_id)
+        context = message.turn_context if message and isinstance(message.turn_context, dict) else {}
+        enabled_mcp_ids = {
+            value for value in context.get('mcp_ids', []) if isinstance(value, int) and not isinstance(value, bool)
+        }
+        if scope.mcp_id not in enabled_mcp_ids:
             raise errors.ForbiddenError(msg='当前会话未启用此 MCP')
         servers = await ai_buddy_mcp_service.get_by_ids(
             db=db, mcp_ids=[scope.mcp_id], user_id=user_id, is_superuser=is_superuser

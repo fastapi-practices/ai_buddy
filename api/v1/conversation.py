@@ -21,7 +21,7 @@ from backend.plugin.ai_buddy.schema.conversation import (
     UpdateAIBuddyConversationTitleParam,
     UpdateAIBuddyConversationWorkspaceParam,
 )
-from backend.plugin.ai_buddy.schema.delegation import ControlAIBuddyDelegationParam
+from backend.plugin.ai_buddy.schema.delegation import AIBuddyDelegationQueryParam, ControlAIBuddyDelegationParam
 from backend.plugin.ai_buddy.schema.follow_up import (
     GetAIBuddyFollowUpDetail,
     GetAIBuddyFollowUpsDetail,
@@ -47,13 +47,13 @@ async def get_ai_buddy_delegations(
     request: Request,
     db: CurrentSession,
     pk: str,
-    run_id: Annotated[str, Query(min_length=1, max_length=128)],
+    query: Annotated[AIBuddyDelegationQueryParam, Query()],
 ) -> ResponseModel:
     data = await ai_buddy_delegation_service.get_list(
         db=db,
         conversation_id=pk,
         user_id=request.user.id,
-        run_id=run_id,
+        run_id=query.run_id,
     )
     return response_base.success(data=data)
 

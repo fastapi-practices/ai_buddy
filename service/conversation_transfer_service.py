@@ -122,8 +122,8 @@ class AIBuddyConversationTransferService:
             messages=messages,
         )
 
+    @staticmethod
     async def import_conversation(
-        self,
         *,
         db: AsyncSession,
         user_id: int,

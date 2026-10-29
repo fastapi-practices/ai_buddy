@@ -52,12 +52,6 @@ def _is_rapidocr_downloaded() -> bool:
     return all((root / name).is_file() for name in _OCR_WEIGHT_FILES)
 
 
-def _require_rapidocr_downloaded() -> None:
-    """要求 RapidOCR 模型已下载到固定目录"""
-    if not _is_rapidocr_downloaded():
-        raise errors.RequestError(msg='RapidOCR 模型尚未下载')
-
-
 def list_onnx_ocr_options() -> list[dict[str, object]]:
     """列出本地 ONNX OCR 选项，含体积和下载状态"""
     return [
@@ -177,12 +171,6 @@ def paddleocr_models_dir() -> Path:
 def _is_paddleocr_downloaded() -> bool:
     """按初始化完成标记判断 PaddleOCR 模型是否就绪"""
     return (paddleocr_models_dir() / _OCR_READY_NAME).is_file()
-
-
-def _require_paddleocr_downloaded() -> None:
-    """要求 PaddleOCR 模型已下载到固定目录"""
-    if not _is_paddleocr_downloaded():
-        raise errors.RequestError(msg='PaddleOCR 模型尚未下载')
 
 
 def list_paddleocr_options() -> list[dict[str, object]]:
@@ -372,7 +360,8 @@ def ocr_images_with_onnx(images: Sequence[KnowledgeSegment]) -> list[str]:
         from rapidocr import RapidOCR
     except ImportError as exc:
         raise errors.RequestError(msg='本地 ONNX OCR 需要安装 rapidocr 和 onnxruntime') from exc
-    _require_rapidocr_downloaded()
+    if not _is_rapidocr_downloaded():
+        raise errors.RequestError(msg='RapidOCR 模型尚未下载')
     if not images:
         return []
     global _rapidocr_engine
@@ -400,7 +389,7 @@ def ocr_images_with_onnx(images: Sequence[KnowledgeSegment]) -> list[str]:
     return texts
 
 
-def ocr_images_with_paddleocr(images: Sequence[KnowledgeSegment]) -> list[str]:
+def ocr_images_with_paddleocr(images: Sequence[KnowledgeSegment]) -> list[str]:  # ruff: ignore[complex-structure]
     """
     使用 PaddleOCR 识别图片文字
 
@@ -431,7 +420,8 @@ def ocr_images_with_paddleocr(images: Sequence[KnowledgeSegment]) -> list[str]:
                 str(payload.get('text') or payload.get('md_content') or '').strip() if isinstance(payload, dict) else ''
             )
             continue
-        _require_paddleocr_downloaded()
+        if not _is_paddleocr_downloaded():
+            raise errors.RequestError(msg='PaddleOCR 模型尚未下载')
         if not segment.image:
             texts.append('')
             continue

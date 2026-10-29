@@ -347,7 +347,6 @@ class AIBuddyMcpOauthService:
                     'enabled': False,
                 },
             )
-
             if not updated:
                 raise errors.ConflictError(msg='OAuth 配置已变更，请重试断开连接')
 

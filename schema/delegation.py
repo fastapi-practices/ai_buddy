@@ -5,11 +5,17 @@ from pydantic import Field, model_validator
 from backend.common.schema import SchemaBase
 
 
+class AIBuddyDelegationQueryParam(SchemaBase):
+    """本轮后台子代理查询参数"""
+
+    run_id: str = Field(min_length=1, max_length=128, description='运行 ID')
+
+
 class ControlAIBuddyDelegationParam(SchemaBase):
     """本轮后台子代理控制参数"""
 
     run_id: str = Field(min_length=1, max_length=128, description='运行 ID')
-    action: Literal['steer', 'stop']
+    action: Literal['steer', 'stop'] = Field(description='控制动作，steer 为引导，stop 为停止')
     text: str | None = Field(None, max_length=8000, description='引导内容，引导操作必填')
 
     @model_validator(mode='after')
