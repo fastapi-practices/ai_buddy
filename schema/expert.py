@@ -6,7 +6,7 @@ from pydantic import ConfigDict, Field, field_validator
 from backend.common.schema import SchemaBase
 from backend.plugin.ai_buddy.schema.knowledge_base import GetAIBuddyKnowledgeBaseDetail
 from backend.plugin.ai_buddy.schema.mcp import GetAIBuddyMcpDetail
-from backend.plugin.ai_buddy.schema.skill import GetAIBuddySkillSearchHit
+from backend.plugin.ai_buddy.schema.skill import GetAIBuddySkillSearchDetail
 
 
 class AIBuddyExpertQueryParam(SchemaBase):
@@ -70,7 +70,7 @@ class GetAIBuddyExpertWithRelationDetail(GetAIBuddyExpertDetail):
     skill_ids: list[int] = Field(default_factory=list, exclude=True, description='默认技能 ID 列表')
     knowledge_ids: list[int] = Field(default_factory=list, exclude=True, description='默认知识库 ID 列表')
     mcps: list[GetAIBuddyMcpDetail] = Field(default_factory=list, description='默认 MCP 列表')
-    skills: list[GetAIBuddySkillSearchHit] = Field(default_factory=list, description='默认技能列表')
+    skills: list[GetAIBuddySkillSearchDetail] = Field(default_factory=list, description='默认技能列表')
     knowledge_bases: list[GetAIBuddyKnowledgeBaseDetail] = Field(default_factory=list, description='默认知识库列表')
 
 

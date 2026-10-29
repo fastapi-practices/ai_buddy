@@ -5,7 +5,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyModelKind, AIBuddyModelModality
 from backend.plugin.ai_buddy.schema.model import AIBuddyThinkingPolicy
 
 
-class GetAIBuddyModelArchitectureSuggestion(SchemaBase):
+class GetAIBuddyModelArchitectureDetail(SchemaBase):
     """模型目录提供的架构建议"""
 
     source: str = Field(description='数据来源')

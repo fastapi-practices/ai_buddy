@@ -17,7 +17,7 @@ from backend.plugin.ai_buddy.schema.mcp_app import (
     AIBuddyMcpAppScope,
     CallAIBuddyMcpAppToolParam,
     GetAIBuddyMcpAppDetail,
-    GetAIBuddyMcpAppToolInfo,
+    GetAIBuddyMcpAppToolInfoDetail,
 )
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.service.mcp_service import ai_buddy_mcp_service
@@ -105,7 +105,7 @@ class AIBuddyMcpAppService:
         user_id: int,
         is_superuser: bool,
         obj: CallAIBuddyMcpAppToolParam,
-    ) -> GetAIBuddyMcpAppToolInfo:
+    ) -> GetAIBuddyMcpAppToolInfoDetail:
         """
         获取 MCP 应用工具信息
 
@@ -120,7 +120,7 @@ class AIBuddyMcpAppService:
             db=db, conversation_id=conversation_id, user_id=user_id, is_superuser=is_superuser, scope=obj
         ) as (_, _, tools):
             target = self._validate_app_tool(tools=tools, scope=obj, name=obj.name)
-            return GetAIBuddyMcpAppToolInfo(
+            return GetAIBuddyMcpAppToolInfoDetail(
                 name=target.name, title=target.title or target.name, read_only=self._read_only_tool(tool=target)
             )
 

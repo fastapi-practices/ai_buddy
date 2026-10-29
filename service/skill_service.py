@@ -15,7 +15,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyObjectKind, AIBuddyObjectLocati
 from backend.plugin.ai_buddy.model.skill import SYSTEM_SKILL_USER_ID, AIBuddySkill
 from backend.plugin.ai_buddy.schema.skill import (
     CreateAIBuddySkillParam,
-    GetAIBuddySkillSearchHit,
+    GetAIBuddySkillSearchDetail,
     UpdateAIBuddySkillParam,
 )
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
@@ -51,7 +51,7 @@ class AIBuddySkillService:
         return skills
 
     @staticmethod
-    async def search(*, db: AsyncSession, user_id: int, query: str) -> list[GetAIBuddySkillSearchHit]:
+    async def search(*, db: AsyncSession, user_id: int, query: str) -> list[GetAIBuddySkillSearchDetail]:
         """
         搜索当前用户可见的系统与自有技能
 
@@ -64,7 +64,7 @@ class AIBuddySkillService:
         if not keyword:
             raise errors.RequestError(msg='请输入搜索词')
         skills = await ai_buddy_skill_dao.search(db, user_id, keyword)
-        return [GetAIBuddySkillSearchHit.model_validate(item) for item in skills]
+        return [GetAIBuddySkillSearchDetail.model_validate(item) for item in skills]
 
     @staticmethod
     async def get(*, db: AsyncSession, pk: int, user_id: int) -> AIBuddySkill:

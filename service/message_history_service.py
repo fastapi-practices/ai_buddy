@@ -16,7 +16,7 @@ from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesS
 from backend.plugin.ai_buddy.schema.message_history import (
     GetAIBuddyMessagePageDetail,
     GetAIBuddyMessageSearchDetail,
-    GetAIBuddyMessageSearchItem,
+    GetAIBuddyMessageSearchHitDetail,
     GetAIBuddyMessageVersionDetail,
     GetAIBuddyPlanDetail,
 )
@@ -80,7 +80,7 @@ class AIBuddyMessageHistoryService:
         if not needle:
             raise errors.RequestError(msg='搜索内容不能为空')
         before = self._decode_cursor(cursor=cursor)
-        items: list[GetAIBuddyMessageSearchItem] = []
+        items: list[GetAIBuddyMessageSearchHitDetail] = []
         scanned = 0
         last = None
         while scanned < 500:
@@ -105,7 +105,7 @@ class AIBuddyMessageHistoryService:
                     if position < 0:
                         continue
                     items.append(
-                        GetAIBuddyMessageSearchItem(
+                        GetAIBuddyMessageSearchHitDetail(
                             message_id=row.id,
                             snapshot_id=message['id'],
                             message_index=row.message_index,

@@ -9,7 +9,7 @@ from backend.plugin.ai_buddy.schema.mcp_app import (
     AIBuddyMcpAppScope,
     CallAIBuddyMcpAppToolParam,
     GetAIBuddyMcpAppDetail,
-    GetAIBuddyMcpAppToolInfo,
+    GetAIBuddyMcpAppToolInfoDetail,
 )
 from backend.plugin.ai_buddy.service.mcp_app_service import ai_buddy_mcp_app_service
 
@@ -37,7 +37,7 @@ async def read_ai_buddy_mcp_app_resource(
 )
 async def get_ai_buddy_mcp_app_tool_info(
     request: Request, db: CurrentSession, conversation_id: str, obj: CallAIBuddyMcpAppToolParam
-) -> ResponseSchemaModel[GetAIBuddyMcpAppToolInfo]:
+) -> ResponseSchemaModel[GetAIBuddyMcpAppToolInfoDetail]:
     data = await ai_buddy_mcp_app_service.tool_info(
         db=db, conversation_id=conversation_id, user_id=request.user.id, is_superuser=request.user.is_superuser, obj=obj
     )

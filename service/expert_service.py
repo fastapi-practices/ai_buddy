@@ -19,7 +19,7 @@ from backend.plugin.ai_buddy.schema.expert import (
 )
 from backend.plugin.ai_buddy.schema.knowledge_base import GetAIBuddyKnowledgeBaseDetail
 from backend.plugin.ai_buddy.schema.mcp import GetAIBuddyMcpDetail
-from backend.plugin.ai_buddy.schema.skill import GetAIBuddySkillSearchHit
+from backend.plugin.ai_buddy.schema.skill import GetAIBuddySkillSearchDetail
 from backend.plugin.ai_buddy.service.assistant_service import ai_buddy_assistant_service
 
 
@@ -75,7 +75,7 @@ class AIBuddyExpertService:
         if expert.skill_ids:
             skills = {item.id: item for item in await ai_buddy_skill_dao.get_by_ids(db, expert.skill_ids, user_id)}
             detail.skills = [
-                GetAIBuddySkillSearchHit.model_validate(skills[pk])
+                GetAIBuddySkillSearchDetail.model_validate(skills[pk])
                 for pk in dict.fromkeys(expert.skill_ids)
                 if pk in skills
             ]

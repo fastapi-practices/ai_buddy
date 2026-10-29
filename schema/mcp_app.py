@@ -29,7 +29,7 @@ class GetAIBuddyMcpAppDetail(SchemaBase):
     server_name: str = Field(description='MCP 名称')
 
 
-class GetAIBuddyMcpAppToolInfo(SchemaBase):
+class GetAIBuddyMcpAppToolInfoDetail(SchemaBase):
     """MCP 交互应用工具信息"""
 
     name: str = Field(description='工具名称')

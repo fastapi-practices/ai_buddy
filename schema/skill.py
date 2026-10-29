@@ -34,7 +34,7 @@ class UpdateAIBuddySkillParam(AIBuddySkillSchemaBase):
     """更新 AI 技能参数"""
 
 
-class GetAIBuddySkillSearchHit(AIBuddySkillSchemaBase):
+class GetAIBuddySkillSearchDetail(AIBuddySkillSchemaBase):
     """技能系统搜索命中"""
 
     model_config = ConfigDict(from_attributes=True)

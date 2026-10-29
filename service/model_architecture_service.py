@@ -14,7 +14,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyProviderType,
 )
 from backend.plugin.ai_buddy.schema.model import AIBuddyThinkingPolicy
-from backend.plugin.ai_buddy.schema.model_architecture import GetAIBuddyModelArchitectureSuggestion
+from backend.plugin.ai_buddy.schema.model_architecture import GetAIBuddyModelArchitectureDetail
 from backend.plugin.ai_buddy.utils.model_catalog import validate_model_binding
 
 _PROVIDER_IDS = {
@@ -53,7 +53,7 @@ class AIBuddyModelArchitectureService:
     @staticmethod
     def _build_suggestion(  # ruff: ignore[complex-structure]
         *, data: dict[str, Any], provider_type: AIBuddyProviderType, current_kind: AIBuddyModelKind
-    ) -> GetAIBuddyModelArchitectureSuggestion:
+    ) -> GetAIBuddyModelArchitectureDetail:
         """
         将模型目录条目转换为当前供应商支持的架构建议
 
@@ -115,7 +115,7 @@ class AIBuddyModelArchitectureService:
         context_window = limit.get('context')
         max_output_tokens = limit.get('output')
 
-        return GetAIBuddyModelArchitectureSuggestion(
+        return GetAIBuddyModelArchitectureDetail(
             source='models.dev',
             last_updated=data.get('last_updated') if isinstance(data.get('last_updated'), str) else None,
             kind=kind,
@@ -134,7 +134,7 @@ class AIBuddyModelArchitectureService:
         provider_type: AIBuddyProviderType,
         model_id: str,
         current_kind: AIBuddyModelKind,
-    ) -> GetAIBuddyModelArchitectureSuggestion:
+    ) -> GetAIBuddyModelArchitectureDetail:
         """
         从完整模型目录获取指定模型的架构建议
 

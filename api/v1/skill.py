@@ -13,7 +13,7 @@ from backend.plugin.ai_buddy.schema.skill import (
     AIBuddySkillQueryParam,
     AIBuddySkillSearchQueryParam,
     GetAIBuddySkillDetail,
-    GetAIBuddySkillSearchHit,
+    GetAIBuddySkillSearchDetail,
 )
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
 
@@ -57,7 +57,7 @@ async def search_ai_buddy_skills(
     request: Request,
     db: CurrentSession,
     query: Annotated[AIBuddySkillSearchQueryParam, Query()],
-) -> ResponseSchemaModel[list[GetAIBuddySkillSearchHit]]:
+) -> ResponseSchemaModel[list[GetAIBuddySkillSearchDetail]]:
     data = await ai_buddy_skill_service.search(db=db, user_id=request.user.id, query=query.q)
     return response_base.success(data=data)
 

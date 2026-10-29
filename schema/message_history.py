@@ -37,7 +37,7 @@ class GetAIBuddyMessagePageDetail(SchemaBase):
     next_cursor: str | None = Field(None, description='继续读取更早消息的游标')
 
 
-class GetAIBuddyMessageSearchItem(SchemaBase):
+class GetAIBuddyMessageSearchHitDetail(SchemaBase):
     """历史正文搜索命中"""
 
     message_id: int = Field(description='持久消息 ID')
@@ -51,7 +51,7 @@ class GetAIBuddyMessageSearchItem(SchemaBase):
 class GetAIBuddyMessageSearchDetail(SchemaBase):
     """全历史正文搜索结果"""
 
-    items: list[GetAIBuddyMessageSearchItem] = Field(description='匹配消息')
+    items: list[GetAIBuddyMessageSearchHitDetail] = Field(description='匹配消息')
     has_more: bool = Field(description='是否还有未搜索历史')
     next_cursor: str | None = Field(None, description='继续搜索游标')
 
