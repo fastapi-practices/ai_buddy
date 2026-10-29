@@ -53,7 +53,8 @@ class StreamLifecycle:
         on_run_error: Callable[[str, list[ChatModelMessage], dict[str, Any] | None], Awaitable[None]],
         on_interrupted: Callable[[list[ChatModelMessage]], Awaitable[None]],
     ) -> None:
-        """保存生成完成、异常和中断回调
+        """
+        保存生成完成、异常和中断回调
 
         :param on_complete: 完成回调
         :param on_run_error: 运行错误回调
@@ -299,7 +300,8 @@ async def _persist_run_state(
     deps: ChatAgentDeps,
     on_finish: Callable[[], Awaitable[None]] | None,
 ) -> None:
-    """在消息落库后保存协议状态并释放供应商资源
+    """
+    在消息落库后保存协议状态并释放供应商资源
 
     :param conversation_id: 对话 ID
     :param adapter: 当前协议运行适配器
@@ -389,7 +391,8 @@ async def build_streaming_response(
             deferred_tool_results = frontend_tool_results
 
         async def complete(result: AgentRunResult[Any]) -> None:
-            """标记前端工具请求后执行生成完成回调
+            """
+            标记前端工具请求后执行生成完成回调
 
             :param result: 执行结果
             :return:

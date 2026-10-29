@@ -52,7 +52,8 @@ def build_workspace_tools_capability(ctx: CapabilityContext) -> CapabilityResult
 
 
 async def search_knowledge(ctx: RunContext[ChatAgentDeps], query: str) -> str:
-    """按语义检索知识库，返回最相关切片的 ID、标题和内容
+    """
+    按语义检索知识库，返回最相关切片的 ID、标题和内容
 
     :param ctx: 运行上下文
     :param query: 检索内容
@@ -71,7 +72,8 @@ async def search_knowledge(ctx: RunContext[ChatAgentDeps], query: str) -> str:
 
 
 async def get_knowledge(ctx: RunContext[ChatAgentDeps], knowledge_id: int) -> str:
-    """读取一条知识的完整内容
+    """
+    读取一条知识的完整内容
 
     :param ctx: 运行上下文
     :param knowledge_id: 知识 ID
@@ -92,7 +94,8 @@ async def get_knowledge(ctx: RunContext[ChatAgentDeps], knowledge_id: int) -> st
 async def read_skill_file(
     ctx: RunContext[ChatAgentDeps], skill_id: int, path: str, offset: int = 0, limit: int = 12000
 ) -> str:
-    """读取技能包内相对路径的 UTF-8 文本；offset/limit 按字符分页，脚本只读不执行
+    """
+    读取技能包内相对路径的 UTF-8 文本；offset/limit 按字符分页，脚本只读不执行
 
     :param ctx: 运行上下文
     :param skill_id: 技能 ID
@@ -111,7 +114,8 @@ async def read_skill_file(
 
 
 async def search_conversation_history(ctx: RunContext[ChatAgentDeps], query: str) -> str:
-    """按关键字检索当前对话中已被压缩或过早的历史消息
+    """
+    按关键字检索当前对话中已被压缩或过早的历史消息
 
     :param ctx: 运行上下文
     :param query: 检索关键字
@@ -134,7 +138,8 @@ async def search_conversation_history(ctx: RunContext[ChatAgentDeps], query: str
 
 
 async def list_artifacts(ctx: RunContext[ChatAgentDeps]) -> str:
-    """列出当前用户已保存的工作产物
+    """
+    列出当前用户已保存的工作产物
 
     :param ctx: 运行上下文
     :return:
@@ -148,7 +153,8 @@ async def list_artifacts(ctx: RunContext[ChatAgentDeps]) -> str:
 
 
 async def get_artifact(ctx: RunContext[ChatAgentDeps], artifact_id: int) -> str:
-    """读取一条工作产物的完整内容
+    """
+    读取一条工作产物的完整内容
 
     :param ctx: 运行上下文
     :param artifact_id: 产物 ID
@@ -172,7 +178,8 @@ async def write_artifact(
     content: str,
     artifact_id: int | None = None,
 ) -> str:
-    """将工作结果写入产物；传入 artifact_id 时更新已有产物
+    """
+    将工作结果写入产物；传入 artifact_id 时更新已有产物
 
     :param ctx: 运行上下文
     :param title: 标题

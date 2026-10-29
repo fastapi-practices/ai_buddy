@@ -9,7 +9,8 @@ from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
 
 
 def input_attachment_path(attachment: BinaryContent) -> str:
-    """为用户输入生成内容寻址路径，客户端文件名不能改变写入目录
+    """
+    为用户输入生成内容寻址路径，客户端文件名不能改变写入目录
 
     :param attachment: 已解码用户附件
     :return:
@@ -25,7 +26,8 @@ def input_attachment_path(attachment: BinaryContent) -> str:
 
 
 async def import_input_attachment(ctx: AgentRunContext, attachment_id: int) -> str:
-    """按编号把本轮附件原始字节导入工作区
+    """
+    按编号把本轮附件原始字节导入工作区
 
     :param ctx: 编码运行上下文
     :param attachment_id: 本轮附件编号
@@ -42,7 +44,8 @@ async def import_input_attachment(ctx: AgentRunContext, attachment_id: int) -> s
 def coding_user_content(
     content: list[UserContent], *, can_import: bool = True, historical: bool = False
 ) -> list[UserContent]:
-    """保留模型原生媒体，普通文件通过元数据和附件导入工具处理
+    """
+    保留模型原生媒体，普通文件通过元数据和附件导入工具处理
 
     :param content: 本轮用户输入
     :param can_import: 是否具有工作区导入工具

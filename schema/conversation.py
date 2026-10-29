@@ -47,7 +47,7 @@ class AIBuddyConversationEventsHeaderParam(SchemaBase):
 class AIBuddyConversationDetailQueryParam(SchemaBase):
     """AI 对话详情查询参数"""
 
-    message_limit: int | None = Field(None, ge=1, le=100)
+    message_limit: int | None = Field(None, ge=1, le=100, description='最近消息数量上限')
 
 
 class AIBuddyConversationSchemaBase(SchemaBase):

@@ -66,7 +66,8 @@ class BuddyFileUnderstanding(FileUnderstanding[ChatAgentDeps]):
     async def before_model_request(
         self, ctx: RunContext[ChatAgentDeps], request_context: ModelRequestContext
     ) -> ModelRequestContext:
-        """恢复描述缓存并在模型请求前保存新增识别结果
+        """
+        恢复描述缓存并在模型请求前保存新增识别结果
 
         :param ctx: 运行上下文
         :param request_context: 模型请求上下文
@@ -108,7 +109,8 @@ class BuddyFileUnderstanding(FileUnderstanding[ChatAgentDeps]):
 
 
 async def build_file_understanding_capability(ctx: CapabilityContext) -> CapabilityResult:
-    """使用当前供应商中明确选择的模型解释附件
+    """
+    使用当前供应商中明确选择的模型解释附件
 
     :param ctx: 能力构建上下文
     :return:

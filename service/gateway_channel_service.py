@@ -40,7 +40,8 @@ return 0
 
 
 def _is_control_message(message: InboundMessage) -> bool:
-    """禁止合并斜杠指令与同一会话的普通消息
+    """
+    禁止合并斜杠指令与同一会话的普通消息
 
     :param message: 消息内容
     :return:
@@ -49,7 +50,8 @@ def _is_control_message(message: InboundMessage) -> bool:
 
 
 def _is_stop_message(message: InboundMessage) -> bool:
-    """允许停止指令中断正在生成的同一会话
+    """
+    允许停止指令中断正在生成的同一会话
 
     :param message: 消息内容
     :return:
@@ -141,7 +143,8 @@ class AIBuddyGatewayChannelService:
 
     @staticmethod
     async def _stop_worker(*, worker: _GatewayWorker) -> None:
-        """先停止原生接收和发送任务，再释放本进程的账号租约
+        """
+        先停止原生接收和发送任务，再释放本进程的账号租约
 
         :param worker: 后台任务
         :return:
@@ -269,7 +272,8 @@ class AIBuddyGatewayChannelService:
 
     @staticmethod
     def _channel_lease_key(*, channel_id: int, channel_type: str, config: dict[str, Any] | None) -> str:
-        """按实际平台账号协调不同配置行和服务进程的接收权
+        """
+        按实际平台账号协调不同配置行和服务进程的接收权
 
         :param channel_id: 通道 ID
         :param channel_type: 通道类型

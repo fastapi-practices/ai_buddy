@@ -35,7 +35,8 @@ class RedactModelText(AbstractCapability[ChatAgentDeps]):
         request_context: ModelRequestContext,
         response: ModelResponse,
     ) -> ModelResponse:
-        """在响应写入历史前清洗文本
+        """
+        在响应写入历史前清洗文本
 
         :param ctx: 运行上下文
         :param request_context: 请求上下文
@@ -47,7 +48,8 @@ class RedactModelText(AbstractCapability[ChatAgentDeps]):
     async def wrap_run_event_stream(
         self, ctx: RunContext[ChatAgentDeps], *, stream: AsyncIterable[AgentStreamEvent]
     ) -> AsyncIterable[AgentStreamEvent]:
-        """完整分段到达后才发布，防止敏感串跨 delta 绕过清洗
+        """
+        完整分段到达后才发布，防止敏感串跨 delta 绕过清洗
 
         :param ctx: 运行上下文
         :param stream: 事件流

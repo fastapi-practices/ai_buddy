@@ -50,7 +50,8 @@ def _unavailable_result(*, command: str, reason: AIBuddyCommandReason) -> AIBudd
 
 
 async def _archive_report(*, ctx: AgentRunContext, report: GetAIBuddyTestReportDetail) -> None:
-    """提交可下载的 Markdown 事实报告并明确记录归档失败
+    """
+    提交可下载的 Markdown 事实报告并明确记录归档失败
 
     :param ctx: 运行上下文
     :param report: 待归档的测试事实
@@ -100,7 +101,8 @@ async def _archive_report(*, ctx: AgentRunContext, report: GetAIBuddyTestReportD
 
 
 async def run_tests_and_archive(*, ctx: AgentRunContext, command: str) -> str:
-    """执行一次显式测试命令，归档完整捕获结果，再返回有界预览
+    """
+    执行一次显式测试命令，归档完整捕获结果，再返回有界预览
 
     :param ctx: 运行上下文
     :param command: 已确认的测试命令

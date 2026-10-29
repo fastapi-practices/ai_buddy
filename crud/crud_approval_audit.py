@@ -13,7 +13,8 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
     """AI 工具审批审计数据库操作类"""
 
     async def get_by_request_id(self, db: AsyncSession, user_id: int, request_id: str) -> AIBuddyApprovalAudit | None:
-        """查询当前用户的请求记录
+        """
+        查询当前用户的请求记录
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -29,7 +30,8 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
     async def get_all(
         self, db: AsyncSession, user_id: int, *, before: int | None = None, limit: int = 100
     ) -> Sequence[AIBuddyApprovalAudit]:
-        """按用户读取最近审批记录
+        """
+        按用户读取最近审批记录
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -44,7 +46,8 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
 
     @staticmethod
     async def create(db: AsyncSession, obj: AIBuddyApprovalAudit) -> None:
-        """保存审批请求
+        """
+        保存审批请求
 
         :param db: 数据库会话
         :param obj: 审计记录
@@ -56,7 +59,8 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
     async def resolve(
         self, db: AsyncSession, user_id: int, request_id: str, status: AIBuddyApprovalStatus, resolved_time: datetime
     ) -> None:
-        """结束待处理记录，保留首次已确认的用户决定
+        """
+        结束待处理记录，保留首次已确认的用户决定
 
         :param db: 数据库会话
         :param user_id: 用户 ID

@@ -10,16 +10,16 @@ from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesS
 class AIBuddyMessageHistoryQueryParam(SchemaBase):
     """AI 消息历史查询参数"""
 
-    before: str | None = Field(None, max_length=128)
-    limit: int = Field(50, ge=1, le=100)
+    before: str | None = Field(None, max_length=128, description='上一页游标')
+    limit: int = Field(50, ge=1, le=100, description='单页消息数量')
 
 
 class AIBuddyMessageSearchQueryParam(SchemaBase):
     """AI 消息历史搜索参数"""
 
-    q: str = Field(min_length=1, max_length=500)
-    cursor: str | None = Field(None, max_length=128)
-    limit: int = Field(50, ge=1, le=100)
+    q: str = Field(min_length=1, max_length=500, description='搜索关键词')
+    cursor: str | None = Field(None, max_length=128, description='分页游标')
+    limit: int = Field(50, ge=1, le=100, description='单页结果数量')
 
 
 class ForkAIBuddyConversationParam(SchemaBase):

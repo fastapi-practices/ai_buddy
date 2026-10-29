@@ -18,7 +18,8 @@ class AIBuddyDelegationService:
 
     @staticmethod
     def key(*, conversation_id: str, run_id: str) -> str:
-        """生成与运行绑定的子任务缓存键
+        """
+        生成与运行绑定的子任务缓存键
 
         :param conversation_id: 对话 ID
         :param run_id: 运行 ID
@@ -34,7 +35,8 @@ class AIBuddyDelegationService:
         user_id: int,
         run_id: str,
     ) -> dict[str, Any]:
-        """只向对话所有者返回本轮任务状态
+        """
+        只向对话所有者返回本轮任务状态
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -61,7 +63,8 @@ class AIBuddyDelegationService:
         task_id: str,
         obj: ControlAIBuddyDelegationParam,
     ) -> None:
-        """提交引导或停止操作并等待执行进程确认
+        """
+        提交引导或停止操作并等待执行进程确认
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID

@@ -49,7 +49,8 @@ class GetAIBuddyChannelDetail(AIBuddyChannelSchemaBase):
     @field_serializer('config')
     @staticmethod
     def serialize_sensitive_data(value: dict[str, Any] | None) -> dict[str, Any] | None:
-        """脱敏序列化通道敏感配置
+        """
+        脱敏序列化通道敏感配置
 
         :param value: 待处理值
         :return:

@@ -55,7 +55,8 @@ class WorkspaceSandbox:
         user_id: int | None = None,
         permission_mode: AIBuddyPermissionMode = AIBuddyPermissionMode.ask,
     ) -> None:
-        """绑定已创建或已接回的 Workspace
+        """
+        绑定已创建或已接回的 Workspace
 
         :param workspace: Pydantic AI 工作区
         :param provider: 沙箱服务商
@@ -128,7 +129,8 @@ class WorkspaceSandbox:
         return f'已写入 {_relative(target)}'
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
-        """导入附件，先写临时文件再原子替换目标
+        """
+        导入附件，先写临时文件再原子替换目标
 
         :param path: 受限的 inbound 路径
         :param content: 附件原始字节
@@ -215,7 +217,8 @@ class WorkspaceSandbox:
         return await self.run_bash(command=_git_command('diff', scope=scope))
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """通过受控命令协议执行已确认的测试命令
+        """
+        通过受控命令协议执行已确认的测试命令
 
         :param command: 已确认的测试命令
         :param timeout: 超时秒数

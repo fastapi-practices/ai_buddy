@@ -11,7 +11,8 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
     """AI 内置 MCP 平台 OAuth 配置数据库操作类"""
 
     async def get(self, db: AsyncSession, mcp_id: int) -> AIBuddyMcpOauthConfig | None:
-        """查询内置 MCP 的平台客户端配置
+        """
+        查询内置 MCP 的平台客户端配置
 
         :param db: 数据库会话
         :param mcp_id: MCP ID
@@ -22,7 +23,8 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
 
     @staticmethod
     async def create(db: AsyncSession, obj: AIBuddyMcpOauthConfig) -> None:
-        """创建平台客户端配置
+        """
+        创建平台客户端配置
 
         :param db: 数据库会话
         :param obj: 配置对象
@@ -32,7 +34,8 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
         await db.flush()
 
     async def update(self, db: AsyncSession, mcp_id: int, generation: str, values: dict[str, Any]) -> int:
-        """仅更新仍匹配版本的平台配置
+        """
+        仅更新仍匹配版本的平台配置
 
         :param db: 数据库会话
         :param mcp_id: MCP ID
@@ -52,7 +55,8 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
         return result.rowcount
 
     async def disable(self, db: AsyncSession, mcp_id: int, generation: str) -> int:
-        """MCP 定义变更后停用平台配置并轮换版本
+        """
+        MCP 定义变更后停用平台配置并轮换版本
 
         :param db: 数据库会话
         :param mcp_id: MCP ID

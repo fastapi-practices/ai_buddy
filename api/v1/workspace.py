@@ -30,7 +30,6 @@ router = APIRouter(dependencies=[DependsJwtAuth])
 async def get_all_ai_buddy_workspaces(
     request: Request, db: CurrentSession
 ) -> ResponseSchemaModel[list[GetAIBuddyWorkspaceDetail]]:
-    """获取当前用户所有工作区"""
     data = await ai_buddy_workspace_service.get_all(db=db, user_id=request.user.id)
     return response_base.success(data=data)
 
@@ -41,7 +40,6 @@ async def get_ai_buddy_workspace(
     db: CurrentSession,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceDetail]:
-    """获取当前用户工作区详情"""
     data = await ai_buddy_workspace_service.get(db=db, user_id=request.user.id, workspace_id=workspace_id)
     return response_base.success(data=data)
 
@@ -52,19 +50,17 @@ async def get_ai_buddy_workspace_files(
     db: CurrentSession,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
 ) -> ResponseSchemaModel[list[GetAIBuddyWorkspaceFileDetail]]:
-    """获取当前用户工作区文件清单"""
     data = await ai_buddy_workspace_service.get_files(db=db, user_id=request.user.id, workspace_id=workspace_id)
     return response_base.success(data=data)
 
 
-@router.put('/{workspace_id}/files', summary='登记工作区文件清单')
+@router.put('/{workspace_id}/files', summary='登记工作区文件清单', description='文件清单已存在时更新')
 async def upsert_ai_buddy_workspace_file(
     request: Request,
     db: CurrentSessionTransaction,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
     obj: UpsertAIBuddyWorkspaceFileParam,
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
-    """登记或更新当前用户工作区文件清单"""
     data = await ai_buddy_workspace_service.upsert_file(
         db=db,
         user_id=request.user.id,
@@ -74,7 +70,11 @@ async def upsert_ai_buddy_workspace_file(
     return response_base.success(data=data)
 
 
-@router.post('/{workspace_id}/files/content', summary='上传工作区文件字节')
+@router.post(
+    '/{workspace_id}/files/content',
+    summary='上传工作区文件字节',
+    description='上传文件字节并更新文件清单',
+)
 async def upload_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSessionTransaction,
@@ -82,7 +82,6 @@ async def upload_ai_buddy_workspace_file_content(
     file: Annotated[UploadFile, File(description='工作区文件')],
     query: Annotated[AIBuddyWorkspaceFileUploadQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
-    """上传工作区文件字节并更新文件清单"""
     data = await ai_buddy_workspace_service.upload_bytes(
         db=db,
         user_id=request.user.id,
@@ -96,14 +95,17 @@ async def upload_ai_buddy_workspace_file_content(
     return response_base.success(data=data)
 
 
-@router.get('/{workspace_id}/files/content', summary='下载工作区文件字节')
+@router.get(
+    '/{workspace_id}/files/content',
+    summary='下载工作区文件字节',
+    description='下载文件字节并校验文件清单',
+)
 async def download_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSession,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
     query: Annotated[AIBuddyWorkspaceFileDownloadQueryParam, Query()],
 ) -> Response:
-    """下载工作区文件字节并校验文件清单"""
     data, manifest = await ai_buddy_workspace_service.download_bytes(
         db=db,
         user_id=request.user.id,
@@ -130,19 +132,21 @@ async def create_ai_buddy_workspace(
     db: CurrentSessionTransaction,
     obj: CreateAIBuddyWorkspaceParam,
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceDetail]:
-    """创建当前用户工作区"""
     data = await ai_buddy_workspace_service.create(db=db, user_id=request.user.id, obj=obj)
     return response_base.success(data=data)
 
 
-@router.post('/{workspace_id}/garbage-collect', summary='预览或回收工作区未引用对象')
+@router.post(
+    '/{workspace_id}/garbage-collect',
+    summary='预览或回收工作区未引用对象',
+    description='默认仅预览，确认后回收过期未引用对象',
+)
 async def collect_ai_buddy_workspace_garbage(
     request: Request,
     db: CurrentSessionTransaction,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
     obj: AIBuddyWorkspaceGarbageCollectParam,
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceGarbageCollectDetail]:
-    """默认仅预览，确认后回收过期未引用对象"""
     data = await ai_buddy_workspace_service.collect_garbage(
         db=db, user_id=request.user.id, workspace_id=workspace_id, obj=obj
     )
@@ -156,7 +160,6 @@ async def update_ai_buddy_workspace(
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
     obj: UpdateAIBuddyWorkspaceParam,
 ) -> ResponseModel:
-    """更新当前用户工作区"""
     count = await ai_buddy_workspace_service.update(
         db=db,
         user_id=request.user.id,
@@ -168,14 +171,17 @@ async def update_ai_buddy_workspace(
     return response_base.fail()
 
 
-@router.delete('/{workspace_id}/files/content', summary='按版本删除工作区文件')
+@router.delete(
+    '/{workspace_id}/files/content',
+    summary='按版本删除工作区文件',
+    description='显式删除文件清单并保留版本冲突保护',
+)
 async def delete_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSessionTransaction,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
     query: Annotated[AIBuddyWorkspaceFileDeleteQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
-    """显式删除文件清单并保留版本冲突保护"""
     data = await ai_buddy_workspace_service.delete_file(
         db=db,
         user_id=request.user.id,
@@ -192,7 +198,6 @@ async def delete_ai_buddy_workspace(
     db: CurrentSessionTransaction,
     workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
 ) -> ResponseModel:
-    """删除当前用户工作区"""
     count = await ai_buddy_workspace_service.delete(db=db, user_id=request.user.id, workspace_id=workspace_id)
     if count > 0:
         return response_base.success()

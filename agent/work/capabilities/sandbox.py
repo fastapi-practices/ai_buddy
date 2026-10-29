@@ -50,7 +50,8 @@ def build_sandbox_capabilities(ctx: CapabilityContext) -> Sequence[CapabilityRes
     has_jev = jev_enabled()
 
     def sandbox_tool(run_ctx: RunContext[ChatAgentDeps], tool_def: ToolDefinition) -> bool:
-        """判断工具是否属于当前沙箱能力
+        """
+        判断工具是否属于当前沙箱能力
 
         :param run_ctx: 运行上下文
         :param tool_def: 工具定义

@@ -9,7 +9,8 @@ class CodingEventStream:
     """将编码宿主事件转换为桌面端共用的 AG-UI 事件"""
 
     def __init__(self, *, conversation_id: str, run_id: str, message_id: str) -> None:
-        """初始化编码对话的 AG-UI 事件标识
+        """
+        初始化编码对话的 AG-UI 事件标识
 
         :param conversation_id: 对话 ID
         :param run_id: 运行 ID
@@ -76,7 +77,8 @@ class CodingEventStream:
         ]
 
     def encode(self, event: str, data: dict[str, Any]) -> str:
-        """将编码运行事件转换为 AG-UI 事件帧
+        """
+        将编码运行事件转换为 AG-UI 事件帧
 
         :param event: 事件数据
         :param data: 输入数据

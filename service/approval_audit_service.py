@@ -21,7 +21,8 @@ class AIBuddyApprovalAuditService:
     async def get_all(
         *, db: AsyncSession, user_id: int, before: int | None = None, limit: int = 100
     ) -> list[GetAIBuddyApprovalAuditDetail]:
-        """读取当前用户的审批历史，异常退出留下的请求按到期时间展示
+        """
+        读取当前用户的审批历史，异常退出留下的请求按到期时间展示
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -57,7 +58,8 @@ class AIBuddyApprovalAuditService:
         arguments: dict[str, Any],
         expires_seconds: int | None,
     ) -> None:
-        """在发出审批前持久化请求，原始参数仅保存可核对摘要
+        """
+        在发出审批前持久化请求，原始参数仅保存可核对摘要
 
         :param user_id: 用户 ID
         :param conversation_id: 对话 ID
@@ -101,7 +103,8 @@ class AIBuddyApprovalAuditService:
             AIBuddyApprovalStatus.expired,
         ],
     ) -> None:
-        """持久化审批结果，数据库写入成功后才允许执行工具
+        """
+        持久化审批结果，数据库写入成功后才允许执行工具
 
         :param user_id: 用户 ID
         :param request_id: 审批请求 ID
@@ -122,7 +125,8 @@ class AIBuddyApprovalAuditService:
         arguments: dict[str, Any],
         approved: bool,
     ) -> None:
-        """保存可跨轮恢复的工作工具审批，重放同一调用不重复登记
+        """
+        保存可跨轮恢复的工作工具审批，重放同一调用不重复登记
 
         :param user_id: 用户 ID
         :param conversation_id: 对话 ID
@@ -151,7 +155,8 @@ class AIBuddyApprovalAuditService:
             await self.resolve(user_id=user_id, request_id=request_id, status=AIBuddyApprovalStatus.approved)
 
     async def resolve_work(self, *, user_id: int, conversation_id: str, decisions: dict[str, bool]) -> None:
-        """在恢复工作流前保存已知审批决定，忽略不属于本对话的请求
+        """
+        在恢复工作流前保存已知审批决定，忽略不属于本对话的请求
 
         :param user_id: 用户 ID
         :param conversation_id: 对话 ID
@@ -173,7 +178,8 @@ class AIBuddyApprovalAuditService:
 
     @staticmethod
     def _work_request_id(*, user_id: int, conversation_id: str, tool_call_id: str) -> str:
-        """生成跨轮恢复稳定的工作工具审批标识
+        """
+        生成跨轮恢复稳定的工作工具审批标识
 
         :param user_id: 用户 ID
         :param conversation_id: 对话 ID

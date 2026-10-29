@@ -32,7 +32,8 @@ _MAX_QUEUE = 128
 
 
 def _key(bridge_id: str, suffix: str) -> str:
-    """构建包含作用域的缓存键
+    """
+    构建包含作用域的缓存键
 
     :param bridge_id: 桥接连接 ID
     :param suffix: 缓存键后缀
@@ -42,7 +43,8 @@ def _key(bridge_id: str, suffix: str) -> str:
 
 
 async def create_bridge(*, user_id: int, obj: CreateAIBuddyExecutionBridgeParam) -> dict[str, str]:
-    """创建用户专属的一次性桌面执行凭证
+    """
+    创建用户专属的一次性桌面执行凭证
 
     :param user_id: 用户 ID
     :param obj: 创建桥接参数
@@ -65,7 +67,8 @@ async def create_bridge(*, user_id: int, obj: CreateAIBuddyExecutionBridgeParam)
 async def get_bridge(
     *, bridge_id: str, user_id: int, backend: AIBuddyDesktopExecutionBackend, permission_mode: AIBuddyPermissionMode
 ) -> dict[str, Any]:
-    """只允许所属用户使用匹配后端和权限的在线连接
+    """
+    只允许所属用户使用匹配后端和权限的在线连接
 
     :param bridge_id: 桥接连接 ID
     :param user_id: 用户 ID
@@ -88,7 +91,8 @@ async def get_bridge(
 async def _close_bridge(
     bridge_id: str, *, metadata: str | bytes | None = None, conversation_id: str | None = None, claim: str | None = None
 ) -> None:
-    """校验连接归属并清理桥接资源
+    """
+    校验连接归属并清理桥接资源
 
     :param bridge_id: 桥接连接 ID
     :param metadata: 连接元数据
@@ -114,7 +118,8 @@ async def _close_bridge(
 
 
 async def close_owned_bridge(*, bridge_id: str, user_id: int, conversation_id: str | None = None) -> None:
-    """释放本用户连接，运行清理不能关闭其他对话占用的连接
+    """
+    释放本用户连接，运行清理不能关闭其他对话占用的连接
 
     :param bridge_id: 桥接连接 ID
     :param user_id: 用户 ID
@@ -128,7 +133,8 @@ async def close_owned_bridge(*, bridge_id: str, user_id: int, conversation_id: s
 
 
 async def _receive_frame(websocket: WebSocket, *, timeout: int) -> dict[str, Any]:
-    """在超时内接收并校验桌面连接消息
+    """
+    在超时内接收并校验桌面连接消息
 
     :param websocket: WebSocket 连接
     :param timeout: 超时时间
@@ -143,7 +149,8 @@ async def _receive_frame(websocket: WebSocket, *, timeout: int) -> dict[str, Any
 
 
 async def _send_frames(websocket: WebSocket, bridge_id: str) -> None:
-    """将服务端队列消息转发到桌面连接
+    """
+    将服务端队列消息转发到桌面连接
 
     :param websocket: WebSocket 连接
     :param bridge_id: 桥接连接 ID
@@ -171,7 +178,8 @@ async def _send_frames(websocket: WebSocket, bridge_id: str) -> None:
 
 
 async def _receive_frames(websocket: WebSocket, bridge_id: str) -> None:
-    """接收桌面响应并写入等待队列
+    """
+    接收桌面响应并写入等待队列
 
     :param websocket: WebSocket 连接
     :param bridge_id: 桥接连接 ID
@@ -201,7 +209,8 @@ async def _receive_frames(websocket: WebSocket, bridge_id: str) -> None:
 
 
 async def serve_bridge(websocket: WebSocket, bridge_id: str) -> None:
-    """认证后只转发执行 RPC，断线立即撤销会话
+    """
+    认证后只转发执行 RPC，断线立即撤销会话
 
     :param websocket: WebSocket 连接
     :param bridge_id: 桥接连接 ID
@@ -279,7 +288,8 @@ class ExecutionBridge:
     """绑定用户和编码会话的桌面 RPC 客户端"""
 
     def __init__(self, *, bridge_id: str, record: dict[str, Any], claim: str) -> None:
-        """保存桌面连接状态与独占凭据
+        """
+        保存桌面连接状态与独占凭据
 
         :param bridge_id: 桥接连接 ID
         :param record: 桥接连接记录
@@ -309,7 +319,8 @@ class ExecutionBridge:
     async def request(
         self, method: AIBuddyExecutionMethod, params: dict[str, Any], *, timeout: float | None = None
     ) -> Any:
-        """发送桌面执行请求并等待关联响应
+        """
+        发送桌面执行请求并等待关联响应
 
         :param method: 方法名称
         :param params: 方法参数
@@ -390,7 +401,8 @@ async def open_bridge(
     permission_mode: AIBuddyPermissionMode,
     conversation_id: str,
 ) -> ExecutionBridge:
-    """校验并独占当前对话的桌面执行连接
+    """
+    校验并独占当前对话的桌面执行连接
 
     :param bridge_id: 桥接连接 ID
     :param user_id: 用户 ID

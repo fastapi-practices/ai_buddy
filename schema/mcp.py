@@ -34,7 +34,8 @@ class AIBuddyMcpSchemaBase(SchemaBase):
     @field_serializer('url')
     @staticmethod
     def serialize_url(url: HttpUrl | None) -> str | None:
-        """序列化 MCP 端点链接
+        """
+        序列化 MCP 端点链接
 
         :param url: 请求地址
         :return:
@@ -76,7 +77,8 @@ class GetAIBuddyMcpDetail(AIBuddyMcpSchemaBase):
     @field_serializer('headers', 'env')
     @staticmethod
     def serialize_sensitive_data(value: dict[str, Any] | None) -> dict[str, Any] | None:
-        """脱敏序列化 MCP 敏感配置
+        """
+        脱敏序列化 MCP 敏感配置
 
         :param value: 待处理值
         :return:

@@ -21,7 +21,8 @@ class BuddyMCPToolset(MCPToolset):
     async def call_tool(
         self, name: str, tool_args: dict[str, Any], ctx: RunContext[Any], tool: ToolsetTool[Any]
     ) -> Any:
-        """保留 SDK 多模态结果与应用元数据
+        """
+        保留 SDK 多模态结果与应用元数据
 
         :param name: 工具名称
         :param tool_args: 工具参数
@@ -41,7 +42,8 @@ class BuddyMCPToolset(MCPToolset):
 
 
 async def build_mcp_toolset(*, mcp: AIBuddyMcp, user_id: int) -> BuddyMCPToolset:
-    """复用工作、编码与应用请求的 MCP 连接配置
+    """
+    复用工作、编码与应用请求的 MCP 连接配置
 
     :param mcp: MCP 服务配置
     :param user_id: 当前用户 ID

@@ -31,7 +31,8 @@ def build_skill_instruction(skill: AIBuddySkill) -> str:
 
 
 def _skill_loader(*, skill_id: int, user_id: int) -> Callable[[], Awaitable[str]]:
-    """在模型加载技能时重新校验可见性并读取正文
+    """
+    在模型加载技能时重新校验可见性并读取正文
 
     :param skill_id: 技能 ID
     :param user_id: 用户 ID

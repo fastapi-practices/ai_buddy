@@ -77,7 +77,8 @@ class PydanticAICodingSession:
     """用 Pydantic AI 跑编码循环的宿主会话"""
 
     def __init__(self, *, spec: CodingHostSpec, tools: list[BoundAgentTool]) -> None:
-        """绑定编码工具与宿主会话配置
+        """
+        绑定编码工具与宿主会话配置
 
         :param spec: 宿主规格
         :param tools: 工具列表
@@ -399,7 +400,8 @@ def _bound_tool(
     tool_policies: dict[str, AIBuddyToolPolicy] | None = None,
     mcp_approve_writes: bool = False,
 ) -> Tool[Any]:
-    """绑定工具参数、权限策略与审批回调
+    """
+    绑定工具参数、权限策略与审批回调
 
     :param item: 工具定义
     :param permission_mode: 权限模式
@@ -424,7 +426,8 @@ def _bound_tool(
         policy = max(policies, key=priority.__getitem__)
 
     async def call(ctx: RunContext[ChatAgentDeps], **kwargs: Any) -> str:
-        """根据工具策略校验审批并执行工具
+        """
+        根据工具策略校验审批并执行工具
 
         :param ctx: 运行上下文
         :param kwargs: 额外关键字参数

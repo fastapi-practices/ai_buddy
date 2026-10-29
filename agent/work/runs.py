@@ -26,7 +26,8 @@ class ActiveChatRun:
     """当前进程持有的对话生成句柄"""
 
     def __init__(self, *, run_id: str, conversation_id: str | None = None) -> None:
-        """初始化本进程生成任务及事件流状态
+        """
+        初始化本进程生成任务及事件流状态
 
         :param run_id: 运行 ID
         :param conversation_id: 对话 ID
@@ -143,7 +144,8 @@ class ActiveChatRun:
         await asyncio.gather(self.task, return_exceptions=True)
 
     async def _run_after_activation(self, coroutine: Coroutine[Any, Any, None]) -> None:
-        """等待响应激活后启动生成并回收未执行协程
+        """
+        等待响应激活后启动生成并回收未执行协程
 
         :param coroutine: 后台协程
         :return:
@@ -355,7 +357,8 @@ def build_run_stream_response(run: ActiveChatRun) -> StreamingResponse:
 
 
 async def _replay_event_log(conversation_id: str, after_id: str = '0-0') -> AsyncIterator[str]:
-    """重放已持久化事件并等待后续事件，每个事件带 SSE id 供客户端断线续传
+    """
+    重放已持久化事件并等待后续事件，每个事件带 SSE id 供客户端断线续传
 
     :param conversation_id: 对话 ID
     :param after_id: 已收到的最后一个事件 ID，从其后开始重放

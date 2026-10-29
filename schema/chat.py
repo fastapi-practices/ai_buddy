@@ -83,10 +83,7 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
     )
     execution_backend: AIBuddyExecutionBackend = Field(
         default=AIBuddyExecutionBackend.local,
-        description=(
-            '工作与编码模式的工作位置，local 为在你的计算机上，sandbox 为服务端沙箱（兼容旧值 opensandbox），'
-            '首轮确定后不可更改'
-        ),
+        description=('工作与编码模式的工作位置，local 为在你的计算机上，sandbox 为服务端沙箱，首轮确定后不可更改'),
     )
     sandbox_provider: AIBuddySandboxProvider | None = Field(
         None,

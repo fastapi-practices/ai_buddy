@@ -74,7 +74,8 @@ class GetAIBuddyProviderDetail(AIBuddyProviderSchemaBase):
     @field_serializer('api_key')
     @staticmethod
     def serialize_api_key(api_key: str) -> str:
-        """脱敏返回接口密钥
+        """
+        脱敏返回接口密钥
 
         :param api_key: 接口密钥
         :return:

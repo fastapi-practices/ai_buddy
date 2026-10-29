@@ -275,7 +275,8 @@ def get_live_sandbox(conversation_id: str) -> CodingSandbox | None:
 
 
 def _desktop_path(path: str) -> str:
-    """校验桌面工作区相对路径并阻止目录逃逸
+    """
+    校验桌面工作区相对路径并阻止目录逃逸
 
     :param path: 文件路径
     :return:
@@ -291,7 +292,8 @@ class DesktopBridgeWorkspace:
     """仅通过桌面连接执行的本机 OS 沙箱工作区"""
 
     def __init__(self, bridge: ExecutionBridge, *, conversation_id: str) -> None:
-        """绑定桌面执行连接及工作区限制
+        """
+        绑定桌面执行连接及工作区限制
 
         :param bridge: 桌面执行连接
         :param conversation_id: 对话 ID
@@ -322,7 +324,8 @@ class DesktopBridgeWorkspace:
             await self.bridge.close()
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
-        """列出工作区相对路径下的目录项
+        """
+        列出工作区相对路径下的目录项
 
         :param path: 文件路径
         :return:
@@ -335,7 +338,8 @@ class DesktopBridgeWorkspace:
         return [entry.model_dump() for entry in entries]
 
     async def _text(self, method: AIBuddyExecutionMethod, params: dict[str, object]) -> str:
-        """调用桌面工具并校验文本结果
+        """
+        调用桌面工具并校验文本结果
 
         :param method: 方法名称
         :param params: 方法参数
@@ -349,7 +353,8 @@ class DesktopBridgeWorkspace:
     async def read_file(
         self, *, path: str, offset: int = 0, limit: int | None = None, line_numbers: bool = True
     ) -> str:
-        """按行范围读取工作区文件
+        """
+        按行范围读取工作区文件
 
         :param path: 文件路径
         :param offset: 起始偏移量
@@ -368,7 +373,8 @@ class DesktopBridgeWorkspace:
         )
 
     async def write_file(self, *, path: str, content: str) -> str:
-        """在大小限制内写入工作区文件
+        """
+        在大小限制内写入工作区文件
 
         :param path: 文件路径
         :param content: 文本内容
@@ -379,7 +385,8 @@ class DesktopBridgeWorkspace:
         return await self._text(AIBuddyExecutionMethod.write_file, {'path': _desktop_path(path), 'content': content})
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
-        """通过已协商的字节协议导入用户附件
+        """
+        通过已协商的字节协议导入用户附件
 
         :param path: 受限的 inbound 路径
         :param content: 附件字节
@@ -397,7 +404,8 @@ class DesktopBridgeWorkspace:
         )
 
     async def read_bytes(self, *, path: str, max_bytes: int) -> bytes:
-        """本机文件已在用户电脑上，不经桌面桥传回服务端
+        """
+        本机文件已在用户电脑上，不经桌面桥传回服务端
 
         :param path: 文件路径
         :param max_bytes: 字节数上限
@@ -406,7 +414,8 @@ class DesktopBridgeWorkspace:
         raise errors.RequestError(msg='本机工作区文件已保存在用户电脑上，无需交付到服务端')
 
     async def edit_file(self, *, path: str, old_text: str, new_text: str) -> str:
-        """替换工作区文件中的指定内容
+        """
+        替换工作区文件中的指定内容
 
         :param path: 文件路径
         :param old_text: 待替换的原文本
@@ -420,7 +429,8 @@ class DesktopBridgeWorkspace:
         )
 
     async def run_bash(self, *, command: str) -> str:
-        """在工作区执行经过校验的命令
+        """
+        在工作区执行经过校验的命令
 
         :param command: 执行命令
         :return:
@@ -434,7 +444,8 @@ class DesktopBridgeWorkspace:
         return await self._text(AIBuddyExecutionMethod.git_status, {})
 
     async def run_command(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """只向已协商能力的桌面端请求结构化命令执行
+        """
+        只向已协商能力的桌面端请求结构化命令执行
 
         :param command: 已确认的命令
         :param timeout: 超时秒数
@@ -476,7 +487,8 @@ class DesktopBridgeWorkspace:
         return await self._text(AIBuddyExecutionMethod.git_diff, {'scope': scope})
 
     async def run_background(self, *, command: str, env: dict[str, str] | None = None) -> str:
-        """桌面端协议没有后台命令任务能力
+        """
+        桌面端协议没有后台命令任务能力
 
         :param command: 执行命令
         :param env: 环境变量
@@ -485,7 +497,8 @@ class DesktopBridgeWorkspace:
         raise errors.RequestError(msg='桌面端尚未协商后台命令能力，请使用 OpenSandbox')
 
     async def get_background_task(self, *, task_id: str, cursor: int | None = None) -> AIBuddyBackgroundTaskDetail:
-        """桌面端协议没有后台命令任务能力
+        """
+        桌面端协议没有后台命令任务能力
 
         :param task_id: 后台命令任务 ID
         :param cursor: 日志游标
@@ -494,7 +507,8 @@ class DesktopBridgeWorkspace:
         raise errors.RequestError(msg='桌面端尚未协商后台命令能力，请使用 OpenSandbox')
 
     async def stop_background(self, *, task_id: str) -> None:
-        """桌面端协议没有后台命令任务能力
+        """
+        桌面端协议没有后台命令任务能力
 
         :param task_id: 后台命令任务 ID
         :return:
@@ -502,7 +516,8 @@ class DesktopBridgeWorkspace:
         raise errors.RequestError(msg='桌面端尚未协商后台命令能力，请使用 OpenSandbox')
 
     async def get_endpoint(self, port: int) -> tuple[str, dict[str, str]]:
-        """查询工作区进程的可访问端口地址
+        """
+        查询工作区进程的可访问端口地址
 
         :param port: 端口号
         :return:
@@ -524,7 +539,8 @@ class OpenSandboxWorkspace:
         user_id: int | None = None,
         permission_mode: AIBuddyPermissionMode = AIBuddyPermissionMode.ask,
     ) -> None:
-        """绑定远程沙箱及端口查询客户端
+        """
+        绑定远程沙箱及端口查询客户端
 
         :param client: 客户端
         :param conversation_id: 对话 ID
@@ -611,7 +627,8 @@ class OpenSandboxWorkspace:
         return f'已写入 {_relative(target)}'
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
-        """通过 SDK 字节接口导入附件，临时写入成功后再替换目标
+        """
+        通过 SDK 字节接口导入附件，临时写入成功后再替换目标
 
         :param path: 受限的 inbound 路径
         :param content: 附件原始字节
@@ -711,7 +728,8 @@ class OpenSandboxWorkspace:
         return await self.run_bash(command=_git_command('status'))
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
-        """通过受控命令协议执行已确认的测试命令
+        """
+        通过受控命令协议执行已确认的测试命令
 
         :param command: 已确认的测试命令
         :param timeout: 超时秒数
@@ -975,7 +993,8 @@ async def create_coding_sandbox(
 
 
 def _relative(path: str) -> str:
-    """将沙箱工作区绝对路径转换为相对路径
+    """
+    将沙箱工作区绝对路径转换为相对路径
 
     :param path: 文件路径
     :return:

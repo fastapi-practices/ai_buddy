@@ -56,7 +56,8 @@ class CodingSession:
     """编码运行会话，宿主由协议适配器提供"""
 
     def __init__(self, host: CodingHostSession) -> None:
-        """绑定编码宿主与本轮上下文
+        """
+        绑定编码宿主与本轮上下文
 
         :param host: 宿主会话
         :return:

@@ -16,7 +16,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
     """AI 消息数据库操作类"""
 
     async def get_file_understanding_cache(self, db: AsyncSession, conversation_id: str) -> dict[str, Any]:
-        """读取当前分支最近保存的文件理解缓存
+        """
+        读取当前分支最近保存的文件理解缓存
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -35,7 +36,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
         return (context or {}).get('file_understanding', {})
 
     async def get_user_anchor(self, db: AsyncSession, message: AIBuddyMessage) -> AIBuddyMessage | None:
-        """将助手片段定位到所属用户轮
+        """
+        将助手片段定位到所属用户轮
 
         :param db: 数据库会话
         :param message: 消息内容
@@ -56,7 +58,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
         )
 
     async def consume_pending_branch(self, db: AsyncSession, conversation_id: str) -> dict[str, Any] | None:
-        """将截断在首条用户输入之前的分支锚点交给下一条用户消息
+        """
+        将截断在首条用户输入之前的分支锚点交给下一条用户消息
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -82,7 +85,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
     async def get_history_page(
         self, db: AsyncSession, conversation_id: str, *, before: tuple[int, int] | None, limit: int
     ) -> Sequence[AIBuddyMessage]:
-        """按稳定复合游标读取历史，返回倒序数据库行
+        """
+        按稳定复合游标读取历史，返回倒序数据库行
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -102,7 +106,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
     async def get_branch_versions(
         self, db: AsyncSession, *, user_id: int, conversation_id: str, message_id: int
     ) -> Sequence[tuple[AIBuddyMessage, AIBuddyConversation]]:
-        """只读取当前用户的同源会话版本
+        """
+        只读取当前用户的同源会话版本
 
         :param db: 数据库会话
         :param user_id: 用户 ID

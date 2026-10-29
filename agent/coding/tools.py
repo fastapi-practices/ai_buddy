@@ -31,7 +31,8 @@ class BoundAgentTool:
 
 
 def _truncate(text: str, limit: int = _CONTENT_CHARS) -> str:
-    """限制工具文本长度并标记截断
+    """
+    限制工具文本长度并标记截断
 
     :param text: 文本内容
     :param limit: 数量上限
@@ -43,7 +44,8 @@ def _truncate(text: str, limit: int = _CONTENT_CHARS) -> str:
 
 
 def _string(arguments: dict[str, Any], key: str, *, required: bool = True) -> str:
-    """提取并校验工具字符串参数
+    """
+    提取并校验工具字符串参数
 
     :param arguments: 工具参数
     :param key: 参数键
@@ -59,7 +61,8 @@ def _string(arguments: dict[str, Any], key: str, *, required: bool = True) -> st
 
 
 def _format_background_task(task: AIBuddyBackgroundTaskDetail) -> str:
-    """渲染后台命令状态与新增输出
+    """
+    渲染后台命令状态与新增输出
 
     :param task: 后台命令任务状态
     :return:
@@ -70,7 +73,8 @@ def _format_background_task(task: AIBuddyBackgroundTaskDetail) -> str:
 
 
 async def _bash_background(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """启动工作区后台命令并返回任务 ID
+    """
+    启动工作区后台命令并返回任务 ID
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -81,7 +85,8 @@ async def _bash_background(ctx: AgentRunContext, arguments: dict[str, Any]) -> s
 
 
 async def _bash_task_output(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """查询后台命令状态并读取新增输出
+    """
+    查询后台命令状态并读取新增输出
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -92,7 +97,8 @@ async def _bash_task_output(ctx: AgentRunContext, arguments: dict[str, Any]) -> 
 
 
 async def _bash_task_stop(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """中断工作区后台命令
+    """
+    中断工作区后台命令
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -103,7 +109,8 @@ async def _bash_task_stop(ctx: AgentRunContext, arguments: dict[str, Any]) -> st
 
 
 async def _search_knowledge(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """按用户权限检索知识内容
+    """
+    按用户权限检索知识内容
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -123,7 +130,8 @@ async def _search_knowledge(ctx: AgentRunContext, arguments: dict[str, Any]) -> 
 
 
 async def _get_knowledge(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """读取用户可访问的知识详情
+    """
+    读取用户可访问的知识详情
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -156,7 +164,8 @@ async def _list_skills(ctx: AgentRunContext, _arguments: dict[str, Any]) -> str:
 
 
 async def _get_skill(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """读取用户可访问的技能内容
+    """
+    读取用户可访问的技能内容
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -172,7 +181,8 @@ async def _get_skill(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
 
 
 async def _read_skill_file(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """读取当前用户可访问的技能包文件
+    """
+    读取当前用户可访问的技能包文件
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -193,7 +203,8 @@ async def _read_skill_file(ctx: AgentRunContext, arguments: dict[str, Any]) -> s
 
 
 def _skill_file_tool(ctx: AgentRunContext) -> BoundAgentTool:
-    """为编码宿主绑定技能文件只读工具
+    """
+    为编码宿主绑定技能文件只读工具
 
     :param ctx: 运行上下文
     :return:
@@ -233,7 +244,8 @@ async def _list_artifacts(ctx: AgentRunContext, _arguments: dict[str, Any]) -> s
 
 
 async def _get_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """读取用户可访问的产物内容
+    """
+    读取用户可访问的产物内容
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -249,7 +261,8 @@ async def _get_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
 
 
 async def _write_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
-    """校验并保存当前对话的产物
+    """
+    校验并保存当前对话的产物
 
     :param ctx: 运行上下文
     :param arguments: 工具参数
@@ -277,7 +290,8 @@ async def _write_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> st
 
 
 def _delivery_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
-    """为服务端沙箱绑定文件交付工具，本机执行的文件已在用户电脑上，不提供
+    """
+    为服务端沙箱绑定文件交付工具，本机执行的文件已在用户电脑上，不提供
 
     :param ctx: 运行上下文
     :return:
@@ -286,7 +300,8 @@ def _delivery_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         return []
 
     async def deliver_file(arguments: dict[str, Any]) -> str:
-        """把沙箱工作区文件交付为持久产物
+        """
+        把沙箱工作区文件交付为持久产物
 
         :param arguments: 工具参数
         :return:
@@ -344,7 +359,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
     """
 
     async def read_file(arguments: dict[str, Any]) -> str:
-        """按行范围读取工作区文件
+        """
+        按行范围读取工作区文件
 
         :param arguments: 工具参数
         :return:
@@ -356,7 +372,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         )
 
     async def write_file(arguments: dict[str, Any]) -> str:
-        """在大小限制内写入工作区文件
+        """
+        在大小限制内写入工作区文件
 
         :param arguments: 工具参数
         :return:
@@ -364,7 +381,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         return await ctx.sandbox.write_file(path=_string(arguments, 'path'), content=_string(arguments, 'content'))
 
     async def edit_file(arguments: dict[str, Any]) -> str:
-        """替换工作区文件中的指定内容
+        """
+        替换工作区文件中的指定内容
 
         :param arguments: 工具参数
         :return:
@@ -376,7 +394,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         )
 
     async def bash(arguments: dict[str, Any]) -> str:
-        """执行编码工具的工作区命令
+        """
+        执行编码工具的工作区命令
 
         :param arguments: 工具参数
         :return:
@@ -392,7 +411,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         return f'exit {result.exit_code if result.exit_code is not None else -1}\n{output}'.rstrip()
 
     async def ls(arguments: dict[str, Any]) -> str:
-        """列出编码工作区目录
+        """
+        列出编码工作区目录
 
         :param arguments: 工具参数
         :return:
@@ -406,7 +426,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         return '\n'.join(lines) or '目录为空'
 
     async def git_status(_arguments: dict[str, Any]) -> str:
-        """读取工作区 Git 状态
+        """
+        读取工作区 Git 状态
 
         :param _arguments: 工具参数
         :return:
@@ -414,7 +435,8 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         return _truncate(await ctx.sandbox.git_status())
 
     async def git_diff(arguments: dict[str, Any]) -> str:
-        """按范围读取工作区未提交差异
+        """
+        按范围读取工作区未提交差异
 
         :param arguments: 工具参数
         :return:

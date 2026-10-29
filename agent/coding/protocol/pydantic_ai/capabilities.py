@@ -39,7 +39,8 @@ async def build_coding_capabilities(
     bound_tool_names: frozenset[str],
     wait_approval: WaitApproval | None,
 ) -> list[AbstractCapability[Any]]:
-    """复用工作模式资源能力，并接入编码运行审批
+    """
+    复用工作模式资源能力，并接入编码运行审批
 
     :param spec: 编码宿主规格
     :param model: 当前供应商模型
@@ -110,7 +111,8 @@ def _build_resource_policy_hooks(
     bound_tool_names: frozenset[str],
     wait_approval: WaitApproval | None,
 ) -> Hooks[ChatAgentDeps]:
-    """构建新增资源工具的审批与拒绝策略
+    """
+    构建新增资源工具的审批与拒绝策略
 
     :param spec: 编码宿主规格
     :param props: 本轮聊天扩展参数
@@ -128,7 +130,8 @@ def _build_resource_policy_hooks(
         tool_def: ToolDefinition,
         args: object,
     ) -> object:
-        """对新增资源工具应用同一轮策略，拒绝不会产生副作用
+        """
+        对新增资源工具应用同一轮策略，拒绝不会产生副作用
 
         :param ctx: 模型运行上下文
         :param call: 工具调用

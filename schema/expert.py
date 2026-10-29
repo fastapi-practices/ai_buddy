@@ -34,7 +34,8 @@ class AIBuddyExpertSchemaBase(SchemaBase):
     @field_validator('starters', 'mcp_ids', 'skill_ids', 'knowledge_ids', mode='before')
     @classmethod
     def default_list(cls, value: list[Any] | None) -> list[Any]:
-        """空值按空列表处理
+        """
+        空值按空列表处理
 
         :param value: 待处理值
         :return:
@@ -65,9 +66,9 @@ class GetAIBuddyExpertDetail(AIBuddyExpertSchemaBase):
 class GetAIBuddyExpertWithRelationDetail(GetAIBuddyExpertDetail):
     """AI 专家模板详情（含关联数据）"""
 
-    mcp_ids: list[int] = Field(default_factory=list, exclude=True)
-    skill_ids: list[int] = Field(default_factory=list, exclude=True)
-    knowledge_ids: list[int] = Field(default_factory=list, exclude=True)
+    mcp_ids: list[int] = Field(default_factory=list, exclude=True, description='默认 MCP ID 列表')
+    skill_ids: list[int] = Field(default_factory=list, exclude=True, description='默认技能 ID 列表')
+    knowledge_ids: list[int] = Field(default_factory=list, exclude=True, description='默认知识库 ID 列表')
     mcps: list[GetAIBuddyMcpDetail] = Field(default_factory=list, description='默认 MCP 列表')
     skills: list[GetAIBuddySkillSearchHit] = Field(default_factory=list, description='默认技能列表')
     knowledge_bases: list[GetAIBuddyKnowledgeBaseDetail] = Field(default_factory=list, description='默认知识库列表')

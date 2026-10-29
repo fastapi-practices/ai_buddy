@@ -25,9 +25,13 @@ from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 router = APIRouter()
 
 
-@router.get('/onnx-options', summary='获取本地 ONNX 选项', dependencies=[DependsJwtAuth])
+@router.get(
+    '/onnx-options',
+    summary='获取本地 ONNX 选项',
+    description='获取本地向量和 OCR 模型选项',
+    dependencies=[DependsJwtAuth],
+)
 async def get_ai_buddy_onnx_options() -> ResponseSchemaModel[GetAIBuddyOnnxCatalogDetail]:
-    """获取本地向量和 OCR 模型选项"""
     data = await ai_buddy_knowledge_base_service.get_onnx_options()
     return response_base.success(data=data)
 
@@ -36,19 +40,12 @@ async def get_ai_buddy_onnx_options() -> ResponseSchemaModel[GetAIBuddyOnnxCatal
 async def download_ai_buddy_onnx_model(
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """
-    下载本地 ONNX 向量模型
-
-    :param obj: 下载参数
-    :return:
-    """
     data = await ai_buddy_knowledge_base_service.download_onnx_model(model_id=obj.model_id)
     return response_base.success(data=data)
 
 
 @router.get('/onnx-download-status', summary='获取 ONNX 向量模型下载状态', dependencies=[DependsJwtAuth])
 async def get_ai_buddy_onnx_download_status() -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """获取本地 ONNX 向量模型下载状态"""
     data = await ai_buddy_knowledge_base_service.get_onnx_download_status()
     return response_base.success(data=data)
 
@@ -57,19 +54,12 @@ async def get_ai_buddy_onnx_download_status() -> ResponseSchemaModel[GetAIBuddyO
 async def download_ai_buddy_ocr_onnx_model(
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """
-    下载本地 ONNX OCR 模型
-
-    :param obj: 下载参数
-    :return:
-    """
     data = await ai_buddy_knowledge_base_service.download_ocr_onnx_model(model_id=obj.model_id)
     return response_base.success(data=data)
 
 
 @router.get('/ocr-onnx-download-status', summary='获取 ONNX OCR 模型下载状态', dependencies=[DependsJwtAuth])
 async def get_ai_buddy_ocr_onnx_download_status() -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """获取本地 ONNX OCR 模型下载状态"""
     data = await ai_buddy_knowledge_base_service.get_ocr_onnx_download_status()
     return response_base.success(data=data)
 
@@ -78,19 +68,12 @@ async def get_ai_buddy_ocr_onnx_download_status() -> ResponseSchemaModel[GetAIBu
 async def download_ai_buddy_paddleocr_model(
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """
-    下载本机 PaddleOCR 模型
-
-    :param obj: 下载参数
-    :return:
-    """
     data = await ai_buddy_knowledge_base_service.download_paddleocr_model(model_id=obj.model_id)
     return response_base.success(data=data)
 
 
 @router.get('/paddleocr-download-status', summary='获取本机 PaddleOCR 模型下载状态', dependencies=[DependsJwtAuth])
 async def get_ai_buddy_paddleocr_download_status() -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    """获取本机 PaddleOCR 模型下载状态"""
     data = await ai_buddy_knowledge_base_service.get_paddleocr_download_status()
     return response_base.success(data=data)
 

@@ -19,7 +19,8 @@ class CodingWorkspace:
     """将现有受控执行环境适配到 SDK 工作区，不在宿主启动进程"""
 
     def __init__(self, sandbox: CodingSandbox, *, conversation_id: str) -> None:
-        """绑定本轮已授权的工作区
+        """
+        绑定本轮已授权的工作区
 
         :param sandbox: 本轮执行环境
         :param conversation_id: 对话 ID
@@ -40,7 +41,8 @@ class CodingWorkspace:
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
     ) -> CommandResult:
-        """复用结构化命令执行的取消、输出限制和真实退出状态
+        """
+        复用结构化命令执行的取消、输出限制和真实退出状态
 
         :param command: 命令字符串或参数列表
         :param shell: 是否使用 Shell 语法

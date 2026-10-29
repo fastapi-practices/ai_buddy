@@ -350,7 +350,7 @@ class AIBuddyArtifactService:
         content: str | None,
     ) -> None:
         """
-        同步产物与统一对象的引用，已删除的产物释放引用，历史产物会在更新时补登记
+        同步产物与统一对象的引用，已删除的产物释放引用
 
         :param db: 数据库会话
         :param user_id: 用户 ID

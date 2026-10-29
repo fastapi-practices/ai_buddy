@@ -10,7 +10,8 @@ from backend.plugin.ai_buddy.utils.model_catalog import apply_catalog_profile
 
 
 def auxiliary_model_name(ctx: CapabilityContext, value: str) -> str:
-    """接受本轮供应商下的模型名，拒绝跨供应商隐式环境凭据
+    """
+    接受本轮供应商下的模型名，拒绝跨供应商隐式环境凭据
 
     :param ctx: 运行上下文
     :param value: 待处理值
@@ -28,7 +29,8 @@ def auxiliary_model_name(ctx: CapabilityContext, value: str) -> str:
 
 
 async def bind_auxiliary_model(ctx: CapabilityContext, name: str) -> Model:
-    """校验模型归属与调用策略，并复用本轮供应商和客户端
+    """
+    校验模型归属与调用策略，并复用本轮供应商和客户端
 
     :param ctx: 运行上下文
     :param name: 模型名称

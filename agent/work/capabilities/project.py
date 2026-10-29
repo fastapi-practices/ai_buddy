@@ -8,7 +8,8 @@ from backend.plugin.ai_buddy.service.project_service import ai_buddy_project_ser
 
 
 async def build_project_capability(ctx: CapabilityContext) -> CapabilityResult:
-    """工作与编码运行共同验证归属并识别当前项目
+    """
+    工作与编码运行共同验证归属并识别当前项目
 
     :param ctx: 能力构建上下文
     :return:

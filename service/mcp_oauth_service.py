@@ -62,7 +62,8 @@ class AIBuddyMcpOauthService:
 
     @staticmethod
     async def get(*, db: AsyncSession, user_id: int, mcp_id: int) -> GetAIBuddyMcpOauthDetail:
-        """读取平台是否已配置及当前用户的连接状态
+        """
+        读取平台是否已配置及当前用户的连接状态
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -90,7 +91,8 @@ class AIBuddyMcpOauthService:
     async def get_config(
         self, *, db: AsyncSession, user_id: int, mcp_id: int, is_superuser: bool
     ) -> GetAIBuddyMcpOauthConfigDetail:
-        """读取后台统一配置，不返回客户端密钥
+        """
+        读取后台统一配置，不返回客户端密钥
 
         :param db: 数据库会话
         :param user_id: 管理员 ID
@@ -128,7 +130,8 @@ class AIBuddyMcpOauthService:
         is_superuser: bool,
         obj: UpdateAIBuddyMcpOauthParam,
     ) -> None:
-        """保存后台统一客户端配置并使所有旧个人授权失效
+        """
+        保存后台统一客户端配置并使所有旧个人授权失效
 
         :param db: 数据库会话
         :param user_id: 管理员 ID
@@ -181,7 +184,8 @@ class AIBuddyMcpOauthService:
         await ai_buddy_mcp_oauth_dao.invalidate(db, mcp_id, secrets.token_hex(16))
 
     async def authorize(self, *, db: AsyncSession, user_id: int, mcp_id: int) -> GetAIBuddyMcpOauthAuthorizeDetail:
-        """生成一次性 PKCE 授权请求
+        """
+        生成一次性 PKCE 授权请求
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -272,7 +276,8 @@ class AIBuddyMcpOauthService:
         )
 
     async def callback(self, *, state: str, code: str | None, error: str | None) -> None:
-        """消费一次性授权状态并保存当前配置版本的令牌
+        """
+        消费一次性授权状态并保存当前配置版本的令牌
 
         :param state: 一次性授权状态
         :param code: 授权码
@@ -319,7 +324,8 @@ class AIBuddyMcpOauthService:
 
     @staticmethod
     async def disconnect(*, db: AsyncSession, user_id: int, mcp_id: int) -> None:
-        """删除本应用保存的用户令牌，旧回调不能重新连接
+        """
+        删除本应用保存的用户令牌，旧回调不能重新连接
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -346,7 +352,8 @@ class AIBuddyMcpOauthService:
                 raise errors.ConflictError(msg='OAuth 配置已变更，请重试断开连接')
 
     async def headers(self, *, mcp: AIBuddyMcp, user_id: int) -> dict[str, str]:
-        """读取当前用户令牌并在过期前刷新，不重试 MCP 工具执行
+        """
+        读取当前用户令牌并在过期前刷新，不重试 MCP 工具执行
 
         :param mcp: 已校验访问权限的 MCP
         :param user_id: 用户 ID
@@ -378,7 +385,8 @@ class AIBuddyMcpOauthService:
         return headers
 
     async def _refresh_tokens(self, *, mcp: AIBuddyMcp, row: AIBuddyMcpOauth) -> dict[str, Any]:
-        """持有用户刷新锁期间重验配置、交换并保存令牌
+        """
+        持有用户刷新锁期间重验配置、交换并保存令牌
 
         :param mcp: 当前 MCP
         :param row: 待刷新的个人连接版本
@@ -425,7 +433,8 @@ class AIBuddyMcpOauthService:
 
     @staticmethod
     async def _exchange(*, config: dict[str, Any], resource: str, data: dict[str, str]) -> dict[str, Any]:
-        """经受限网络交换令牌，限制响应大小并复用 MCP SDK 令牌契约
+        """
+        经受限网络交换令牌，限制响应大小并复用 MCP SDK 令牌契约
 
         :param config: 已配置客户端
         :param resource: 绑定的 MCP 资源地址
@@ -469,7 +478,8 @@ class AIBuddyMcpOauthService:
         return tokens
 
     async def _save_tokens(self, *, row: AIBuddyMcpOauth, tokens: dict[str, Any]) -> None:
-        """按配置版本写入加密令牌，拒绝已断开或已更改的连接
+        """
+        按配置版本写入加密令牌，拒绝已断开或已更改的连接
 
         :param row: 原始配置版本
         :param tokens: 服务商返回的令牌

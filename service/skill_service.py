@@ -92,7 +92,8 @@ class AIBuddySkillService:
         offset: int = 0,
         limit: int = _SKILL_FILE_PAGE_CHARS,
     ) -> str:
-        """校验权限并分页读取技能包内 UTF-8 文本，不执行脚本
+        """
+        校验权限并分页读取技能包内 UTF-8 文本，不执行脚本
 
         :param db: 数据库会话
         :param pk: 主键 ID
@@ -310,7 +311,8 @@ class AIBuddySkillService:
 
     @staticmethod
     def _skill_file_key(*, object_key: str | None, path: str) -> tuple[str, str]:
-        """将相对文件路径限制在技能包对象前缀内
+        """
+        将相对文件路径限制在技能包对象前缀内
 
         :param object_key: 对象键
         :param path: 文件路径

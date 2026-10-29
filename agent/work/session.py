@@ -60,7 +60,8 @@ class AgentSession:
         http_client: httpx2.AsyncClient,
         image_generation_model: ImageGenerationModel | None = None,
     ) -> None:
-        """保存供应商会话及其客户端资源
+        """
+        保存供应商会话及其客户端资源
 
         :param adapter: 供应商适配器
         :param model: 模型对象
@@ -251,7 +252,8 @@ class AgentSession:
                 raise RuntimeError('缺少聊天生命周期回调')
 
             async def default_on_complete(result: AgentRunResult[Any]) -> None:
-                """保存本轮生成完成后的助手消息
+                """
+                保存本轮生成完成后的助手消息
 
                 :param result: 执行结果
                 :return:
@@ -268,7 +270,8 @@ class AgentSession:
                 messages: list[ChatModelMessage],
                 detail: dict[str, Any] | None = None,
             ) -> None:
-                """将本轮助手消息保存为错误终态
+                """
+                将本轮助手消息保存为错误终态
 
                 :param message: 消息内容
                 :param messages: 消息列表
@@ -284,7 +287,8 @@ class AgentSession:
                 )
 
             async def default_on_interrupted(messages: list[ChatModelMessage]) -> None:
-                """将本轮助手消息保存为中断终态
+                """
+                将本轮助手消息保存为中断终态
 
                 :param messages: 消息列表
                 :return:

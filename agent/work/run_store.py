@@ -52,7 +52,8 @@ class SharedChatRunStore:
     """基于 Redis 的跨进程聊天任务协调存储"""
 
     def __init__(self, client: RedisCli = redis_client) -> None:
-        """配置 Redis 客户端及聊天任务缓存前缀
+        """
+        配置 Redis 客户端及聊天任务缓存前缀
 
         :param client: 客户端
         :return:
@@ -61,7 +62,8 @@ class SharedChatRunStore:
         self.key_prefix = f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:chat-run'
 
     def _key(self, conversation_id: str, suffix: str) -> str:
-        """构建包含作用域的缓存键
+        """
+        构建包含作用域的缓存键
 
         :param conversation_id: 对话 ID
         :param suffix: 缓存键后缀
@@ -310,7 +312,8 @@ class SharedChatRunStore:
         await self.client.expire(self._key(conversation_id, 'events'), _EVENT_DONE_TTL_SECONDS)
 
     async def _expire_event_log(self, *, conversation_id: str, ttl: int) -> None:
-        """同步续期事件日志及元信息
+        """
+        同步续期事件日志及元信息
 
         :param conversation_id: 对话 ID
         :param ttl: 过期时间
@@ -321,7 +324,8 @@ class SharedChatRunStore:
 
 
 def _decode_stream_entries(entries: Any) -> list[tuple[str, str]]:
-    """解析 Redis 事件日志条目
+    """
+    解析 Redis 事件日志条目
 
     :param entries: 事件日志条目
     :return:

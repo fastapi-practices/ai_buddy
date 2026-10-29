@@ -12,7 +12,12 @@ from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
 
 
 def _workspace_id(value: str) -> str:
-    """校验工作区标识"""
+    """
+    校验工作区标识
+
+    :param value: 待校验的工作区 ID
+    :return:
+    """
     try:
         return validate_workspace_id(value.strip())
     except errors.RequestError as exc:

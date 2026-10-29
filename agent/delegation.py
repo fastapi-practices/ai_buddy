@@ -30,7 +30,8 @@ class BuddyDelegationReports(DelegationReports):
     """限定在一轮内的后台委派、报告回流与跨进程控制"""
 
     def __init__(self, *, conversation_id: str) -> None:
-        """创建由本轮独占的委派任务所有者
+        """
+        创建由本轮独占的委派任务所有者
 
         :param conversation_id: 对话 ID
         :return:
@@ -43,7 +44,8 @@ class BuddyDelegationReports(DelegationReports):
         self.changed = asyncio.Event()
 
     async def wrap_run(self, ctx: RunContext[ChatAgentDeps], *, handler: WrapRunHandler) -> AgentRunResult[Any]:
-        """关闭所有子任务后再释放主模型和工作区
+        """
+        关闭所有子任务后再释放主模型和工作区
 
         :param ctx: 运行上下文
         :param handler: SDK 运行处理器
@@ -75,7 +77,8 @@ class BuddyDelegationReports(DelegationReports):
         output_context: OutputContext,
         output: object,
     ) -> object:
-        """等待本轮子任务并在最终回复前让 SDK 消费报告
+        """
+        等待本轮子任务并在最终回复前让 SDK 消费报告
 
         :param ctx: 运行上下文
         :param output_context: 输出上下文
@@ -94,7 +97,8 @@ class BuddyDelegationReports(DelegationReports):
         return output
 
     async def observe(self, event: DelegationTaskEvent) -> None:
-        """转发变化的任务状态，忽略逐 token 子事件
+        """
+        转发变化的任务状态，忽略逐 token 子事件
 
         :param event: SDK 子任务事件
         :return:

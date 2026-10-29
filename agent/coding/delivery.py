@@ -14,7 +14,8 @@ _EXCLUDED_PARTS = frozenset({'.git', 'node_modules', '.venv', '__pycache__', '.f
 async def deliver_sandbox_file(
     *, ctx: AgentRunContext, path: str, title: str | None, kind: AIBuddyArtifactKind | None
 ) -> str:
-    """把服务端沙箱中的文件交付为持久产物，沙箱被回收后聊天记录仍可回显和下载
+    """
+    把服务端沙箱中的文件交付为持久产物，沙箱被回收后聊天记录仍可回显和下载
 
     :param ctx: 运行上下文
     :param path: 沙箱工作区内的文件路径

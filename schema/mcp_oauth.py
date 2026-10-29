@@ -11,9 +11,9 @@ from backend.plugin.ai_buddy.security.ssrf import validate_public_http_url
 class AIBuddyMcpOAuthCallbackQueryParam(SchemaBase):
     """AI MCP OAuth 回调查询参数"""
 
-    state: str = Field(min_length=32, max_length=128)
-    code: str | None = Field(None, max_length=8192)
-    error: str | None = Field(None, max_length=256)
+    state: str = Field(min_length=32, max_length=128, description='授权状态值')
+    code: str | None = Field(None, max_length=8192, description='授权码')
+    error: str | None = Field(None, max_length=256, description='授权服务返回的错误码')
 
 
 class UpdateAIBuddyMcpOauthParam(SchemaBase):
@@ -34,7 +34,8 @@ class UpdateAIBuddyMcpOauthParam(SchemaBase):
     @field_validator('authorization_url', 'token_url')
     @classmethod
     def validate_endpoint(cls, value: str) -> str:
-        """限制凭据交换地址为公网 HTTPS，拒绝 URL 内嵌凭据和片段
+        """
+        限制凭据交换地址为公网 HTTPS，拒绝 URL 内嵌凭据和片段
 
         :param value: OAuth 端点
         :return:

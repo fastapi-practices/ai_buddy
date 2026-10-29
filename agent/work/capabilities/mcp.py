@@ -10,7 +10,8 @@ from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 
 
 async def build_mcp_capability(ctx: CapabilityContext) -> Sequence[CapabilityResult]:
-    """构建带原生应用协议的 MCP 能力
+    """
+    构建带原生应用协议的 MCP 能力
 
     :param ctx: 能力构建上下文
     :return:

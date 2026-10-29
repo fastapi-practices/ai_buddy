@@ -22,7 +22,8 @@ class CRUDAIBuddyFollowUp(CRUDPlus[AIBuddyFollowUp]):
     async def get_by_request_id(
         self, db: AsyncSession, conversation_id: str, request_id: str
     ) -> AIBuddyFollowUp | None:
-        """读取幂等记录，包含已删除项
+        """
+        读取幂等记录，包含已删除项
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -46,7 +47,8 @@ class CRUDAIBuddyFollowUp(CRUDPlus[AIBuddyFollowUp]):
         *,
         for_update: bool = False,
     ) -> list[AIBuddyFollowUp]:
-        """读取未删除的跟进，变更路径使用当前读
+        """
+        读取未删除的跟进，变更路径使用当前读
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
@@ -67,7 +69,8 @@ class CRUDAIBuddyFollowUp(CRUDPlus[AIBuddyFollowUp]):
         return list((await db.scalars(stmt)).all())
 
     async def get_due_conversations(self, db: AsyncSession) -> list[str]:
-        """读取有待执行或待确认派发的会话
+        """
+        读取有待执行或待确认派发的会话
 
         :param db: 数据库会话
         :return:

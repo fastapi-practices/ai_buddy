@@ -44,7 +44,8 @@ class AIBuddyAssistantSchemaBase(SchemaBase):
     @field_validator('starters', mode='before')
     @classmethod
     def default_starters(cls, value: list[str] | None) -> list[str]:
-        """空值按空列表处理
+        """
+        空值按空列表处理
 
         :param value: 待处理值
         :return:

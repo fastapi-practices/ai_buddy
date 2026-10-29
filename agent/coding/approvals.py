@@ -28,7 +28,8 @@ return 1
 
 
 def _approval_key(conversation_id: str, request_id: str) -> str:
-    """构建对话内审批请求的缓存键
+    """
+    构建对话内审批请求的缓存键
 
     :param conversation_id: 对话 ID
     :param request_id: 请求 ID
@@ -38,7 +39,8 @@ def _approval_key(conversation_id: str, request_id: str) -> str:
 
 
 async def resolve_approval(*, conversation_id: str, user_id: int, request_id: str, approved: bool) -> None:
-    """仅接受当前运行中尚未处理的审批
+    """
+    仅接受当前运行中尚未处理的审批
 
     :param conversation_id: 对话 ID
     :param user_id: 审批用户 ID
@@ -73,7 +75,8 @@ async def wait_for_approval(
     emit: EmitEvent,
     is_cancelled: CancelledCheck,
 ) -> bool:
-    """通过共享存储等待桌面端审批，支持跨进程提交和事件重放
+    """
+    通过共享存储等待桌面端审批，支持跨进程提交和事件重放
 
     :param conversation_id: 对话 ID
     :param user_id: 审批用户 ID

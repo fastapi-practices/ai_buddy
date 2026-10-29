@@ -32,7 +32,8 @@ return 1
 
 
 def _key(conversation_id: str, request_id: str) -> str:
-    """构建包含作用域的缓存键
+    """
+    构建包含作用域的缓存键
 
     :param conversation_id: 对话 ID
     :param request_id: 请求 ID
@@ -42,7 +43,8 @@ def _key(conversation_id: str, request_id: str) -> str:
 
 
 def _index_key(conversation_id: str) -> str:
-    """构建对话输入请求的索引键
+    """
+    构建对话输入请求的索引键
 
     :param conversation_id: 对话 ID
     :return:
@@ -51,7 +53,8 @@ def _index_key(conversation_id: str) -> str:
 
 
 def public_request(record: dict[str, Any]) -> dict[str, Any]:
-    """只序列化公开字段，排除答案和加密密钥
+    """
+    只序列化公开字段，排除答案和加密密钥
 
     :param record: 输入请求记录
     :return:
@@ -60,7 +63,8 @@ def public_request(record: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_answers(questions: list[AIBuddyInputQuestion], answers: dict[str, str | list[str]]) -> None:
-    """检查题目类型、必填和选项归属
+    """
+    检查题目类型、必填和选项归属
 
     :param questions: 问题列表
     :param answers: 回答列表
@@ -96,7 +100,8 @@ def _secret_cipher() -> Fernet:
 
 
 async def resolve_input_request(*, conversation_id: str, request_id: str, obj: ResolveAIBuddyInputRequestParam) -> None:
-    """校验问题后原子提交，只接受当前运行中的一次回复
+    """
+    校验问题后原子提交，只接受当前运行中的一次回复
 
     :param conversation_id: 对话 ID
     :param request_id: 请求 ID
@@ -139,7 +144,8 @@ async def resolve_input_request(*, conversation_id: str, request_id: str, obj: R
 
 
 async def list_input_requests(*, conversation_id: str) -> list[dict[str, Any]]:
-    """恢复当前运行中尚未答复的问题，不泄露密钥或答案
+    """
+    恢复当前运行中尚未答复的问题，不泄露密钥或答案
 
     :param conversation_id: 对话 ID
     :return:
@@ -169,7 +175,8 @@ async def wait_for_input(
     tool_call_id: str | None = None,
     secret: dict[str, str] | None = None,
 ) -> dict[str, Any] | SecretStr | None:
-    """等待同一运行的真实输入，密钥仅交给受信调用者一次
+    """
+    等待同一运行的真实输入，密钥仅交给受信调用者一次
 
     :param conversation_id: 对话 ID
     :param title: 标题

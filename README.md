@@ -16,8 +16,6 @@
 # [ Plugin ] ai_buddy
 AI_BUDDY_QDRANT_URL='http://127.0.0.1:6333'
 AI_BUDDY_QDRANT_API_KEY=''
-AI_BUDDY_AGENT_EXECUTION_BACKEND='local'
-AI_BUDDY_MCP_OAUTH_REDIRECT_URI=''
 AI_BUDDY_OPENSANDBOX_DOMAIN='127.0.0.1:8090'
 AI_BUDDY_OPENSANDBOX_API_KEY='ai-buddy-opensandbox-local'
 AI_BUDDY_OPENSANDBOX_PROTOCOL='http'
@@ -79,7 +77,7 @@ AI_BUDDY_JEV_MODEL = "jev-latest"
 AI_BUDDY_JEV_INPUT_THRESHOLD = 0.75
 ```
 
-当前项目的 `backend/core/conf.py` 已包含以下字段：
+在 `backend/core/conf.py` 中添加以下内容：
 
 ```python
 ##################################################
@@ -189,27 +187,6 @@ AI_BUDDY_JEV_INPUT_THRESHOLD: float = 0.75
 - `AI_BUDDY_QDRANT_MEMORY_COLLECTION`：控制记忆向量写入的 Qdrant 集合名称
 - `AI_BUDDY_JEV_MODEL`：控制工作、编码、生图输入和高风险工具护栏使用的 Jev 模型
 - `AI_BUDDY_JEV_INPUT_THRESHOLD`：控制 Jev 判定提示有害后拦截的概率阈值
-
-## 对象生命周期
-
-附件、产物、知识、技能和工具输出统一登记在 `ai_buddy_object`，由 `ai_buddy_object_ref` 记录谁在引用它，`ai_buddy_object_audit` 记录登记、引用、墓碑、删除和读取
-
-- 引用归零后对象先进入墓碑，保留期（默认 `AI_BUDDY_OBJECT_GC_GRACE_HOURS`，工具输出固定为 6 小时）结束后才会被物理删除；保留期内出现新引用会自动恢复
-- 工具输出没有持有者，登记后直接按保留期到期
-- 回收接口默认只预览，确认后才物理删除；也可通过 `AI_BUDDY_OBJECT_GC_INTERVAL_SECONDS` 开启后台定时回收
-- 聊天附件按内容摘要去重，由对话引用；单条消息被删除不会释放附件，对话被删除时才释放
-- 历史数据升级后，调用 `POST /objects/backfill` 为已有产物、知识和技能补登记（默认仅预览，可重复执行，同时为缺少 `storage_id` 的记录回填默认存储）；历史聊天附件不补登记，因此不会被自动回收
-- 工作区文件由工作区清单与工作区回收接口管理，不进入统一对象表
-
-删除对话的级联策略：
-
-| 数据 | 处理方式 |
-| --- | --- |
-| 消息、消息错误记录、对话 | 软删除 |
-| 步骤事件、快照、工具台账、运行记录 | 立即物理删除 |
-| 聊天附件等对象 | 释放本对话的引用，无人引用后进入墓碑，保留期后回收 |
-| 用户产物 | 保留，不随对话删除 |
-| 任务计划 | 立即删除 |
 
 ## 使用方式
 

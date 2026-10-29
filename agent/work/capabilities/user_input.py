@@ -24,7 +24,8 @@ class BuddyUserInputEvent(
 
 
 async def ask_user(ctx: RunContext[ChatAgentDeps], title: str, questions: list[AIBuddyInputQuestion]) -> dict[str, Any]:
-    """向用户提出最多十个文本、单选或多选问题并等待回复；不得索取密码和密钥
+    """
+    向用户提出最多十个文本、单选或多选问题并等待回复；不得索取密码和密钥
 
     :param ctx: 运行上下文
     :param title: 标题
@@ -35,7 +36,8 @@ async def ask_user(ctx: RunContext[ChatAgentDeps], title: str, questions: list[A
         return {'cancelled': True, 'reason': '当前运行没有可交互的对话'}
 
     async def emit(request: dict[str, Any]) -> None:
-        """发布本轮运行的界面事件
+        """
+        发布本轮运行的界面事件
 
         :param request: 当前请求
         :return:
@@ -53,7 +55,8 @@ async def ask_user(ctx: RunContext[ChatAgentDeps], title: str, questions: list[A
 
 
 def build_user_input_capability(ctx: CapabilityContext) -> CapabilityResult:
-    """为有归属的工作会话开放结构化问答
+    """
+    为有归属的工作会话开放结构化问答
 
     :param ctx: 运行上下文
     :return:

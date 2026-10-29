@@ -20,7 +20,12 @@ class AIBuddyCommandParam(SchemaBase):
     @field_validator('command')
     @classmethod
     def validate_command(cls, value: str) -> str:
-        """保留原始命令并拒绝空值、空字符及超限输入"""
+        """
+        保留原始命令并拒绝空值、空字符及超限输入
+
+        :param value: 待校验的命令
+        :return:
+        """
         if not value.strip() or '\0' in value or len(value.encode()) > COMMAND_MAX_BYTES:
             raise ValueError('命令不能为空、包含空字符或超过 64 KiB')
         return value
@@ -42,7 +47,12 @@ class AIBuddyCommandResult(AIBuddyCommandParam):
     @field_validator('started_at')
     @classmethod
     def validate_started_at(cls, value: str | None) -> str | None:
-        """开始时间必须是带 UTC 偏移的有效 ISO 时间"""
+        """
+        开始时间必须是带 UTC 偏移的有效 ISO 时间
+
+        :param value: 待校验的开始时间
+        :return:
+        """
         if value is None:
             return None
         parsed = datetime.fromisoformat(value)

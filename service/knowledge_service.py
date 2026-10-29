@@ -294,9 +294,9 @@ class AIBuddyKnowledgeService:
 
         :param db: 数据库会话
         :param user_id: 当前用户 ID
-        :param is_superuser: 是否为后台超级管理员
         :param knowledge_base_id: 知识库 ID
         :param include_content: 是否从对象存储读取正文
+        :param is_superuser: 是否为后台超级管理员
         :return:
         """
         if knowledge_base_id is not None:
@@ -323,9 +323,9 @@ class AIBuddyKnowledgeService:
         获取知识详情
 
         :param db: 数据库会话
+        :param pk: 知识 ID
         :param user_id: 当前用户 ID
         :param is_superuser: 是否为后台超级管理员
-        :param pk: 知识 ID
         :param knowledge_base_id: 限定所属知识库 ID
         :return:
         """
@@ -356,10 +356,10 @@ class AIBuddyKnowledgeService:
 
         :param db: 数据库会话
         :param user_id: 当前用户 ID
-        :param is_superuser: 是否为后台超级管理员
         :param title: 知识标题
         :param knowledge_base_id: 知识库 ID
         :param include_content: 是否从对象存储读取正文
+        :param is_superuser: 是否为后台超级管理员
         :return:
         """
         if knowledge_base_id is not None:
@@ -596,8 +596,8 @@ class AIBuddyKnowledgeService:
 
         :param db: 数据库会话
         :param pk: 知识 ID
-        :param knowledge_base_id: 限定所属知识库 ID
         :param user_id: 当前用户 ID，空则跳过归属校验
+        :param knowledge_base_id: 限定所属知识库 ID
         :param is_superuser: 是否为超级管理员
         :param allow_system: 后台写入是否允许系统知识库
         :return:

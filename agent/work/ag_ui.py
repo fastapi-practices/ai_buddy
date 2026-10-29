@@ -30,7 +30,8 @@ from backend.plugin.ai_buddy.utils.run_error import build_run_error_payload
 
 
 def lifecycle_payload(event: CapabilityEvent) -> tuple[str, dict[str, Any]] | None:
-    """只向客户端公开计划和子代理的真实能力事件
+    """
+    只向客户端公开计划和子代理的真实能力事件
 
     :param event: 事件数据
     :return:
@@ -62,7 +63,8 @@ class BuddyAGUIEventStream(AGUIEventStream):
 
     @override
     async def on_error(self, error: Exception) -> AsyncIterator[BaseEvent]:
-        """保留 SDK 错误终态并公开统一错误分类
+        """
+        保留 SDK 错误终态并公开统一错误分类
 
         :param error: 模型或运行异常
         :return:
@@ -103,7 +105,8 @@ class BuddyAGUIEventStream(AGUIEventStream):
 
     @override
     async def handle_text_end(self, part: TextPart, followed_by_text: bool = False) -> AsyncIterator[BaseEvent]:
-        """在原生文本结束时保留供应商返回的网页引用
+        """
+        在原生文本结束时保留供应商返回的网页引用
 
         :param part: 文本片段
         :param followed_by_text: 是否紧接下一个文本片段
@@ -119,7 +122,8 @@ class BuddyAGUIEventStream(AGUIEventStream):
             yield event
 
     async def handle_capability_event(self, event: CapabilityEvent) -> AsyncIterator[BaseEvent]:
-        """将能力生命周期事件转换为 AG-UI 活动事件
+        """
+        将能力生命周期事件转换为 AG-UI 活动事件
 
         :param event: 事件数据
         :return:

@@ -35,7 +35,8 @@ from backend.plugin.ai_buddy.service.slash_service import ai_buddy_slash_service
 
 @contextmanager
 def _channel_request_context(data: dict[str, Any]) -> Generator[None, None, None]:
-    """确保通道后台异常时也恢复 starlette 请求上下文
+    """
+    确保通道后台异常时也恢复 starlette 请求上下文
 
     :param data: 输入数据
     :return:

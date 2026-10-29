@@ -30,7 +30,8 @@ class DatabaseMemoryStore:
         operation: MemoryOperation,
         for_update: bool = False,
     ) -> MemoryMutation | None:
-        """读取并校验记忆操作的幂等回执
+        """
+        读取并校验记忆操作的幂等回执
 
         :param db: 数据库会话
         :param operation: 幂等操作
@@ -47,7 +48,8 @@ class DatabaseMemoryStore:
         return MemoryMutation(version=row.version, replayed=True, existed=row.existed)
 
     async def _reserve_operation(self, *, db: AsyncSession, operation: MemoryOperation) -> MemoryMutation | None:
-        """预占记忆操作并处理并发重放
+        """
+        预占记忆操作并处理并发重放
 
         :param db: 数据库会话
         :param operation: 幂等操作
@@ -68,7 +70,8 @@ class DatabaseMemoryStore:
 
     @staticmethod
     async def read(path: str, *, max_chars: int) -> MemoryFile | None:
-        """按字符上限读取记忆文件
+        """
+        按字符上限读取记忆文件
 
         :param path: 文件路径
         :param max_chars: 最大字符数
@@ -89,7 +92,8 @@ class DatabaseMemoryStore:
         )
 
     async def get_operation(self, operation: MemoryOperation) -> MemoryMutation | None:
-        """读取已完成的记忆操作回执
+        """
+        读取已完成的记忆操作回执
 
         :param operation: 幂等操作
         :return:
@@ -105,7 +109,8 @@ class DatabaseMemoryStore:
         expected_version: str | None,
         operation: MemoryOperation | None = None,
     ) -> MemoryMutation:
-        """按预期版本写入记忆文件并同步向量
+        """
+        按预期版本写入记忆文件并同步向量
 
         :param path: 文件路径
         :param content: 文本内容
@@ -159,7 +164,8 @@ class DatabaseMemoryStore:
         expected_version: str | None,
         operation: MemoryOperation | None = None,
     ) -> MemoryMutation:
-        """按预期版本删除记忆文件并清理向量
+        """
+        按预期版本删除记忆文件并清理向量
 
         :param path: 文件路径
         :param expected_version: 预期版本
@@ -192,7 +198,8 @@ class DatabaseMemoryStore:
 
     @staticmethod
     async def list_paths(prefix: str = '', *, limit: int) -> list[str]:
-        """按前缀列出记忆文件路径
+        """
+        按前缀列出记忆文件路径
 
         :param prefix: 路径前缀
         :param limit: 数量上限
@@ -214,7 +221,8 @@ class DatabaseMemoryStore:
         max_chars: int,
         max_file_chars: int,
     ) -> MemorySearchResult:
-        """检索前缀范围内的记忆内容
+        """
+        检索前缀范围内的记忆内容
 
         :param prefix: 路径前缀
         :param query: 检索内容

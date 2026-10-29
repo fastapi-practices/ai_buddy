@@ -23,7 +23,8 @@ class AIBuddyCronSchemaBase(SchemaBase):
     @field_validator('mcp_ids', mode='before')
     @classmethod
     def default_mcp_ids(cls, value: list[int] | None) -> list[int]:
-        """空值按空列表处理
+        """
+        空值按空列表处理
 
         :param value: 待处理值
         :return:

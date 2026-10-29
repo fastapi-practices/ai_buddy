@@ -31,7 +31,8 @@ class CreateAIBuddyExecutionBridgeParam(SchemaBase):
     @field_validator('capabilities')
     @classmethod
     def validate_capabilities(cls, value: list[AIBuddyExecutionCapability]) -> list[AIBuddyExecutionCapability]:
-        """桌面连接必须实现当前执行协议的全部能力
+        """
+        桌面连接必须实现当前执行协议的全部能力
 
         :param value: 客户端能力列表
         :return:
@@ -43,7 +44,8 @@ class CreateAIBuddyExecutionBridgeParam(SchemaBase):
     @field_validator('cwd')
     @classmethod
     def validate_cwd(cls, value: str) -> str:
-        """工作目录由桌面端校验存在性，服务器只校验路径格式
+        """
+        工作目录由桌面端校验存在性，服务器只校验路径格式
 
         :param value: 待处理值
         :return:

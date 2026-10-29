@@ -57,7 +57,8 @@ def build_tool_policy_hooks(
         tool_def: ToolDefinition,
         args: object,
     ) -> object:
-        """记录工具启动并应用审批策略
+        """
+        记录工具启动并应用审批策略
 
         :param run_ctx: 运行上下文
         :param call: 工具调用
@@ -96,7 +97,8 @@ def build_tool_policy_hooks(
         args: object,
         result: object,
     ) -> object:
-        """记录工具执行结束事件
+        """
+        记录工具执行结束事件
 
         :param run_ctx: 运行上下文
         :param call: 工具调用
@@ -131,7 +133,8 @@ async def build_runtime_hooks_capability(ctx: CapabilityContext) -> list[Capabil
         run_ctx: RunContext[ChatAgentDeps],
         tool_defs: list[ToolDefinition],
     ) -> list[ToolDefinition]:
-        """按策略标记需要审批的 MCP 工具
+        """
+        按策略标记需要审批的 MCP 工具
 
         :param run_ctx: 运行上下文
         :param tool_defs: 工具定义列表

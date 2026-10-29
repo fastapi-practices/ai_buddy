@@ -9,7 +9,12 @@ from backend.plugin.ai_buddy.utils.workspace import normalize_workspace_path
 
 
 def _relative_path(value: str) -> str:
-    """校验工作区文件相对路径"""
+    """
+    校验工作区文件相对路径
+
+    :param value: 待校验的相对路径
+    :return:
+    """
     try:
         return normalize_workspace_path(value)
     except errors.RequestError as exc:
@@ -17,7 +22,12 @@ def _relative_path(value: str) -> str:
 
 
 def _object_key(value: str | None) -> str | None:
-    """校验工作区对象键"""
+    """
+    校验工作区对象键
+
+    :param value: 待校验的对象键
+    :return:
+    """
     if value is None:
         return None
     normalized = value.strip().strip('/')

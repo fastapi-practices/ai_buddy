@@ -39,7 +39,8 @@ class ObservableTieredCompaction(TieredCompaction[ChatAgentDeps]):
     async def before_model_request(
         self, ctx: RunContext[ChatAgentDeps], request_context: ModelRequestContext
     ) -> ModelRequestContext:
-        """压缩上下文后发送消息和 token 数变化事件
+        """
+        压缩上下文后发送消息和 token 数变化事件
 
         :param ctx: 运行上下文
         :param request_context: 请求上下文

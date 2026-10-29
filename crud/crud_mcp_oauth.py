@@ -13,7 +13,8 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
     """AI MCP 用户 OAuth 授权令牌数据库操作类"""
 
     async def get(self, db: AsyncSession, user_id: int, mcp_id: int) -> AIBuddyMcpOauth | None:
-        """查询当前用户的授权连接
+        """
+        查询当前用户的授权连接
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -27,7 +28,8 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
 
     @staticmethod
     async def create(db: AsyncSession, obj: AIBuddyMcpOauth) -> None:
-        """创建用户授权连接
+        """
+        创建用户授权连接
 
         :param db: 数据库会话
         :param obj: 连接对象
@@ -37,7 +39,8 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
         await db.flush()
 
     async def update(self, db: AsyncSession, user_id: int, mcp_id: int, generation: str, values: dict[str, Any]) -> int:
-        """仅更新仍匹配配置版本的凭据，防止旧回调覆盖断开操作
+        """
+        仅更新仍匹配配置版本的凭据，防止旧回调覆盖断开操作
 
         :param db: 数据库会话
         :param user_id: 用户 ID
@@ -59,7 +62,8 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
         return result.rowcount
 
     async def invalidate(self, db: AsyncSession, mcp_id: int, generation: str) -> int:
-        """平台配置或 MCP 定义变更后使所有个人授权失效
+        """
+        平台配置或 MCP 定义变更后使所有个人授权失效
 
         :param db: 数据库会话
         :param mcp_id: MCP ID
@@ -74,7 +78,8 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
         return result.rowcount
 
     async def save_tokens(self, db: AsyncSession, row: AIBuddyMcpOauth, values: dict[str, Any]) -> int:
-        """只为仍有效的 MCP、平台配置和个人连接写入令牌
+        """
+        只为仍有效的 MCP、平台配置和个人连接写入令牌
 
         :param db: 数据库会话
         :param row: 原始连接版本

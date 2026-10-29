@@ -215,7 +215,8 @@ async def assemble_capabilities(
 
 
 def _build_runtime_capabilities(*, text: bool) -> list[AbstractCapability[Any]]:
-    """按配置构建 SDK 运行时能力
+    """
+    按配置构建 SDK 运行时能力
 
     :param text: 是否为文本生成
     :return:
@@ -237,7 +238,8 @@ def _build_runtime_capabilities(*, text: bool) -> list[AbstractCapability[Any]]:
 
 
 def _order_tool_result_filters(capabilities: list[AbstractCapability[Any]]) -> list[AbstractCapability[Any]]:
-    """结果钩子逆序执行，将外溢放在守卫前以先清洗再落盘
+    """
+    结果钩子逆序执行，将外溢放在守卫前以先清洗再落盘
 
     :param capabilities: 模型能力集合
     :return:

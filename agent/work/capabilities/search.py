@@ -16,7 +16,8 @@ from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 
 
 def _build_builtin_search(ctx: CapabilityContext) -> CapabilityResult:
-    """只选择实际可用的搜索路径，禁止隐藏的函数工具后备绕过门禁
+    """
+    只选择实际可用的搜索路径，禁止隐藏的函数工具后备绕过门禁
 
     :param ctx: 运行上下文
     :return:

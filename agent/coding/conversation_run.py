@@ -117,7 +117,8 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
     run.publish(stream.encode('start', {}))
 
     async def emit(event: str, data: dict[str, Any]) -> None:  # ruff: ignore[unused-async]
-        """发布本轮运行的界面事件
+        """
+        发布本轮运行的界面事件
 
         :param event: 事件数据
         :param data: 输入数据
@@ -130,7 +131,8 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
         run.publish(stream.encode(event, data))
 
     async def persist_message(message: AgentMessage) -> None:
-        """保存编码运行产生的助手消息
+        """
+        保存编码运行产生的助手消息
 
         :param message: 消息内容
         :return:
@@ -330,7 +332,8 @@ async def _write_assistant_message(
     model_messages: list[ModelMessage] | None = None,
     error_payload: dict[str, Any] | None = None,
 ) -> None:
-    """更新编码回复及对应模型消息
+    """
+    更新编码回复及对应模型消息
 
     :param assistant_message_id: 助手消息 ID
     :param conversation_id: 对话 ID

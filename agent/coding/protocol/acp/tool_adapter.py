@@ -27,7 +27,8 @@ def build_acp_prompt(
     capabilities: PromptCapabilities | None,
     imported_hashes: frozenset[str] = frozenset(),
 ) -> list[AcpPromptBlock]:
-    """根据 ACP 握手能力转换本轮文本和原始附件
+    """
+    根据 ACP 握手能力转换本轮文本和原始附件
 
     :param blocks: 主代理委托文本
     :param attachments: 用户附件字节

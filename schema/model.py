@@ -91,7 +91,8 @@ class AIBuddyModelSchemaBase(SchemaBase):
     @field_validator('capabilities', mode='before')
     @classmethod
     def default_capabilities(cls, value: list[str] | None) -> list[str]:
-        """未提供能力时默认为空
+        """
+        未提供能力时默认为空
 
         :param value: 待处理值
         :return:
@@ -166,7 +167,8 @@ class GetMyAIBuddyModelDetail(AIBuddyModelSchemaBase):
     @field_serializer('api_key')
     @staticmethod
     def serialize_api_key(api_key: str) -> str:
-        """脱敏返回接口密钥
+        """
+        脱敏返回接口密钥
 
         :param api_key: 接口密钥
         :return:
