@@ -16,6 +16,7 @@ from pydantic_ai.capabilities import (
 )
 from pydantic_ai.models import Model
 from pydantic_ai.native_tools import AbstractNativeTool
+from pydantic_ai_harness import DetectLoops
 from pydantic_ai_harness.guardrails import ToolGuardrail
 from pydantic_ai_harness.repair_tool_arguments import RepairToolArguments
 from pydantic_ai_harness.step_persistence import StepPersistence
@@ -29,7 +30,10 @@ from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
 from backend.plugin.ai_buddy.agent.work.capabilities.advisor import build_advisor_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.base import CapabilityBuilder
 from backend.plugin.ai_buddy.agent.work.capabilities.builtin_toolset import build_builtin_toolset_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.compaction import build_compaction_capability
+from backend.plugin.ai_buddy.agent.work.capabilities.compaction import (
+    build_compact_on_request_capability,
+    build_compaction_capability,
+)
 from backend.plugin.ai_buddy.agent.work.capabilities.files import build_file_understanding_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.guardrails import build_guardrail_capabilities
 from backend.plugin.ai_buddy.agent.work.capabilities.mcp import build_mcp_capability
@@ -88,6 +92,7 @@ _CAPABILITY_BUILDERS: tuple[CapabilityBuilder, ...] = (
     build_planning_capability,
     build_subagents_capability,
     build_sandbox_capabilities,
+    build_compact_on_request_capability,
     build_tool_output_limits_capability,
 )
 
@@ -173,6 +178,7 @@ async def assemble_capabilities(
             build_planning_capability,
             build_subagents_capability,
             build_sandbox_capabilities,
+            build_compact_on_request_capability,
         ):
             continue
         ctx = CapabilityContext(
@@ -227,6 +233,7 @@ def _build_runtime_capabilities(*, text: bool) -> list[AbstractCapability[Any]]:
             ReinjectSystemPrompt(),
             UseThreadExecutor(_TOOL_EXECUTOR),
             SetToolMetadata(tools=lambda _ctx, tool_def: is_jev_tool_risk(tool_def.name), ai_buddy_high_risk=True),
+            DetectLoops(),
         ))
         if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED:
             capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name='ai_buddy_work'))
