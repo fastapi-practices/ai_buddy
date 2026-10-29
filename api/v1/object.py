@@ -12,8 +12,6 @@ from backend.plugin.ai_buddy.schema.object import (
     GetAIBuddyObjectEchoDetail,
     GetAIBuddyObjectGarbageCollectDetail,
 )
-from backend.plugin.ai_buddy.schema.object_backfill import AIBuddyObjectBackfillParam, GetAIBuddyObjectBackfillDetail
-from backend.plugin.ai_buddy.service.object_backfill_service import ai_buddy_object_backfill_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 
 router = APIRouter()
@@ -29,19 +27,6 @@ async def collect_ai_buddy_object_garbage(
     request: Request, db: CurrentSessionTransaction, obj: AIBuddyObjectGarbageCollectParam
 ) -> ResponseSchemaModel[GetAIBuddyObjectGarbageCollectDetail]:
     data = await ai_buddy_object_service.collect_garbage(db=db, user_id=request.user.id, obj=obj)
-    return response_base.success(data=data)
-
-
-@router.post(
-    '/backfill',
-    summary='为历史产物、知识和技能补登记统一对象',
-    description='默认仅预览数量；dry_run 设为 false 才会写入，并为缺少 storage_id 的记录回填默认存储，可重复执行',
-    dependencies=[DependsJwtAuth],
-)
-async def backfill_ai_buddy_objects(
-    request: Request, db: CurrentSessionTransaction, obj: AIBuddyObjectBackfillParam
-) -> ResponseSchemaModel[GetAIBuddyObjectBackfillDetail]:
-    data = await ai_buddy_object_backfill_service.run(db=db, user_id=request.user.id, dry_run=obj.dry_run)
     return response_base.success(data=data)
 
 

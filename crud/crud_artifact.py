@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -92,22 +92,6 @@ class CRUDAIBuddyArtifact(CRUDPlus[AIBuddyArtifact]):
         :return:
         """
         return await self.update_model_by_column(db, obj, id=pk, deleted=0)
-
-    async def get_with_objects(self, db: AsyncSession, user_id: int) -> Sequence[AIBuddyArtifact]:
-        """
-        获取当前用户已写入对象存储的记录，供历史数据补登记统一对象
-
-        :param db: 数据库会话
-        :param user_id: 用户 ID
-        :return:
-        """
-        stmt = select(self.model).where(
-            self.model.user_id == user_id,
-            self.model.deleted == 0,
-            self.model.object_key.is_not(None),
-            self.model.relative_path.is_(None),
-        )
-        return (await db.execute(stmt.order_by(self.model.id.asc()))).scalars().all()
 
 
 ai_buddy_artifact_dao: CRUDAIBuddyArtifact = CRUDAIBuddyArtifact(AIBuddyArtifact)

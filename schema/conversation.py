@@ -13,8 +13,6 @@ from backend.plugin.ai_buddy.enums import (
 )
 from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesSnapshotDetail
 
-_EXPECTED_REVISION_DESCRIPTION = '客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-
 
 class AIBuddyConversationQueryParam(SchemaBase):
     """AI 对话查询参数"""

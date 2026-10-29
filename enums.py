@@ -159,15 +159,6 @@ class AIBuddyMcpType(IntEnum):
     streamable_http = 2
 
 
-class AIBuddyChatAttachmentType(StrEnum):
-    """聊天附件类型"""
-
-    image = 'image'
-    audio = 'audio'
-    video = 'video'
-    document = 'document'
-
-
 class AIBuddyChatAttachmentSourceType(StrEnum):
     """聊天附件来源类型"""
 
@@ -516,11 +507,6 @@ class AIBuddyExecutionBackend(StrEnum):
 
     local = 'local'
     sandbox = 'sandbox'
-
-    @classmethod
-    def _missing_(cls, value: object) -> 'AIBuddyExecutionBackend | None':
-        """兼容旧值 opensandbox"""
-        return cls.sandbox if value == 'opensandbox' else None
 
 
 class AIBuddySandboxProvider(StrEnum):

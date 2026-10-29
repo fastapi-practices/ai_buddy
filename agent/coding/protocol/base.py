@@ -86,18 +86,3 @@ class CodingHostSession(Protocol):
     async def aclose(self) -> None:
         """关闭宿主资源"""
         ...
-
-
-class CodingProtocolAdapter(Protocol):
-    """编码宿主协议适配器"""
-
-    name: str
-
-    async def open_session(self, *, spec: CodingHostSpec) -> CodingHostSession:
-        """
-        按 Buddy 规格打开宿主会话
-
-        :param spec: 宿主规格
-        :return:
-        """
-        ...

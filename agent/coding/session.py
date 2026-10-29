@@ -125,17 +125,6 @@ class CodingSession:
                 await self.run_context.sandbox.stop()
 
 
-def get_coding_session(conversation_id: str) -> CodingSession | None:
-    """
-    获取仍在运行的编码会话
-
-    :param conversation_id: 对话 ID
-    :return:
-    """
-    session = _LIVE_SESSIONS.get(conversation_id)
-    return session if isinstance(session, CodingSession) else None
-
-
 def _release_live_session(conversation_id: str, expected: object | None = None) -> None:
     """
     释放本进程会话槽

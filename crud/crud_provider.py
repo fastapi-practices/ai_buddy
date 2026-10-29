@@ -102,20 +102,6 @@ class CRUDAIBuddyProvider(CRUDPlus[AIBuddyProvider]):
         """
         return await self.select_models_order(db, 'id', 'desc', user_id=user_id, deleted=0)
 
-    async def get_first_enabled_by_types(self, db: AsyncSession, types: Sequence[int]) -> AIBuddyProvider | None:
-        """
-        获取指定类型中第一个启用的供应商
-
-        :param db: 数据库会话
-        :param types: 供应商类型列表
-        :return:
-        """
-        if not types:
-            return None
-        stmt = (await self.select(deleted=0, status=StatusType.enable.value)).where(self.model.type.in_(types))
-        stmt = stmt.order_by(self.model.id.asc()).limit(1)
-        return await db.scalar(stmt)
-
     async def create(
         self,
         db: AsyncSession,

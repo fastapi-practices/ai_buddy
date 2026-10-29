@@ -55,16 +55,6 @@ class CRUDAIBuddyChannel(CRUDPlus[AIBuddyChannel]):
         """
         return await self.select_models_order(db, 'id', 'desc', user_id=user_id, deleted=0)
 
-    async def get_enabled_by_type(self, db: AsyncSession, channel_type: AIBuddyChannelType) -> Sequence[AIBuddyChannel]:
-        """
-        获取指定类型的启用通道
-
-        :param db: 数据库会话
-        :param channel_type: 通道类型
-        :return:
-        """
-        return await self.select_models_order(db, 'id', 'asc', type=channel_type, status=StatusType.enable, deleted=0)
-
     async def get_enabled_by_types(
         self, db: AsyncSession, channel_types: Sequence[AIBuddyChannelType]
     ) -> Sequence[AIBuddyChannel]:

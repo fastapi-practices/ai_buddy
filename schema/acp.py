@@ -6,38 +6,6 @@ from backend.common.schema import SchemaBase
 from backend.plugin.ai_buddy.enums import AIBuddyAcpRunnerName, AIBuddyPermissionMode
 
 
-class AIBuddyAcpLaunchParam(SchemaBase):
-    """桌面端本地 ACP 启动参数"""
-
-    command: str = Field(min_length=1, max_length=512, description='用户本机程序名称或路径')
-    args: list[str] = Field(default_factory=list, max_length=64, description='启动参数列表')
-
-    @field_validator('command')
-    @classmethod
-    def validate_command(cls, value: str) -> str:
-        """校验启动程序
-
-        :param value: 待处理值
-        :return:
-        """
-        command = value.strip()
-        if not command or any(char in command for char in ('\0', '\n', '\r')):
-            raise ValueError('请输入有效的启动命令')
-        return command
-
-    @field_validator('args')
-    @classmethod
-    def validate_args(cls, values: list[str]) -> list[str]:
-        """校验启动参数长度与空字符
-
-        :param values: 待处理值列表
-        :return:
-        """
-        if any(len(value) > 4096 or '\0' in value for value in values):
-            raise ValueError('启动参数过长或包含空字符')
-        return values
-
-
 class CheckAIBuddyAcpParam(SchemaBase):
     """ACP 可用性检测参数"""
 

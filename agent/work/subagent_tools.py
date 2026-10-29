@@ -1,4 +1,4 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -70,11 +70,6 @@ SUBAGENT_TOOL_CATALOG: tuple[SubagentToolSpec, ...] = (
         handler=get_current_time,
     ),
 )
-
-
-def list_subagent_tools() -> Sequence[SubagentToolSpec]:
-    """返回子代理内置工具目录"""
-    return SUBAGENT_TOOL_CATALOG
 
 
 def build_subagent_toolset() -> FunctionToolset[ChatAgentDeps]:
