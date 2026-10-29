@@ -314,35 +314,3 @@ async def delete_memory_vector(*, path: str) -> None:
         collection_name=collection,
         points_selector=Filter(must=[FieldCondition(key='path', match=MatchValue(value=path))]),
     )
-
-
-async def search_memory_points(*, query_vector: Sequence[float], prefix: str, limit: int) -> list[dict[str, Any]]:
-    """
-    按向量检索记忆
-
-    :param query_vector: 查询向量
-    :param prefix: 路径前缀
-    :param limit: 条数
-    :return:
-    """
-    collection = _memory_collection_name()
-    client = _get_qdrant_client()
-    if not await client.collection_exists(collection):
-        return []
-    # 按路径首段（用户）在服务端缩小范围，再按完整前缀精确过滤，避免 limit 被其他用户的结果占满
-    owner = prefix.partition('/')[0] if '/' in prefix else ''
-    response = await client.query_points(
-        collection_name=collection,
-        query=list(query_vector),
-        query_filter=Filter(must=[FieldCondition(key='owner', match=MatchValue(value=owner))]) if owner else None,
-        limit=limit,
-        with_payload=True,
-    )
-    hits: list[dict[str, Any]] = []
-    for point in response.points:
-        payload = point.payload or {}
-        path = str(payload.get('path') or '')
-        if prefix and not path.startswith(prefix):
-            continue
-        hits.append({'path': path, 'content': payload.get('content') or '', 'score': float(point.score or 0)})
-    return hits

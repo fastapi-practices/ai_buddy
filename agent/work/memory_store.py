@@ -12,11 +12,12 @@ from pydantic_ai_harness.memory._store import lexical_search, validate_store_pat
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.common.log import log
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.crud.crud_memory_file import ai_buddy_memory_file_dao
 from backend.plugin.ai_buddy.crud.crud_memory_operation import ai_buddy_memory_operation_dao
 from backend.plugin.ai_buddy.model.memory_file import AIBuddyMemoryFile
-from backend.plugin.ai_buddy.utils.qdrant_store import delete_memory_vector, search_memory_points, upsert_memory_vector
+from backend.plugin.ai_buddy.utils.qdrant_store import delete_memory_vector, upsert_memory_vector
 from backend.plugin.ai_buddy.utils.text_vector import hash_embed
 
 
@@ -153,8 +154,8 @@ class DatabaseMemoryStore:
         try:
             embedding = await asyncio.to_thread(hash_embed, content)
             await upsert_memory_vector(path=path, content=content, embedding=embedding)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning(f'记忆向量写入失败: {type(exc).__name__}')
         return mutation
 
     async def delete(
@@ -192,8 +193,8 @@ class DatabaseMemoryStore:
                 )
         try:
             await delete_memory_vector(path=path)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning(f'记忆向量删除失败: {type(exc).__name__}')
         return mutation
 
     @staticmethod
@@ -248,11 +249,6 @@ class DatabaseMemoryStore:
             score_prefix=prefix,
         )
         truncated = result.truncated or any(len(content) > max_file_chars for _, content in rows)
-        try:
-            query_vector = await asyncio.to_thread(hash_embed, query)
-            await search_memory_points(query_vector=query_vector, prefix=prefix, limit=limit)
-        except Exception:
-            pass
         return MemorySearchResult(matches=result.matches, scanned=result.scanned, truncated=truncated)
 
 
