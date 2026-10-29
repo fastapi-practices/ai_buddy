@@ -1,10 +1,13 @@
 from typing import Any
 
 from pydantic_ai.exceptions import (
+    ModelAuthenticationError,
     ModelConnectionError,
     ModelContextWindowExceededError,
+    ModelNotFoundError,
     ModelQuotaExceededError,
     ModelRateLimitError,
+    ModelRequestRejectedError,
     ModelRequestTimeout,
     ModelServerError,
     ModelTimeoutError,
@@ -77,12 +80,18 @@ def build_run_error_payload(
             (ModelRateLimitError, 'model_rate_limit', '模型请求频率受限，请稍后重试', True),
             (ModelQuotaExceededError, 'model_quota_exceeded', '模型供应商额度不足，请检查余额或配额', False),
             (ModelContextWindowExceededError, 'model_context_exceeded', '模型上下文超限，请压缩历史或更换模型', False),
+            (ModelAuthenticationError, 'model_auth_failed', '模型供应商认证失败，请检查 API Key 与模型访问权限', False),
+            (ModelNotFoundError, 'model_not_found', '模型不存在或无权访问，请检查模型名称与供应商配置', False),
+            # 兜底的请求被拒绝，供应商给出的具体原因比固定文案更有用，需放在上面几个子类之后
+            (ModelRequestRejectedError, 'model_request_rejected', None, False),
             (ModelUnavailableError, 'model_unavailable', '模型暂时不可用，请稍后重试', True),
             (ModelServerError, 'model_server_error', '模型供应商服务异常，请稍后重试', True),
             (ModelConnectionError, 'model_connection_error', '模型连接中断，请检查网络后重试', True),
         ):
             if isinstance(error, error_type):
-                payload.update(code=code, message=message, retryable=retryable)
+                payload.update(code=code, retryable=retryable)
+                if message is not None:
+                    payload['message'] = message
                 break
     payload.update({key: value for key, value in (extra or {}).items() if value is not None and key not in payload})
     return payload

@@ -1,26 +1,27 @@
-# Pydantic AI 要求 ag-ui-protocol<1，由 ag-ui extra 解析兼容版本
-pydantic-ai-slim[openai,google,anthropic,xai,openrouter,mcp,retries,tavily,duckduckgo,ag-ui,exa,web-fetch,typesafe]==2.60.0
+pydantic-ai-slim[openai,google,anthropic,xai,openrouter,mcp,retries,tavily,duckduckgo,ag-ui,exa,web-fetch,typesafe]==2.63.0
+# ag-ui extra 不限制协议版本上限，需显式固定到移除 THINKING_* 事件的 1.0
+ag-ui-protocol==1.0.0
 # Harness 已合仓到 pydantic-ai，仍独立发布并保留 pydantic_ai_harness 导入路径
-pydantic-ai-harness[codemode]==0.60.0
+pydantic-ai-harness[codemode]==0.63.0
 agent-client-protocol==0.12.1
-jsonpatch==1.36
+jsonpatch==1.38
 jsonschema==4.26.0
-# xai-sdk 1.20 仍声明 packaging<26、protobuf<7
+# xai-sdk 1.21 仍声明 packaging<26，protobuf 上限已放宽到 <8
 packaging>=25.0,<26
-protobuf>=6.33.6,<7
+protobuf>=6.33.6,<8
 qdrant-client==1.20.0
-opensandbox==1.1.1
+opensandbox==1.2.0
 lark-oapi==1.7.5
 octop-gateway==1.0.3
-pypdf==6.21.2
+pypdf==6.21.4
 pypdfium2==5.14.0
-# fastembed 0.9.0 要求 pillow<13
-pillow==12.3.0
+# fastembed 0.9.1 要求 pillow<14
+pillow==13.0.0
 python-docx==1.2.0
 python-pptx==1.0.2
 openpyxl==3.1.5
-# fastembed 0.9.0 要求 huggingface-hub<2
+# fastembed 0.9.1 要求 huggingface-hub<2
 huggingface-hub==1.33.0
-fastembed==0.9.0
+fastembed==0.9.1
 rapidocr==3.10.0
-onnxruntime==1.31.0
+onnxruntime==1.31.1

@@ -298,13 +298,12 @@ def _serialize_response_message(
     cache_audio_read_tokens = usage.cache_audio_read_tokens or 0
     details = dict(usage.details or {})
     cost = None
-    raw_cost = getattr(usage, 'cost', None)
-    if raw_cost is not None:
-        cost = float(raw_cost)
+    if usage.cost is not None:
+        cost = float(usage.cost)
     elif message.model_name:
         try:
             cost = float(message.cost().total_price)
-        except Exception:
+        except (LookupError, ValueError):
             pass
     if (
         input_tokens == 0

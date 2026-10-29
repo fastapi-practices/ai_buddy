@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from urllib.parse import urlsplit
 
-from pydantic_ai.messages import TextPart
+from pydantic_ai.messages import TextPart, WebCitationSource
 
 from backend.plugin.ai_buddy.schema.citation import AIBuddyCitationDetail
 
@@ -13,30 +13,26 @@ def text_part_citations(parts: Sequence[TextPart]) -> list[AIBuddyCitationDetail
     :param parts: 模型文本片段
     :return:
     """
+    web_sources = (
+        source
+        for part in parts
+        for citation in (part.citations or [])[:100]
+        for source in citation.sources
+        if isinstance(source, WebCitationSource)
+    )
     sources: dict[str, AIBuddyCitationDetail] = {}
-    for part in parts:
-        annotations = (part.provider_details or {}).get('annotations')
-        if not isinstance(annotations, list):
+    for source in web_sources:
+        if len(source.url) > 4096:
             continue
-        for annotation in annotations[:100]:
-            if not isinstance(annotation, dict) or annotation.get('type') != 'url_citation':
+        try:
+            parsed = urlsplit(source.url)
+            if parsed.scheme not in {'https', 'http'} or not parsed.hostname or parsed.username or parsed.password:
                 continue
-            citation = annotation.get('url_citation', annotation)
-            if not isinstance(citation, dict):
-                continue
-            url = citation.get('url')
-            if not isinstance(url, str) or len(url) > 4096:
-                continue
-            try:
-                parsed = urlsplit(url)
-                if parsed.scheme not in {'https', 'http'} or not parsed.hostname or parsed.username or parsed.password:
-                    continue
-            except ValueError:
-                continue
-            title = citation.get('title')
-            sources[url] = AIBuddyCitationDetail(
-                url=url, title=title[:512] if isinstance(title, str) else parsed.hostname
-            )
-            if len(sources) == 100:
-                return list(sources.values())
+        except ValueError:
+            continue
+        sources[source.url] = AIBuddyCitationDetail(
+            url=source.url, title=source.title[:512] if source.title else parsed.hostname
+        )
+        if len(sources) == 100:
+            break
     return list(sources.values())

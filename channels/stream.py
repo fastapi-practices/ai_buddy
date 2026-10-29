@@ -9,11 +9,6 @@ from ag_ui.core import EventType
 from starlette.responses import StreamingResponse
 
 _THINKING_EVENTS = frozenset({
-    EventType.THINKING_START,
-    EventType.THINKING_END,
-    EventType.THINKING_TEXT_MESSAGE_START,
-    EventType.THINKING_TEXT_MESSAGE_CONTENT,
-    EventType.THINKING_TEXT_MESSAGE_END,
     EventType.REASONING_START,
     EventType.REASONING_MESSAGE_START,
     EventType.REASONING_MESSAGE_CONTENT,
@@ -170,11 +165,7 @@ async def collect_channel_reply(response: StreamingResponse) -> str:  # ruff: ig
                 if isinstance(content, str) and content:
                     message_id = str(payload.get('messageId') or current_message_id)
                     text_parts.setdefault(message_id, []).append(content)
-            elif event_type in {
-                EventType.THINKING_TEXT_MESSAGE_CONTENT,
-                EventType.REASONING_MESSAGE_CONTENT,
-                EventType.REASONING_MESSAGE_CHUNK,
-            }:
+            elif event_type in {EventType.REASONING_MESSAGE_CONTENT, EventType.REASONING_MESSAGE_CHUNK}:
                 content = payload.get('delta') or payload.get('content')
                 if isinstance(content, str) and content:
                     thinking_parts.append(content)
