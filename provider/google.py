@@ -86,8 +86,10 @@ class GoogleAdapter(ProviderAdapter):
         :param http_client: 共享 HTTP 客户端
         :return:
         """
+        # google-genai 会自行追加 API 版本号，传入的地址不能再带 /v1beta
+        host = normalize_provider_api_host(cls.provider_type, base_url).removesuffix('/v1beta')
         return GoogleProvider(
-            base_url=normalize_provider_api_host(cls.provider_type, base_url),
+            base_url=host,
             api_key=api_key,
             http_client=http_client,
         )
