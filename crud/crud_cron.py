@@ -1,12 +1,13 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
 from backend.common.enums import StatusType
 from backend.plugin.ai_buddy.model.cron import AIBuddyCron
-from backend.plugin.ai_buddy.schema.cron import CreateAIBuddyCronParam, UpdateAIBuddyCronParam
+from backend.plugin.ai_buddy.schema.cron import CreateAIBuddyCronParam
 from backend.utils.timezone import timezone
 
 
@@ -64,13 +65,13 @@ class CRUDAIBuddyCron(CRUDPlus[AIBuddyCron]):
         """
         return await self.create_model(db, obj, user_id=user_id, flush=True)
 
-    async def update(self, db: AsyncSession, pk: int, obj: UpdateAIBuddyCronParam) -> int:
+    async def update(self, db: AsyncSession, pk: int, obj: dict[str, Any]) -> int:
         """
         更新定时任务
 
         :param db: 数据库会话
         :param pk: 任务 ID
-        :param obj: 更新参数
+        :param obj: 更新字段
         :return:
         """
         return await self.update_model_by_column(db, obj, id=pk, deleted=0)

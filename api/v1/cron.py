@@ -5,6 +5,7 @@ from fastapi import APIRouter, Path, Request
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
 from backend.database.db import CurrentSession, CurrentSessionTransaction
+from backend.plugin.ai_buddy.cron.tasks import run_cron_now
 from backend.plugin.ai_buddy.schema.cron import CreateAIBuddyCronParam, GetAIBuddyCronDetail, UpdateAIBuddyCronParam
 from backend.plugin.ai_buddy.service.cron_service import ai_buddy_cron_service
 
@@ -75,7 +76,7 @@ async def run_ai_buddy_cron_now(
     db: CurrentSession,
     pk: Annotated[int, Path(description='任务 ID')],
 ) -> ResponseModel:
-    await ai_buddy_cron_service.run_now(db=db, pk=pk, user_id=request.user.id)
+    await run_cron_now(db=db, pk=pk, user_id=request.user.id)
     return response_base.success()
 
 

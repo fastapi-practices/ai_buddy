@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from redis.asyncio.lock import Lock
 from redis.exceptions import LockNotOwnedError
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette_context import request_cycle_context
 
 from backend.app.admin.crud.crud_user import user_dao
@@ -24,6 +25,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyOrigin
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
 from backend.plugin.ai_buddy.schema.conversation import CreateAIBuddyConversationParam
 from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
+from backend.plugin.ai_buddy.service.cron_service import ai_buddy_cron_service
 from backend.plugin.ai_buddy.utils.conversation_title import normalize_generated_conversation_title
 from backend.utils.timezone import timezone
 
@@ -205,6 +207,25 @@ async def deliver_cron_prompt(*, cron_id: int, scheduled: bool = False) -> None:
                 await _mark_run(cron_id=cron_id, status='error', error=str(exc), disable=disable_after)
             except Exception as mark_exc:
                 log.warning(f'写入定时任务执行结果失败 cron_id={cron_id}: {mark_exc}')
+
+
+async def run_cron_now(*, db: AsyncSession, pk: int, user_id: int) -> None:
+    """
+    校验任务归属和启用状态后在后台立即执行一次，不占用请求连接
+
+    :param db: 数据库会话
+    :param pk: 任务 ID
+    :param user_id: 用户 ID
+    :return:
+    """
+    cron = await ai_buddy_cron_service.get(db=db, pk=pk, user_id=user_id)
+    if cron.status != StatusType.enable:
+        raise errors.RequestError(msg='定时任务已停用，请启用后再执行')
+    if await redis_client.exists(f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:cron:{pk}:lock'):
+        raise errors.ConflictError(msg='定时任务正在执行，请稍后再试')
+    task = asyncio.create_task(deliver_cron_prompt(cron_id=pk), name=f'ai-buddy-cron-now-{pk}')
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 async def tick_due_crons() -> int:

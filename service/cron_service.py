@@ -109,6 +109,20 @@ class AIBuddyCronService:
             raise errors.NotFoundError(msg='定时任务不存在')
         return cron
 
+    @staticmethod
+    def _validate_trigger(trigger: str) -> None:
+        """
+        校验触发器的最小间隔和一次性任务的执行时间
+
+        :param trigger: 规范化后的触发器
+        :return:
+        """
+        kind, value = parse_trigger(trigger)
+        if kind == 'interval' and int(value) < CRON_MIN_INTERVAL_SECONDS:
+            raise errors.RequestError(msg=f'循环间隔不能小于 {CRON_MIN_INTERVAL_SECONDS} 秒')
+        if kind == 'date' and parse_date_trigger(value) <= timezone.now():
+            raise errors.RequestError(msg='一次性任务的执行时间必须晚于当前时间')
+
     async def create(self, *, db: AsyncSession, obj: CreateAIBuddyCronParam, user_id: int) -> AIBuddyCron:
         """
         创建定时任务
@@ -119,11 +133,7 @@ class AIBuddyCronService:
         :return:
         """
         obj = await self._normalize(db=db, obj=obj, user_id=user_id, fallback=obj.conversation_id.strip())
-        kind, value = parse_trigger(obj.trigger)
-        if kind == 'interval' and int(value) < CRON_MIN_INTERVAL_SECONDS:
-            raise errors.RequestError(msg=f'循环间隔不能小于 {CRON_MIN_INTERVAL_SECONDS} 秒')
-        if kind == 'date' and parse_date_trigger(value) <= timezone.now():
-            raise errors.RequestError(msg='一次性任务的执行时间必须晚于当前时间')
+        self._validate_trigger(obj.trigger)
         await self._ensure_quota(db=db, user_id=user_id)
         if await ai_buddy_cron_dao.get_by_name(db, user_id, obj.name):
             raise errors.ConflictError(msg='任务名称已存在')
@@ -144,8 +154,11 @@ class AIBuddyCronService:
         :param user_id: 用户 ID
         :return:
         """
-        await self.get(db=db, pk=pk, user_id=user_id)
+        cron = await self.get(db=db, pk=pk, user_id=user_id)
         obj = await self._normalize(db=db, obj=obj, user_id=user_id, fallback=str(pk))
+        trigger_changed = obj.trigger != cron.trigger
+        if trigger_changed:
+            self._validate_trigger(obj.trigger)
         existed = await ai_buddy_cron_dao.get_by_name(db, user_id, obj.name)
         if existed and existed.id != pk:
             raise errors.ConflictError(msg='任务名称已存在')
@@ -154,7 +167,11 @@ class AIBuddyCronService:
             conversation_id=obj.conversation_id,
             user_id=user_id,
         )
-        return await ai_buddy_cron_dao.update(db, pk, obj)
+        # 启停只能走 set_enabled，才会校验配额和一次性任务是否已执行完毕
+        fields = obj.model_dump(exclude={'status'}, exclude_unset=True)
+        if trigger_changed:
+            fields['last_run_time'] = None
+        return await ai_buddy_cron_dao.update(db, pk, fields)
 
     async def set_enabled(self, *, db: AsyncSession, pk: int, user_id: int, enabled: bool) -> AIBuddyCron:
         """
@@ -185,20 +202,6 @@ class AIBuddyCronService:
         """
         cron = await self.get(db=db, pk=pk, user_id=user_id)
         return await ai_buddy_cron_dao.delete(db, pk, cron.user_id)
-
-    async def run_now(self, *, db: AsyncSession, pk: int, user_id: int) -> None:
-        """
-        立即执行一次定时任务
-
-        :param db: 数据库会话
-        :param pk: 任务 ID
-        :param user_id: 用户 ID
-        :return:
-        """
-        await self.get(db=db, pk=pk, user_id=user_id)
-        from backend.plugin.ai_buddy.cron.tasks import deliver_cron_prompt
-
-        await deliver_cron_prompt(cron_id=pk)
 
 
 ai_buddy_cron_service: AIBuddyCronService = AIBuddyCronService()
