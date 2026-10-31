@@ -1,16 +1,23 @@
+import re
+
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.enums import AIBuddyChatThinkingType, AIBuddyModelCapability
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
 from backend.plugin.ai_buddy.schema.model import AIBuddyThinkingPolicy
 
-_THINKING_OVERRIDE_KEYS = frozenset({
-    'thinking',
-    'openai_reasoning_effort',
-    'anthropic_thinking',
-    'google_thinking_config',
-    'openrouter_reasoning',
-    'xai_reasoning_effort',
-})
+_THINKING_KEY_PATTERN = re.compile(r'think|reason|effort|budget')
+# 客户端不能经 extra_body 改写请求体、请求头和超时，否则可绕过模型可见性、分组策略和运行时限
+EXTRA_BODY_BLOCKED_KEYS = frozenset({'extra_body', 'extra_headers', 'timeout'})
+
+
+def is_thinking_override_key(key: str) -> bool:
+    """
+    判断 extra_body 键是否会改变思考强度或预算
+
+    :param key: extra_body 键名
+    :return:
+    """
+    return _THINKING_KEY_PATTERN.search(key) is not None
 
 
 def resolve_thinking_policy(
@@ -28,11 +35,7 @@ def resolve_thinking_policy(
     :return:
     """
     requested = forwarded_props.thinking
-    overrides = {
-        key
-        for key in forwarded_props.extra_body or {}
-        if key in _THINKING_OVERRIDE_KEYS or key.startswith('openai_reasoning_')
-    }
+    overrides = {key for key in forwarded_props.extra_body or {} if is_thinking_override_key(key)}
     if overrides:
         raise errors.RequestError(msg='请使用 thinking 参数而非 extra_body 修改思考强度')
     if requested is not None and AIBuddyModelCapability.thinking not in capabilities:

@@ -4,6 +4,7 @@ from pydantic_ai import ModelSettings
 
 from backend.plugin.ai_buddy.provider.base import COMMON_MODEL_SETTING_FIELDS, ProviderAdapter
 from backend.plugin.ai_buddy.schema.chat import AIBuddyForwardedPropsParam
+from backend.plugin.ai_buddy.utils.thinking_policy import EXTRA_BODY_BLOCKED_KEYS, is_thinking_override_key
 
 
 def build_model_settings(
@@ -27,8 +28,10 @@ def build_model_settings(
     if 'parallel_tool_calls' in included:
         payload['parallel_tool_calls'] = True
     extra = getattr(forwarded_props, 'extra_body', None) or {}
-    known_keys = adapter.settings_cls.__annotations__
-    payload.update({key: value for key, value in extra.items() if key in known_keys})
+    known_keys = adapter.settings_cls.__annotations__.keys() - EXTRA_BODY_BLOCKED_KEYS
+    payload.update({
+        key: value for key, value in extra.items() if key in known_keys and not is_thinking_override_key(key)
+    })
     payload.update(
         adapter.resolve_extra_settings(
             forwarded_props=forwarded_props,
