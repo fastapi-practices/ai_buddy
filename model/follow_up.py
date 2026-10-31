@@ -5,7 +5,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, id_key
+from backend.common.model import Base, TimeZone, UniversalText, id_key
 from backend.plugin.ai_buddy.enums import AIBuddyFollowUpStatus
 
 
@@ -23,7 +23,7 @@ class AIBuddyFollowUp(Base):
     conversation_id: Mapped[str] = mapped_column(sa.String(64), comment='对话 ID')
     user_id: Mapped[int] = mapped_column(sa.BigInteger, comment='用户 ID')
     client_request_id: Mapped[str] = mapped_column(sa.String(128), comment='客户端幂等 ID')
-    content: Mapped[str] = mapped_column(sa.Text, comment='跟进文本')
+    content: Mapped[str] = mapped_column(UniversalText, comment='跟进文本')
     attachments: Mapped[list[dict[str, Any]]] = mapped_column(sa.JSON, comment='AG-UI 附件内容')
     forwarded_props: Mapped[dict[str, Any]] = mapped_column(sa.JSON, comment='本轮运行参数')
     user_context: Mapped[dict[str, Any]] = mapped_column(sa.JSON, comment='提交时用户上下文')
@@ -33,7 +33,7 @@ class AIBuddyFollowUp(Base):
     disposition: Mapped[str] = mapped_column(
         sa.String(16), default=AIBuddyFollowUpStatus.queued.value, comment='实际处理方式'
     )
-    reason: Mapped[str | None] = mapped_column(sa.Text, default=None, comment='降级或失败原因')
+    reason: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='降级或失败原因')
     run_id: Mapped[str | None] = mapped_column(sa.String(64), default=None, comment='派发运行 ID')
     message_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='回复消息 ID')
     claimed_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='派发认领时间')
