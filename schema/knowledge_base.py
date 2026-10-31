@@ -14,8 +14,8 @@ class AIBuddyKnowledgeBaseQueryParam(SchemaBase):
 class AIBuddyKnowledgeBaseSchemaBase(SchemaBase):
     """AI 知识库基础模型"""
 
-    name: str = Field(max_length=128, description='知识库名称')
-    description: str | None = Field(None, max_length=512, description='知识库描述')
+    name: str = Field(description='知识库名称')
+    description: str | None = Field(None, description='知识库描述')
     provider_id: int | None = Field(None, description='向量化供应商 ID，本地 ONNX 模型不填')
     model_id: str | None = Field(None, description='向量化模型 ID，本地 ONNX 模型需显式指定')
 

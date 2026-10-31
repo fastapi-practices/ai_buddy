@@ -24,7 +24,7 @@ class CreateAIBuddyExecutionBridgeParam(SchemaBase):
     model_config = ConfigDict(extra='forbid')
 
     backend: AIBuddyDesktopExecutionBackend = Field(description='桌面本机 OS 沙箱执行后端')
-    cwd: str = Field(min_length=1, max_length=4096, description='桌面端固定的绝对工作目录')
+    cwd: str = Field(description='桌面端固定的绝对工作目录')
     permission_mode: AIBuddyPermissionMode = Field(AIBuddyPermissionMode.ask, description='本次连接的操作审批模式')
     capabilities: list[AIBuddyExecutionCapability] = Field(description='客户端支持且已协商的全部执行能力')
 
@@ -69,8 +69,8 @@ class AIBuddyExecutionError(SchemaBase):
 
     model_config = ConfigDict(extra='forbid', strict=True)
 
-    code: str = Field(min_length=1, max_length=64, description='执行错误分类')
-    message: str = Field(min_length=1, max_length=4096, description='执行错误说明')
+    code: str = Field(description='执行错误分类')
+    message: str = Field(description='执行错误说明')
 
 
 class AIBuddyExecutionResponse(SchemaBase):
@@ -97,4 +97,4 @@ class AIBuddyExecutionFileEntry(SchemaBase):
 
     path: str = Field(description='相对工作区的路径')
     is_dir: bool = Field(description='是否为目录')
-    size: int | None = Field(ge=0, description='文件字节数，目录为 null')
+    size: int | None = Field(description='文件字节数，目录为 null')

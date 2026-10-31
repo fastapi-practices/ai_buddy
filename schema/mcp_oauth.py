@@ -11,9 +11,9 @@ from backend.plugin.ai_buddy.security.ssrf import validate_public_http_url
 class AIBuddyMcpOAuthCallbackQueryParam(SchemaBase):
     """AI MCP OAuth 回调查询参数"""
 
-    state: str = Field(min_length=32, max_length=128, description='授权状态值')
-    code: str | None = Field(None, max_length=8192, description='授权码')
-    error: str | None = Field(None, max_length=256, description='授权服务返回的错误码')
+    state: str = Field(description='授权状态值')
+    code: str | None = Field(None, description='授权码')
+    error: str | None = Field(None, description='授权服务返回的错误码')
 
 
 class UpdateAIBuddyMcpOauthParam(SchemaBase):
@@ -22,11 +22,11 @@ class UpdateAIBuddyMcpOauthParam(SchemaBase):
     model_config = ConfigDict(extra='forbid')
 
     enabled: bool = Field(True, description='是否启用 MCP OAuth')
-    authorization_url: str = Field(min_length=1, max_length=2048, description='授权端点 HTTPS 地址')
-    token_url: str = Field(min_length=1, max_length=2048, description='令牌端点 HTTPS 地址')
-    client_id: str = Field(min_length=1, max_length=512, description='已注册的客户端 ID')
-    client_secret: str | None = Field(None, max_length=8192, description='客户端密钥，省略时保留当前密钥')
-    scope: str = Field('', max_length=2048, description='以空格分隔的权限范围')
+    authorization_url: str = Field(description='授权端点 HTTPS 地址')
+    token_url: str = Field(description='令牌端点 HTTPS 地址')
+    client_id: str = Field(description='已注册的客户端 ID')
+    client_secret: str | None = Field(None, description='客户端密钥，省略时保留当前密钥')
+    scope: str = Field('', description='以空格分隔的权限范围')
     token_endpoint_auth_method: Literal['none', 'client_secret_post', 'client_secret_basic'] = Field(
         'none', description='令牌端点客户端认证方式'
     )

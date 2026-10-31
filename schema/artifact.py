@@ -66,10 +66,10 @@ class CreateAIBuddyArtifactParam(AIBuddyArtifactSchemaBase):
     storage_backend: Literal[AIBuddyArtifactStorageBackend.s3] = Field(
         AIBuddyArtifactStorageBackend.s3, description='文本产物存储后端'
     )
-    workspace_id: str | None = Field(None, max_length=128, description='工作区 ID')
-    relative_path: str | None = Field(None, max_length=2048, description='工作区相对路径')
-    mime_type: str | None = Field(None, max_length=128, description='媒体类型')
-    size: int | None = Field(None, ge=0, description='文件字节数')
+    workspace_id: str | None = Field(None, description='工作区 ID')
+    relative_path: str | None = Field(None, description='工作区相对路径')
+    mime_type: str | None = Field(None, description='媒体类型')
+    size: int | None = Field(None, description='文件字节数')
     sha256: str | None = Field(None, pattern=r'^[0-9a-f]{64}$', description='文件 SHA-256 摘要')
     state: AIBuddyArtifactState = Field(AIBuddyArtifactState.ready, description='产物状态')
 
@@ -80,15 +80,15 @@ class CreateAIBuddyArtifactParam(AIBuddyArtifactSchemaBase):
 class RegisterAIBuddyArtifactParam(SchemaBase):
     """注册工作区产物引用参数"""
 
-    title: str = Field(min_length=1, max_length=256, description='产物标题')
+    title: str = Field(description='产物标题')
     kind: AIBuddyArtifactKind = Field(
         description='产物类型：image 图片、video 视频、audio 音频、text 文本、document 文档、other 其他'
     )
     storage_backend: AIBuddyArtifactStorageBackend = Field(description='存储后端')
-    workspace_id: str | None = Field(None, max_length=128, description='工作区 ID')
-    relative_path: str = Field(min_length=1, max_length=2048, description='工作区相对路径')
-    mime_type: str | None = Field(None, max_length=128, description='媒体类型')
-    size: int | None = Field(None, ge=0, description='文件字节数')
+    workspace_id: str | None = Field(None, description='工作区 ID')
+    relative_path: str = Field(description='工作区相对路径')
+    mime_type: str | None = Field(None, description='媒体类型')
+    size: int | None = Field(None, description='文件字节数')
     sha256: str | None = Field(None, pattern=r'^[0-9a-f]{64}$', description='文件 SHA-256 摘要')
     state: AIBuddyArtifactState = Field(AIBuddyArtifactState.ready, description='产物状态')
 
@@ -106,10 +106,10 @@ class UpdateAIBuddyArtifactParam(SchemaBase):
     content: str | None = Field(None, description='产物内容')
     object_key: str | None = Field(None, description='对象键')
     storage_backend: AIBuddyArtifactStorageBackend | None = Field(None, description='存储后端')
-    workspace_id: str | None = Field(None, max_length=128, description='工作区 ID')
-    relative_path: str | None = Field(None, max_length=2048, description='工作区相对路径')
-    mime_type: str | None = Field(None, max_length=128, description='媒体类型')
-    size: int | None = Field(None, ge=0, description='文件字节数')
+    workspace_id: str | None = Field(None, description='工作区 ID')
+    relative_path: str | None = Field(None, description='工作区相对路径')
+    mime_type: str | None = Field(None, description='媒体类型')
+    size: int | None = Field(None, description='文件字节数')
     sha256: str | None = Field(None, pattern=r'^[0-9a-f]{64}$', description='文件 SHA-256 摘要')
     state: AIBuddyArtifactState | None = Field(None, description='产物状态')
 

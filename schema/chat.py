@@ -51,21 +51,19 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
     tool_policies: dict[str, AIBuddyToolPolicy] | None = Field(None, description='本轮工具策略覆盖，allow/ask/deny')
     web_search: AIBuddyWebSearchType = Field(default=AIBuddyWebSearchType.off, description='网络搜索模式')
     workspace_ref: AIBuddyChatWorkspaceRefParam | None = Field(None, description='工作区引用')
-    workspace_id: str | None = Field(None, max_length=128, description='编码工作区 ID')
+    workspace_id: str | None = Field(None, description='编码工作区 ID')
     advisor_model: str | None = Field(None, description='顾问模型名称，空值表示不启用')
     file_understanding_model: str | None = Field(None, description='当前供应商下的文件理解模型，空值表示不启用')
     smart_search_model: str | None = Field(None, description='当前供应商下的代码语义搜索模型，仅内置编码模式生效')
     cache_enabled: bool = Field(default=True, description='是否启用 SDK 管理的提示词缓存')
     background_subagents_enabled: bool = Field(default=False, description='是否允许子代理在本轮后台执行')
-    run_timeout: float | None = Field(
-        None, gt=0, allow_inf_nan=False, description='整轮执行时限，包含工具与审批等待，单位秒'
-    )
+    run_timeout: float | None = Field(None, allow_inf_nan=False, description='整轮执行时限，包含工具与审批等待，单位秒')
     compaction_enabled: bool | None = Field(None, description='是否启用对话压缩，空值沿用服务端默认（当前为开启）')
     compaction_strategy: Literal['summary', 'relevance'] = Field(
         default='summary', description='历史压缩策略：摘要或相关性筛选'
     )
-    compaction_keep_messages: int | None = Field(None, ge=1, description='压缩时保留的最近消息数')
-    compaction_max_messages: int | None = Field(None, ge=1, description='触发滑动窗口压缩的消息数上限')
+    compaction_keep_messages: int | None = Field(None, description='压缩时保留的最近消息数')
+    compaction_max_messages: int | None = Field(None, description='触发滑动窗口压缩的消息数上限')
     agent_mode: AIBuddyAgentMode = Field(
         default=AIBuddyAgentMode.work,
         description='本轮交互模式，chat 用于问答和讨论，work 执行资料与产物任务，coding 执行代码仓库任务',
@@ -79,7 +77,7 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
 
     acp_bridge_id: str | None = Field(None, pattern=r'^[a-f0-9]{32}$', description='桌面端本地 ACP 连接 ID')
     acp_imported_attachment_hashes: list[Annotated[str, Field(pattern=r'^[a-f0-9]{64}$')]] = Field(
-        default_factory=list, max_length=32, description='桌面端已导入当前工作区的本轮附件 SHA-256'
+        default_factory=list, description='桌面端已导入当前工作区的本轮附件 SHA-256'
     )
     execution_backend: AIBuddyExecutionBackend = Field(
         default=AIBuddyExecutionBackend.local,
@@ -122,7 +120,7 @@ class AIBuddyChatModelSettingsParam(AIBuddyChatSchemaBase):
     top_p: float | None = Field(None, description='模型生成文本的多样性')
     timeout: float | None = Field(None, description='覆盖客户端对请求的默认超时（单位：s）')
     request_timeout: float | None = Field(
-        None, gt=0, allow_inf_nan=False, description='单次模型请求总时限，包含重试与流消费，单位秒'
+        None, allow_inf_nan=False, description='单次模型请求总时限，包含重试与流消费，单位秒'
     )
     seed: int | None = Field(None, description='用于模型的随机种子')
     presence_penalty: float | None = Field(None, description='根据新 token 是否出现在文本中来处罚')
@@ -151,7 +149,7 @@ class AIBuddyChatForwardedPropsParam(
     """对话扩展参数"""
 
     assistant_id: int | None = Field(None, description='助手 ID，仅新建对话时生效')
-    project_id: int | None = Field(None, gt=0, description='项目 ID，仅新建对话时生效')
+    project_id: int | None = Field(None, description='项目 ID，仅新建对话时生效')
     quote: AIBuddyMessageQuote | None = Field(None, description='本轮用户消息的引用定位锚点，业务扩展')
 
 

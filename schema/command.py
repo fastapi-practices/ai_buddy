@@ -15,7 +15,7 @@ class AIBuddyCommandParam(SchemaBase):
 
     model_config = ConfigDict(extra='forbid', strict=True)
 
-    command: str = Field(min_length=1, max_length=COMMAND_MAX_BYTES, description='实际请求执行的 shell 命令')
+    command: str = Field(description='实际请求执行的 shell 命令')
 
     @field_validator('command')
     @classmethod
@@ -35,11 +35,11 @@ class AIBuddyCommandResult(AIBuddyCommandParam):
     """执行器返回的命令事实结果，不从输出文本推测状态"""
 
     exit_code: int | None = Field(description='进程实际退出码，无法获取时为 null')
-    stdout: str = Field(max_length=COMMAND_OUTPUT_MAX_BYTES, description='保留的标准输出')
-    stderr: str = Field(max_length=COMMAND_OUTPUT_MAX_BYTES, description='保留的标准错误输出')
+    stdout: str = Field(description='保留的标准输出')
+    stderr: str = Field(description='保留的标准错误输出')
     reason: AIBuddyCommandReason = Field(strict=False, description='执行完成或中止的原因')
     started_at: str | None = Field(description='执行器开始调用的 ISO UTC 时间，未知时为 null')
-    duration_ms: int | None = Field(ge=0, description='执行器观测的运行时长，未知时为 null')
+    duration_ms: int | None = Field(description='执行器观测的运行时长，未知时为 null')
     truncated: bool = Field(description='输出是否被裁剪')
     output_complete: bool = Field(description='是否收到正常完成的完整输出')
     result_available: bool = Field(description='是否取得执行器的最终结果')

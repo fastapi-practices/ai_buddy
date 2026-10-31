@@ -45,7 +45,7 @@ class AIBuddyConversationEventsHeaderParam(SchemaBase):
 class AIBuddyConversationDetailQueryParam(SchemaBase):
     """AI 对话详情查询参数"""
 
-    message_limit: int | None = Field(None, ge=1, le=100, description='最近消息数量上限')
+    message_limit: int | None = Field(None, description='最近消息数量上限')
 
 
 class AIBuddyConversationSchemaBase(SchemaBase):
@@ -85,36 +85,28 @@ class UpdateAIBuddyConversationTitleParam(SchemaBase):
     """更新对话标题参数"""
 
     title: str = Field(description='对话标题')
-    expected_revision: int | None = Field(
-        None, ge=1, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-    )
+    expected_revision: int | None = Field(None, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查')
 
 
 class UpdateAIBuddyConversationPinnedParam(SchemaBase):
     """更新对话置顶状态参数"""
 
     is_pinned: bool = Field(description='是否置顶')
-    expected_revision: int | None = Field(
-        None, ge=1, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-    )
+    expected_revision: int | None = Field(None, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查')
 
 
 class UpdateAIBuddyConversationArchiveParam(SchemaBase):
     """更新对话归档状态参数"""
 
     is_archived: bool = Field(description='是否归档')
-    expected_revision: int | None = Field(
-        None, ge=1, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-    )
+    expected_revision: int | None = Field(None, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查')
 
 
 class UpdateAIBuddyConversationSourceParam(SchemaBase):
     """迁移会话事实源参数"""
 
     source: AIBuddyConversationSource = Field(description='目标事实源')
-    expected_revision: int | None = Field(
-        None, ge=1, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-    )
+    expected_revision: int | None = Field(None, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查')
 
 
 class ResolveAIBuddyCodingApprovalParam(SchemaBase):
@@ -129,9 +121,7 @@ class UpdateAIBuddyConversationWorkspaceParam(SchemaBase):
     project_id: int | None = Field(None, description='项目 ID')
     assistant_id: int | None = Field(None, description='助手 ID')
     goal: str | None = Field(None, description='对话目标')
-    expected_revision: int | None = Field(
-        None, ge=1, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查'
-    )
+    expected_revision: int | None = Field(None, description='客户端读到的修订号，与当前不一致时返回冲突，不传则不检查')
 
 
 class GetAIBuddyConversationListDetail(SchemaBase):

@@ -10,7 +10,7 @@ class AIBuddySyncQueryParam(SchemaBase):
     """增量同步查询参数"""
 
     cursor: str | None = Field(None, pattern=r'^\d+\.[01]\.\d+$', description='上一次响应返回的同步游标，首次同步不传')
-    limit: int = Field(100, ge=1, le=500, description='本次最多返回的变更条数')
+    limit: int = Field(100, description='本次最多返回的变更条数')
 
 
 class GetAIBuddySyncChangeDetail(SchemaBase):

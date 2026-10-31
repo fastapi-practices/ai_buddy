@@ -10,22 +10,22 @@ from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesS
 class AIBuddyMessageHistoryQueryParam(SchemaBase):
     """AI 消息历史查询参数"""
 
-    before: str | None = Field(None, max_length=128, description='上一页游标')
-    limit: int = Field(50, ge=1, le=100, description='单页消息数量')
+    before: str | None = Field(None, description='上一页游标')
+    limit: int = Field(50, description='单页消息数量')
 
 
 class AIBuddyMessageSearchQueryParam(SchemaBase):
     """AI 消息历史搜索参数"""
 
-    q: str = Field(min_length=1, max_length=500, description='搜索关键词')
-    cursor: str | None = Field(None, max_length=128, description='分页游标')
-    limit: int = Field(50, ge=1, le=100, description='单页结果数量')
+    q: str = Field(description='搜索关键词')
+    cursor: str | None = Field(None, description='分页游标')
+    limit: int = Field(50, description='单页结果数量')
 
 
 class ForkAIBuddyConversationParam(SchemaBase):
     """按消息边界复刻对话"""
 
-    message_id: int | None = Field(None, gt=0, description='截断边界的持久消息 ID，省略则复制整段对话')
+    message_id: int | None = Field(None, description='截断边界的持久消息 ID，省略则复制整段对话')
     include_message: bool = Field(True, description='是否包含边界消息')
 
 

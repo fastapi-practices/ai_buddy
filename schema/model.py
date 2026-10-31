@@ -77,13 +77,13 @@ class AIBuddyModelSchemaBase(SchemaBase):
 
     provider_id: int = Field(description='供应商 ID')
     model_id: str = Field(description='模型 ID')
-    name: str | None = Field(None, max_length=256, description='模型名称')
+    name: str | None = Field(None, description='模型名称')
     kind: AIBuddyModelKind = Field(description='模型类型')
     capabilities: list[AIBuddyModelCapability] = Field(default_factory=list, description='模型行为能力')
     input_modalities: list[AIBuddyModelModality] | None = Field(None, description='模型输入模态；空值表示未知')
     thinking_policy: AIBuddyThinkingPolicy | None = Field(None, description='可选择的思考档位；空值表示不可调节')
-    context_window: int | None = Field(None, ge=1, description='上下文窗口 token 数')
-    max_output_tokens: int | None = Field(None, ge=1, description='最大输出 token 数')
+    context_window: int | None = Field(None, description='上下文窗口 token 数')
+    max_output_tokens: int | None = Field(None, description='最大输出 token 数')
     sort: int = Field(default=0, description='排序')
     status: StatusType = Field(description='状态')
     remark: str | None = Field(None, description='备注')
@@ -133,7 +133,7 @@ class UpdateMyAIBuddyModelParam(CreateMyAIBuddyModelParam):
 class CreateAIBuddyModelsParam(SchemaBase):
     """批量创建 AI 模型参数"""
 
-    items: list[CreateAIBuddyModelParam] = Field(max_length=200, description='模型列表')
+    items: list[CreateAIBuddyModelParam] = Field(description='模型列表')
 
 
 class DeleteAIBuddyModelParam(SchemaBase):

@@ -21,8 +21,6 @@ class AIBuddyImageGenerationParam(AIBuddyChatSchemaBase):
     moderation: Literal['auto', 'low'] | None = Field(None, description='审核强度，仅 OpenAI')
     output_compression: int | None = Field(
         None,
-        ge=0,
-        le=100,
         description='输出压缩，OpenAI jpeg/webp 默认 100',
     )
     output_format: Literal['png', 'webp', 'jpeg'] | None = Field(

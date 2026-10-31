@@ -60,7 +60,7 @@ class AIBuddyObjectGarbageCollectParam(SchemaBase):
     """对象回收参数"""
 
     dry_run: bool = Field(True, description='默认仅预览候选，设为 false 才会物理删除')
-    limit: int | None = Field(None, ge=1, le=1000, description='本次最多处理条数，默认使用服务端批量配置')
+    limit: int | None = Field(None, description='本次最多处理条数，默认使用服务端批量配置')
 
 
 class GetAIBuddyObjectGarbageCollectDetail(SchemaBase):

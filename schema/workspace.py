@@ -27,11 +27,11 @@ def _workspace_id(value: str) -> str:
 class AIBuddyWorkspaceSchemaBase(SchemaBase):
     """AI 工作区基础模型"""
 
-    workspace_id: str = Field(min_length=1, max_length=128, description='工作区 ID')
-    name: str | None = Field(None, min_length=1, max_length=256, description='工作区名称')
+    workspace_id: str = Field(description='工作区 ID')
+    name: str | None = Field(None, description='工作区名称')
     backend: AIBuddyWorkspaceBackend = Field(description='工作区后端')
-    object_prefix: str | None = Field(None, max_length=512, description='对象前缀')
-    revision: int = Field(default=0, ge=0, description='工作区版本')
+    object_prefix: str | None = Field(None, description='对象前缀')
+    revision: int = Field(default=0, description='工作区版本')
     state: AIBuddyWorkspaceState = Field(default=AIBuddyWorkspaceState.ready, description='工作区状态')
 
     _validate_workspace_id = field_validator('workspace_id')(_workspace_id)
@@ -44,10 +44,10 @@ class CreateAIBuddyWorkspaceParam(AIBuddyWorkspaceSchemaBase):
 class UpdateAIBuddyWorkspaceParam(SchemaBase):
     """更新 AI 工作区参数"""
 
-    name: str | None = Field(None, min_length=1, max_length=256, description='工作区名称')
+    name: str | None = Field(None, description='工作区名称')
     backend: AIBuddyWorkspaceBackend | None = Field(None, description='工作区后端')
-    object_prefix: str | None = Field(None, max_length=512, description='对象前缀')
-    revision: int | None = Field(None, ge=0, description='客户端基于的工作区版本')
+    object_prefix: str | None = Field(None, description='对象前缀')
+    revision: int | None = Field(None, description='客户端基于的工作区版本')
     state: AIBuddyWorkspaceState | None = Field(None, description='工作区状态')
 
 
@@ -66,9 +66,9 @@ class AIBuddyWorkspaceGarbageCollectParam(SchemaBase):
     """回收工作区未引用的旧对象"""
 
     dry_run: bool = Field(True, description='默认仅预览，不删除对象')
-    revision: int = Field(ge=0, description='客户端基于的工作区版本')
-    limit: int = Field(100, ge=1, le=1000, description='单次扫描对象数上限')
-    cursor: str | None = Field(None, max_length=1024, description='上次扫描返回的游标')
+    revision: int = Field(description='客户端基于的工作区版本')
+    limit: int = Field(100, description='单次扫描对象数上限')
+    cursor: str | None = Field(None, description='上次扫描返回的游标')
 
 
 class GetAIBuddyWorkspaceGarbageCollectDetail(SchemaBase):

@@ -9,8 +9,8 @@ from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus
 class AIBuddyApprovalAuditQueryParam(SchemaBase):
     """AI 审批审计查询参数"""
 
-    before: int | None = Field(None, gt=0, description='上一页最小审计 ID')
-    limit: int = Field(50, ge=1, le=100, description='返回条数')
+    before: int | None = Field(None, description='上一页最小审计 ID')
+    limit: int = Field(50, description='返回条数')
 
 
 class GetAIBuddyApprovalAuditDetail(SchemaBase):

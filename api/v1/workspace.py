@@ -38,7 +38,7 @@ async def get_all_ai_buddy_workspaces(
 async def get_ai_buddy_workspace(
     request: Request,
     db: CurrentSession,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceDetail]:
     data = await ai_buddy_workspace_service.get(db=db, user_id=request.user.id, workspace_id=workspace_id)
     return response_base.success(data=data)
@@ -48,7 +48,7 @@ async def get_ai_buddy_workspace(
 async def get_ai_buddy_workspace_files(
     request: Request,
     db: CurrentSession,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
 ) -> ResponseSchemaModel[list[GetAIBuddyWorkspaceFileDetail]]:
     data = await ai_buddy_workspace_service.get_files(db=db, user_id=request.user.id, workspace_id=workspace_id)
     return response_base.success(data=data)
@@ -58,7 +58,7 @@ async def get_ai_buddy_workspace_files(
 async def upsert_ai_buddy_workspace_file(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     obj: UpsertAIBuddyWorkspaceFileParam,
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
     data = await ai_buddy_workspace_service.upsert_file(
@@ -78,7 +78,7 @@ async def upsert_ai_buddy_workspace_file(
 async def upload_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     file: Annotated[UploadFile, File(description='工作区文件')],
     query: Annotated[AIBuddyWorkspaceFileUploadQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
@@ -103,7 +103,7 @@ async def upload_ai_buddy_workspace_file_content(
 async def download_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSession,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     query: Annotated[AIBuddyWorkspaceFileDownloadQueryParam, Query()],
 ) -> Response:
     data, manifest = await ai_buddy_workspace_service.download_bytes(
@@ -144,7 +144,7 @@ async def create_ai_buddy_workspace(
 async def collect_ai_buddy_workspace_garbage(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     obj: AIBuddyWorkspaceGarbageCollectParam,
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceGarbageCollectDetail]:
     data = await ai_buddy_workspace_service.collect_garbage(
@@ -157,7 +157,7 @@ async def collect_ai_buddy_workspace_garbage(
 async def update_ai_buddy_workspace(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     obj: UpdateAIBuddyWorkspaceParam,
 ) -> ResponseModel:
     count = await ai_buddy_workspace_service.update(
@@ -179,7 +179,7 @@ async def update_ai_buddy_workspace(
 async def delete_ai_buddy_workspace_file_content(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
     query: Annotated[AIBuddyWorkspaceFileDeleteQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyWorkspaceFileDetail]:
     data = await ai_buddy_workspace_service.delete_file(
@@ -196,7 +196,7 @@ async def delete_ai_buddy_workspace_file_content(
 async def delete_ai_buddy_workspace(
     request: Request,
     db: CurrentSessionTransaction,
-    workspace_id: Annotated[str, Path(max_length=128, description='工作区 ID')],
+    workspace_id: Annotated[str, Path(description='工作区 ID')],
 ) -> ResponseModel:
     count = await ai_buddy_workspace_service.delete(db=db, user_id=request.user.id, workspace_id=workspace_id)
     if count > 0:

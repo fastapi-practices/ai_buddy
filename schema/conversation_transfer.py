@@ -17,25 +17,25 @@ from backend.plugin.ai_buddy.enums import (
 class AIBuddyConversationTransferMessage(SchemaBase):
     """可迁移的会话消息，附件以内联 base64 携带，不依赖原部署的对象存储"""
 
-    message_index: int = Field(ge=0, description='会话内顺序号')
+    message_index: int = Field(description='会话内顺序号')
     role: AIBuddyMessageRole = Field(description='消息角色')
     origin: AIBuddyOrigin = Field(AIBuddyOrigin.web, description='消息来源')
     status: AIBuddyMessageStatus = Field(AIBuddyMessageStatus.success, description='消息状态，不允许 pending')
     model_messages: list[dict[str, Any]] = Field(description='原始模型消息列表')
     turn_context: dict[str, Any] | None = Field(None, description='本轮实际组合')
-    client_message_id: str | None = Field(None, max_length=128, description='客户端消息 ID')
+    client_message_id: str | None = Field(None, description='客户端消息 ID')
     created_time: datetime | None = Field(None, description='原始创建时间，导入后仅保留在 turn_context 中')
 
 
 class AIBuddyConversationTransferInfo(SchemaBase):
     """可迁移的会话信息，不含项目、助手等与具体部署绑定的关联"""
 
-    conversation_id: str = Field(min_length=1, max_length=64, description='对话 ID，导入时若未被占用则保留')
-    title: str = Field(min_length=1, max_length=256, description='对话标题')
+    conversation_id: str = Field(description='对话 ID，导入时若未被占用则保留')
+    title: str = Field(description='对话标题')
     provider_id: int = Field(description='供应商 ID，导入用户必须可见')
-    model_id: str = Field(min_length=1, max_length=512, description='模型 ID')
+    model_id: str = Field(description='模型 ID')
     agent_mode: AIBuddyAgentMode | None = Field(None, description='最近一轮使用的会话模式')
-    goal: str | None = Field(None, max_length=512, description='对话目标')
+    goal: str | None = Field(None, description='对话目标')
     origin: AIBuddyOrigin = Field(AIBuddyOrigin.web, description='对话来源')
     surface: AIBuddyConversationSurface = Field(AIBuddyConversationSurface.chat, description='会话入口')
     source: AIBuddyConversationSource = Field(AIBuddyConversationSource.cloud, description='会话事实源，导入后原样保留')

@@ -26,7 +26,7 @@ class CreateAIBuddyAcpBridgeParam(SchemaBase):
     """桌面端提供的本地 Agent 连接信息"""
 
     runner: AIBuddyAcpRunnerName = Field(description='本地 Agent 名称')
-    cwd: str = Field(min_length=1, max_length=4096, description='桌面端固定的本地绝对工作目录')
+    cwd: str = Field(description='桌面端固定的本地绝对工作目录')
 
     @field_validator('cwd')
     @classmethod

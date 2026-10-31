@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Annotated
 
 from pydantic import ConfigDict, Field, field_validator
 
@@ -30,13 +29,12 @@ class AIBuddyAssistantQueryParam(SchemaBase):
 class AIBuddyAssistantSchemaBase(SchemaBase):
     """AI 助手基础模型"""
 
-    name: str = Field(max_length=64, description='助手名称')
+    name: str = Field(description='助手名称')
     prompt: str = Field(description='角色提示词')
-    description: str | None = Field(None, max_length=512, description='助手描述')
+    description: str | None = Field(None, description='助手描述')
     category: AIBuddyAssistantCategory | None = Field(None, description='助手分类编码')
-    starters: list[Annotated[str, Field(max_length=256)]] = Field(
+    starters: list[str] = Field(
         default_factory=list,
-        max_length=8,
         description='开场白列表',
     )
     sort: int = Field(default=0, description='排序')

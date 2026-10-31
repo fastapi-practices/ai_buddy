@@ -14,8 +14,8 @@ class AIBuddySubagentQueryParam(SchemaBase):
 class AIBuddySubagentSchemaBase(SchemaBase):
     """AI 子代理基础模型"""
 
-    name: str = Field(max_length=64, description='子代理名称')
-    description: str = Field(max_length=512, description='子代理描述')
+    name: str = Field(description='子代理名称')
+    description: str = Field(description='子代理描述')
     prompt: str = Field(description='角色提示词')
     sort: int = Field(default=0, description='排序')
 

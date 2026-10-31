@@ -9,9 +9,9 @@ from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction
 class AIBuddyConversationAuditQueryParam(SchemaBase):
     """AI 会话审计查询参数"""
 
-    conversation_id: str | None = Field(None, max_length=64, description='限定的对话 ID')
-    before: int | None = Field(None, gt=0, description='上一页最小审计 ID')
-    limit: int = Field(50, ge=1, le=100, description='返回条数')
+    conversation_id: str | None = Field(None, description='限定的对话 ID')
+    before: int | None = Field(None, description='上一页最小审计 ID')
+    limit: int = Field(50, description='返回条数')
 
 
 class GetAIBuddyConversationAuditDetail(SchemaBase):

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 
 from pydantic import ConfigDict, Field, field_validator
 
@@ -18,12 +18,11 @@ class AIBuddyExpertQueryParam(SchemaBase):
 class AIBuddyExpertSchemaBase(SchemaBase):
     """AI 专家模板基础模型"""
 
-    name: str = Field(max_length=64, description='专家名称')
+    name: str = Field(description='专家名称')
     prompt: str = Field(description='角色提示词')
-    description: str | None = Field(None, max_length=512, description='专家描述')
-    starters: list[Annotated[str, Field(max_length=256)]] = Field(
+    description: str | None = Field(None, description='专家描述')
+    starters: list[str] = Field(
         default_factory=list,
-        max_length=8,
         description='开场白列表',
     )
     mcp_ids: list[int] = Field(default_factory=list, description='默认 MCP ID 列表')
@@ -77,4 +76,4 @@ class GetAIBuddyExpertWithRelationDetail(GetAIBuddyExpertDetail):
 class ApplyAIBuddyExpertParam(SchemaBase):
     """专家一键填入助手参数"""
 
-    name: str | None = Field(None, max_length=64, description='助手名称，空则使用专家名称')
+    name: str | None = Field(None, description='助手名称，空则使用专家名称')

@@ -8,15 +8,15 @@ from backend.common.schema import SchemaBase
 class AIBuddyMcpAppScope(SchemaBase):
     """MCP 交互资源访问范围"""
 
-    mcp_id: int = Field(gt=0, description='当前会话启用的 MCP ID')
-    tool_name: str = Field(min_length=1, max_length=256, description='声明交互资源的原始工具名称')
-    resource_uri: str = Field(pattern=r'^ui://', max_length=2048, description='工具声明的 UI 资源 URI')
+    mcp_id: int = Field(description='当前会话启用的 MCP ID')
+    tool_name: str = Field(description='声明交互资源的原始工具名称')
+    resource_uri: str = Field(pattern=r'^ui://', description='工具声明的 UI 资源 URI')
 
 
 class CallAIBuddyMcpAppToolParam(AIBuddyMcpAppScope):
     """调用 MCP 交互应用工具参数"""
 
-    name: str = Field(min_length=1, max_length=256, description='应用请求调用的工具名称')
+    name: str = Field(description='应用请求调用的工具名称')
     arguments: dict[str, Any] = Field(default_factory=dict, description='工具调用参数')
     approved: bool = Field(default=False, description='宿主用户已批准本次写操作')
 

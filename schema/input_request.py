@@ -7,17 +7,17 @@ from backend.plugin.ai_buddy.enums import AIBuddyInputQuestionKind
 class AIBuddyInputOption(SchemaBase):
     """结构化问题选项"""
 
-    id: str = Field(min_length=1, max_length=100, description='选项 ID')
-    label: str = Field(min_length=1, max_length=500, description='选项显示文本')
+    id: str = Field(description='选项 ID')
+    label: str = Field(description='选项显示文本')
 
 
 class AIBuddyInputQuestion(SchemaBase):
     """单题结构"""
 
-    id: str = Field(min_length=1, max_length=100, description='题目 ID')
-    prompt: str = Field(min_length=1, max_length=2000, description='题目')
+    id: str = Field(description='题目 ID')
+    prompt: str = Field(description='题目')
     kind: AIBuddyInputQuestionKind = Field(AIBuddyInputQuestionKind.text, description='作答方式')
-    options: list[AIBuddyInputOption] = Field(default_factory=list, max_length=30, description='可选答案')
+    options: list[AIBuddyInputOption] = Field(default_factory=list, description='可选答案')
     required: bool = Field(True, description='是否必答')
 
     @model_validator(mode='after')

@@ -14,7 +14,7 @@ class AIBuddyQuickPhraseQueryParam(SchemaBase):
 class AIBuddyQuickPhraseSchemaBase(SchemaBase):
     """AI 快捷短语基础模型"""
 
-    title: str = Field(max_length=128, description='短语标题')
+    title: str = Field(description='短语标题')
     content: str = Field(description='短语内容')
     sort: int = Field(default=0, description='排序')
 

@@ -23,7 +23,7 @@ class AIBuddySkillSchemaBase(SchemaBase):
 
     name: str = Field(description='技能名称')
     description: str | None = Field(None, description='技能描述')
-    version: str = Field(default='0.1.0', max_length=32, description='技能版本')
+    version: str = Field(default='0.1.0', description='技能版本')
 
 
 class CreateAIBuddySkillParam(AIBuddySkillSchemaBase):

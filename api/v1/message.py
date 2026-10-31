@@ -61,7 +61,7 @@ async def get_ai_buddy_message_versions(
     request: Request,
     db: CurrentSession,
     conversation_id: str,
-    pk: Annotated[int, Path(gt=0)],
+    pk: Annotated[int, Path(description='消息 ID')],
 ) -> ResponseSchemaModel[list[GetAIBuddyMessageVersionDetail]]:
     data = await ai_buddy_message_history_service.versions(
         db=db, conversation_id=conversation_id, user_id=request.user.id, message_id=pk
@@ -77,7 +77,7 @@ async def get_ai_buddy_message_versions(
 async def regenerate_ai_buddy_conversation_message(
     request: Request,
     conversation_id: Annotated[str, Path(description='对话 ID')],
-    pk: Annotated[int, Path(gt=0, description='消息 ID')],
+    pk: Annotated[int, Path(description='消息 ID')],
     obj: AIBuddyChatRegenerateParam,
 ) -> StreamingResponse:
     return await ai_buddy_message_service.regenerate_from_user_message(
@@ -118,7 +118,7 @@ async def delete_ai_buddy_conversation_message(
     request: Request,
     db: CurrentSessionTransaction,
     conversation_id: Annotated[str, Path(description='对话 ID')],
-    pk: Annotated[int, Path(gt=0, description='消息 ID')],
+    pk: Annotated[int, Path(description='消息 ID')],
 ) -> ResponseModel:
     count = await ai_buddy_message_service.delete(
         db=db,

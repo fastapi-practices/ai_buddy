@@ -13,9 +13,9 @@ from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiInputCont
 class SubmitAIBuddyFollowUpParam(AIBuddyChatSchemaBase):
     """提交持久跟进"""
 
-    client_request_id: str = Field(min_length=1, max_length=128, description='客户端幂等 ID')
+    client_request_id: str = Field(description='客户端幂等 ID')
     mode: AIBuddyFollowUpMode = Field(default=AIBuddyFollowUpMode.queue, description='请求处理方式')
-    content: str = Field(default='', max_length=200000, description='跟进文本')
+    content: str = Field(default='', description='跟进文本')
     attachments: list[AIBuddyChatAgUiInputContentParam] = Field(default_factory=list, description='AG-UI 附件内容')
     forwarded_props: AIBuddyChatForwardedPropsParam = Field(description='本轮运行参数')
 
@@ -38,10 +38,10 @@ class SubmitAIBuddyFollowUpParam(AIBuddyChatSchemaBase):
 class UpdateAIBuddyFollowUpParam(AIBuddyChatSchemaBase):
     """修改待执行跟进"""
 
-    content: str | None = Field(None, max_length=200000, description='跟进文本')
+    content: str | None = Field(None, description='跟进文本')
     attachments: list[AIBuddyChatAgUiInputContentParam] | None = Field(None, description='AG-UI 附件内容')
     forwarded_props: AIBuddyChatForwardedPropsParam | None = Field(None, description='本轮运行参数')
-    position: int | None = Field(None, ge=0, description='待执行项中的零起始位置')
+    position: int | None = Field(None, description='待执行项中的零起始位置')
 
     @model_validator(mode='after')
     def validate_patch(self) -> 'UpdateAIBuddyFollowUpParam':

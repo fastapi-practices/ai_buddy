@@ -7,14 +7,14 @@ class AIBuddyMessageQuote(SchemaBase):
     """用户消息的引用定位锚点"""
 
     model_config = ConfigDict(populate_by_name=True)
-    message_id: str = Field(alias='messageId', min_length=1, max_length=256, description='来源渲染消息 ID')
-    text: str = Field(min_length=1, max_length=8000, description='选中的原文')
-    conversation_id: str | None = Field(None, alias='conversationId', max_length=64, description='来源对话 ID')
-    occurrence: int | None = Field(None, ge=0, description='同段原文在来源消息中的出现序号')
-    start: int | None = Field(None, ge=0, description='选区在来源消息中的起始偏移')
-    end: int | None = Field(None, ge=0, description='选区在来源消息中的结束偏移')
-    prefix: str | None = Field(None, max_length=64, description='选区之前的定位文本')
-    suffix: str | None = Field(None, max_length=64, description='选区之后的定位文本')
+    message_id: str = Field(alias='messageId', description='来源渲染消息 ID')
+    text: str = Field(description='选中的原文')
+    conversation_id: str | None = Field(None, alias='conversationId', description='来源对话 ID')
+    occurrence: int | None = Field(None, description='同段原文在来源消息中的出现序号')
+    start: int | None = Field(None, description='选区在来源消息中的起始偏移')
+    end: int | None = Field(None, description='选区在来源消息中的结束偏移')
+    prefix: str | None = Field(None, description='选区之前的定位文本')
+    suffix: str | None = Field(None, description='选区之后的定位文本')
 
     @model_validator(mode='after')
     def validate_range(self) -> 'AIBuddyMessageQuote':

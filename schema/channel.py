@@ -20,7 +20,7 @@ class AIBuddyChannelHitlQueryParam(SchemaBase):
 class AIBuddyChannelSchemaBase(SchemaBase):
     """AI 通道基础模型"""
 
-    name: str = Field(max_length=64, description='通道名称')
+    name: str = Field(description='通道名称')
     type: AIBuddyChannelType = Field(description='通道类型')
     config: dict[str, Any] | None = Field(None, description='通道配置')
     status: StatusType = Field(default=StatusType.enable, description='状态')
