@@ -61,6 +61,8 @@ def _is_stop_message(message: InboundMessage) -> bool:
 
 @dataclass(slots=True)
 class _GatewayWorker:
+    """正在运行的网关通道工作协程及其账号租约"""
+
     channel: AIBuddyChannel
     task: asyncio.Task[None]
     lease_key: str

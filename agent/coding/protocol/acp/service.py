@@ -25,6 +25,8 @@ ApprovalWaiter = Callable[[str, AgentToolCall], Awaitable[bool]]
 
 @dataclass
 class _Conversation:
+    """一个对话线程下的外部 Agent 会话及其运行状态"""
+
     thread_id: str
     runner: str
     acp_session_id: str
