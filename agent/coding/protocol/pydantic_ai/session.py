@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import anyio
 
+from opensandbox.exceptions import SandboxException
 from pydantic_ai import (
     Agent,
     CapabilityEvent,
@@ -26,9 +27,12 @@ from pydantic_ai.messages import (
     ThinkingPartDelta,
     repair_messages,
 )
+from pydantic_ai.workspaces import WorkspaceError
 from pydantic_ai_harness.repair_tool_arguments import RepairToolArguments
 from pydantic_core import SchemaValidator, core_schema
 
+from backend.common.exception import errors
+from backend.common.log import log
 from backend.core.conf import settings
 from backend.plugin.ai_buddy.agent.coding.attachments import coding_user_content
 from backend.plugin.ai_buddy.agent.coding.prompts import build_agent_system_prompt
@@ -439,7 +443,14 @@ def _bound_tool(
             tool_call = AgentToolCall(id=ctx.tool_call_id or item.spec.name, name=item.spec.name, arguments=kwargs)
             if wait_approval is None or not await wait_approval(item.spec.description, tool_call):
                 return '用户未批准此操作，工具未执行'
-        return await item.handler(kwargs)
+        # 工具失败要以结果交还模型，否则会中断整轮运行
+        try:
+            return await item.handler(kwargs)
+        except errors.BaseExceptionError as exc:
+            return f'错误：{exc.msg}'
+        except (SandboxException, WorkspaceError, TimeoutError, OSError, ValueError) as exc:
+            log.warning(f'编码工具执行失败 tool={item.spec.name}: {exc!r}')
+            return f'错误：工具 {item.spec.name} 执行失败，请检查参数或稍后重试'
 
     tool = Tool.from_schema(
         call,

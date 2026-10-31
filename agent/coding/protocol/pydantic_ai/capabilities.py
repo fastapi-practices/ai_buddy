@@ -162,7 +162,7 @@ def _build_resource_policy_hooks(
                         else AIBuddyToolPolicy.allow
                     ),
                 )
-                for name in ('bash', 'read_file')
+                for name in ('bash', 'read')
             ]
             priority = {AIBuddyToolPolicy.allow: 0, AIBuddyToolPolicy.ask: 1, AIBuddyToolPolicy.deny: 2}
             policy = max(policies, key=priority.__getitem__)

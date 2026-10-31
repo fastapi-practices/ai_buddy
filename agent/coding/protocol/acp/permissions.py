@@ -147,7 +147,7 @@ class ACPPermissionAdapter:
             payload={'toolCall': tool_call_payload, 'options': option_payloads},
             options=option_payloads,
             runner=runner,
-            tool_name=summary or 'external-agent',
+            tool_name=(summary or 'external-agent')[:200],
             tool_kind=kind or 'other',
             target=target,
             action=kind,

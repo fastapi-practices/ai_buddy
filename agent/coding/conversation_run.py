@@ -11,7 +11,6 @@ from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, Text
 
 from backend.common.exception import errors
 from backend.common.log import log
-from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.agent.coding.approvals import wait_for_approval
 from backend.plugin.ai_buddy.agent.coding.events import CodingEventStream
@@ -33,6 +32,10 @@ from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyMess
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.utils.media_store import dump_model_message_payloads, encode_model_message_payloads
 from backend.plugin.ai_buddy.utils.run_error import build_run_error_payload
+from backend.plugin.ai_buddy.utils.run_timeout import resolve_run_timeout
+
+# 外层总时限只作兜底，让 agent.run 自带的时限先触发并给出明确的超时原因
+_RUN_TIMEOUT_GRACE_SECONDS = 30
 
 if TYPE_CHECKING:
     from starlette.responses import StreamingResponse
@@ -230,7 +233,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
                 is_cancelled=is_cancelled,
                 wait_approval=wait_approval,
             ),
-            timeout=settings.AI_BUDDY_AGENT_SANDBOX_TIMEOUT_MINUTES * 60,
+            timeout=resolve_run_timeout(None) + _RUN_TIMEOUT_GRACE_SECONDS,
         )
         if run.cancellation_token.cancelled:
             status = AIBuddyMessageStatus.interrupted

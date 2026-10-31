@@ -19,6 +19,7 @@ from backend.plugin.ai_buddy.utils.skill_parser import skill_file_guidance
 
 _SNIPPET_CHARS = 240
 _CONTENT_CHARS = 12000
+_TOOL_OUTPUT_CHARS = 30000
 ToolHandler = Callable[[dict[str, Any]], Awaitable[str]]
 
 
@@ -308,7 +309,9 @@ def _delivery_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         """
         kind = _string(arguments, 'kind', required=False)
         return await deliver_sandbox_file(
-            ctx=ctx,
+            sandbox=ctx.sandbox,
+            user_id=ctx.user_id,
+            conversation_id=ctx.conversation_id,
             path=_string(arguments, 'path'),
             title=_string(arguments, 'title', required=False).strip() or None,
             kind=AIBuddyArtifactKind(kind) if kind else None,
@@ -365,11 +368,12 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         :param arguments: 工具参数
         :return:
         """
-        return await ctx.sandbox.read_file(
+        text = await ctx.sandbox.read_file(
             path=_string(arguments, 'path'),
             offset=int(arguments.get('offset') or 0),
             limit=None if arguments.get('limit') is None else int(arguments['limit']),
         )
+        return _truncate(text, _TOOL_OUTPUT_CHARS)
 
     async def write_file(arguments: dict[str, Any]) -> str:
         """
@@ -408,7 +412,9 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         output = f'{result.stdout}{result.stderr}'
         if result.reason != AIBuddyCommandReason.completed:
             output = f'{output}\n命令未正常完成：{result.reason}' + ('，输出已截断' if result.truncated else '')
-        return f'exit {result.exit_code if result.exit_code is not None else -1}\n{output}'.rstrip()
+        return _truncate(
+            f'exit {result.exit_code if result.exit_code is not None else -1}\n{output}'.rstrip(), _TOOL_OUTPUT_CHARS
+        )
 
     async def ls(arguments: dict[str, Any]) -> str:
         """
@@ -423,7 +429,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         for item in entries:
             suffix = '/' if item['is_dir'] else f' {item["size"]}B'
             lines.append(f'{item["path"]}{suffix}')
-        return '\n'.join(lines) or '目录为空'
+        return _truncate('\n'.join(lines) or '目录为空', _TOOL_OUTPUT_CHARS)
 
     async def git_status(_arguments: dict[str, Any]) -> str:
         """

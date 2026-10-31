@@ -6,6 +6,8 @@ import math
 
 from typing import TYPE_CHECKING, Any
 
+from acp.exceptions import RequestError as ACPRequestError
+
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.models import ACPConfig, ACPError
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.tool_adapter import (
     format_close_response,
@@ -231,6 +233,8 @@ async def run_acp_runner(  # ruff: ignore[complex-structure]
         return f'未安装 ACP 支持：{exc}。请安装 agent-client-protocol'
     except (ACPError, ValueError) as exc:
         return f'错误：{exc}'
+    except ACPRequestError as exc:
+        return f'外部 Agent 返回错误：{exc}'
     except OSError as exc:
         return f'ACP 执行错误：{exc}'
 

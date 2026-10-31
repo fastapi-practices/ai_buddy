@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from backend.common.exception import errors
-from backend.core.conf import settings
 from backend.plugin.ai_buddy.agent.work.run_store import shared_chat_run_store
 from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus
 from backend.plugin.ai_buddy.service.approval_audit_service import ai_buddy_approval_audit_service
+from backend.plugin.ai_buddy.utils.run_timeout import resolve_run_timeout
 
 if TYPE_CHECKING:
     from backend.plugin.ai_buddy.agent.coding.protocol.base import CancelledCheck, EmitEvent
@@ -89,7 +89,7 @@ async def wait_for_approval(
     request_id = uuid4().hex
     key = _approval_key(conversation_id, request_id)
     client = shared_chat_run_store.client
-    expires_seconds = settings.AI_BUDDY_AGENT_SANDBOX_TIMEOUT_MINUTES * 60 + 60
+    expires_seconds = resolve_run_timeout(None) + 60
     await ai_buddy_approval_audit_service.create(
         user_id=user_id,
         conversation_id=conversation_id,
@@ -127,7 +127,7 @@ async def wait_for_approval(
                 )
                 await emit('approval_resolved', {'request_id': request_id, 'approved': approved})
                 return approved
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
         return False
     finally:
         try:
