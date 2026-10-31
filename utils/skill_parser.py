@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.plugin.ai_buddy.schema.skill import AIBuddySkillFrontmatter
+from backend.plugin.ai_buddy.utils.archive import validate_archive_size
 from backend.plugin.ai_buddy.utils.workspace import safe_relative_parts
 
 _SKILL_MARKDOWN_NAME = 'skill.md'
@@ -89,7 +90,7 @@ def rewrite_skill_markdown(content: str, *, description: str | None, body: str |
 
 def load_builtin_skill_payloads() -> list[list[tuple[str, bytes]]]:
     """
-    读取随插件发布的内置技能目录，每个技能一组以技能目录名开头的文件
+    读取随插件发布的内置技能目录，每个技能一组以技能目录名开头的文件，以点开头的目录（如工具缓存）不是技能
 
     :return:
     """
@@ -100,21 +101,28 @@ def load_builtin_skill_payloads() -> list[list[tuple[str, bytes]]]:
             if path.is_file()
         ]
         for directory in sorted(_BUILTIN_SKILL_ROOT.iterdir())
-        if directory.is_dir()
+        if directory.is_dir() and not directory.name.startswith('.')
     ]
 
 
-def skill_file_guidance(skill_id: int) -> str:
+def skill_file_guidance(skill_id: int, *, executable: bool = False) -> str:
     """
-    说明技能包相对路径的只读访问方式
+    说明技能包相对路径的访问方式，有沙箱时说明如何执行其中的脚本
 
     :param skill_id: 技能 ID
+    :param executable: 本轮是否有沙箱可以执行脚本
     :return:
     """
-    return (
+    reading = (
         f'技能包内的相对路径请用 read_skill_file(skill_id={skill_id}, path="相对路径") 读取，'
-        '较长文本可用 offset 和 limit 按字符分页；脚本只返回文本，不会执行'
+        '较长文本可用 offset 和 limit 按字符分页；'
     )
+    if executable:
+        return (
+            f'{reading}read_skill_file 只返回文本；需要运行其中的脚本时，先调用 install_skill(skill_id={skill_id}) '
+            '把技能包复制进沙箱，文档里的 SKILL_DIR 即返回的目录'
+        )
+    return f'{reading}脚本只返回文本，不会执行'
 
 
 # 上传校验、压缩包展开和技能目录约束保持顺序一致
@@ -143,6 +151,7 @@ def parse_skill_upload(*, files: Sequence[tuple[str | None, bytes]]) -> SkillUpl
         except BadZipFile:
             raise errors.RequestError(msg='技能 zip 文件无效')
         with archive:
+            validate_archive_size(archive, msg='技能 zip 解压后超出最大限制')
             payloads = []
             for info in archive.infolist():
                 if info.is_dir():
@@ -150,9 +159,14 @@ def parse_skill_upload(*, files: Sequence[tuple[str | None, bytes]]) -> SkillUpl
                 parts = safe_relative_parts(info.filename, msg='技能路径包含非法路径')
                 if not parts or _ignored_parts(parts):
                     continue
-                if parts[-1].lower() == _SKILL_MARKDOWN_NAME and info.file_size > _SKILL_MARKDOWN_MAX_BYTES:
+                limit = (
+                    _SKILL_MARKDOWN_MAX_BYTES
+                    if parts[-1].lower() == _SKILL_MARKDOWN_NAME
+                    else settings.S3_UPLOAD_SIZE_MAX
+                )
+                if info.file_size > limit:
                     raise errors.RequestError(msg='技能文件超出最大限制')
-                payloads.append(('/'.join(parts), archive.read(info.filename)))
+                payloads.append(('/'.join(parts), archive.read(info)))
             if not payloads:
                 raise errors.RequestError(msg='未找到 SKILL.md，请上传技能目录或包含技能目录的 zip')
 
@@ -285,9 +299,9 @@ def _validate_skill_name(name: str) -> str:
 
 def _ignored_parts(parts: Sequence[str]) -> bool:
     """
-    判断压缩包路径是否应忽略
+    判断压缩包路径是否应忽略，隐藏文件被忽略，但 Office 模板必需的 .rels 除外
 
     :param parts: 路径片段
     :return:
     """
-    return any(part == '__MACOSX' or part.startswith('.') for part in parts)
+    return any(part == '__MACOSX' or (part.startswith('.') and part != '.rels') for part in parts)

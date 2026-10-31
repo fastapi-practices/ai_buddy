@@ -8,6 +8,7 @@ from zipfile import BadZipFile, ZipFile
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.plugin.ai_buddy.enums import AIBuddyDocumentExtractBackend, AIBuddyKnowledgeFileType
+from backend.plugin.ai_buddy.utils.archive import validate_archive_size
 from backend.plugin.ai_buddy.utils.knowledge_extract import extract_with_backend
 from backend.plugin.ai_buddy.utils.workspace import safe_relative_parts
 
@@ -99,6 +100,7 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
             except BadZipFile as exc:
                 raise errors.RequestError(msg='知识 zip 文件无效') from exc
             with archive:
+                validate_archive_size(archive, msg='知识 zip 解压后超出最大限制')
                 entries: list[tuple[str, bytes]] = []
                 for info in archive.infolist():
                     if info.is_dir():
