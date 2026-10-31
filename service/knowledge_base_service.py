@@ -36,7 +36,7 @@ from backend.plugin.ai_buddy.utils.onnx_embed import (
     list_onnx_embedding_options,
     start_onnx_download,
 )
-from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID, visible_owner_ids
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 
 class AIBuddyKnowledgeBaseService:
@@ -145,10 +145,10 @@ class AIBuddyKnowledgeBaseService:
         :param is_superuser: 是否为超级管理员
         :return:
         """
-        knowledge_base = await ai_buddy_knowledge_base_dao.get(db, pk)
+        knowledge_base = await ai_buddy_knowledge_base_dao.get_visible(
+            db, pk, user_id=user_id, is_superuser=is_superuser
+        )
         if knowledge_base is None:
-            raise errors.NotFoundError(msg='知识库不存在')
-        if not is_superuser and knowledge_base.user_id not in set(visible_owner_ids(user_id)):
             raise errors.NotFoundError(msg='知识库不存在')
         return knowledge_base
 

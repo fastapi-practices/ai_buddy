@@ -11,6 +11,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyModelKind
 from backend.plugin.ai_buddy.model import AIBuddyModel, AIBuddyProvider
 from backend.plugin.ai_buddy.schema.default_model import GetAIBuddyDefaultModelDetail, UpdateAIBuddyDefaultModelParam
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
+from backend.plugin.ai_buddy.utils.knowledge_reindex import schedule_reindex
 from backend.plugin.ai_buddy.utils.model_catalog import eligible_for_default, require_default_kind
 from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
@@ -112,9 +113,7 @@ class AIBuddyDefaultModelService:
             and obj.status == StatusType.enable
             and previous_binding != (obj.provider_id, obj.model_id, obj.status)
         ):
-            from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
-
-            ai_buddy_knowledge_service.schedule_reindex(db=db)
+            schedule_reindex(db=db)
 
     async def get_enabled_or_none(
         self,

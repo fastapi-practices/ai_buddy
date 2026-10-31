@@ -4,12 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.enums import StatusType
 from backend.core.conf import settings
+from backend.database.redis import redis_client
 from backend.plugin.ai_buddy.enums import (
     AIBuddyDocumentExtractBackend,
     AIBuddyEmbeddingBackend,
     AIBuddyExecutionBackend,
     AIBuddyOcrBackend,
 )
+from backend.plugin.ai_buddy.utils.knowledge_reindex import schedule_reindex
 from backend.plugin.core import check_plugin_installed
 from backend.utils.dynamic_config import load_config
 from backend.utils.serializers import select_list_serialize
@@ -176,9 +178,6 @@ async def load_ai_buddy_config(db: AsyncSession, *, reindex_on_change: bool = Tr
     await load_config(db, 'ai', _AI_CONFIG_MAPPING, 'AI_BUDDY_CONFIG_STATUS')
     if not reindex_on_change:
         return
-    from backend.database.redis import redis_client
-    from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
-
     fingerprint_key = f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:embed-fp'
     fingerprint = settings.AI_BUDDY_EMBEDDING_BACKEND
     if fingerprint == AIBuddyEmbeddingBackend.onnx:
@@ -188,7 +187,7 @@ async def load_ai_buddy_config(db: AsyncSession, *, reindex_on_change: bool = Tr
         stored = AIBuddyEmbeddingBackend.remote.value
     await redis_client.set(fingerprint_key, fingerprint)
     if stored is not None and stored != fingerprint:
-        ai_buddy_knowledge_service.schedule_reindex()
+        schedule_reindex()
 
 
 async def get_ai_buddy_config_snapshot(db: AsyncSession) -> tuple[StatusType, dict[str, str]]:

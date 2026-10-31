@@ -1,5 +1,3 @@
-import asyncio
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -7,15 +5,16 @@ from typing import Any
 import httpx
 
 from fastapi import UploadFile
-from sqlalchemy import event
+from pydantic_ai import Agent
+from pydantic_ai.messages import BinaryContent
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, SessionTransaction
 from starlette.concurrency import run_in_threadpool
 
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.common.pagination import paging_data
 from backend.core.conf import settings
+from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.crud.crud_knowledge import ai_buddy_knowledge_dao, knowledge_visibility_context
 from backend.plugin.ai_buddy.crud.crud_knowledge_base import ai_buddy_knowledge_base_dao
 from backend.plugin.ai_buddy.crud.crud_model import ai_buddy_model_dao
@@ -30,10 +29,12 @@ from backend.plugin.ai_buddy.enums import (
 )
 from backend.plugin.ai_buddy.model import AIBuddyKnowledge
 from backend.plugin.ai_buddy.provider.base import normalize_provider_api_host
+from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.schema.knowledge import CreateAIBuddyKnowledgeParam
 from backend.plugin.ai_buddy.service.default_model_service import ai_buddy_default_model_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
+from backend.plugin.ai_buddy.utils.http_client import build_retry_http_client
 from backend.plugin.ai_buddy.utils.knowledge_ocr import (
     join_ocr_segments,
     ocr_images_with_mistral,
@@ -67,6 +68,25 @@ class KnowledgeHit:
     source: str | None
     content: str
     score: float
+
+
+async def _require_knowledge_base(
+    *, db: AsyncSession, knowledge_base_id: int, user_id: int, is_superuser: bool
+) -> None:
+    """
+    校验知识库存在且对当前用户可见
+
+    :param db: 数据库会话
+    :param knowledge_base_id: 知识库 ID
+    :param user_id: 当前用户 ID
+    :param is_superuser: 是否为后台超级管理员
+    :return:
+    """
+    knowledge_base = await ai_buddy_knowledge_base_dao.get_visible(
+        db, knowledge_base_id, user_id=user_id, is_superuser=is_superuser
+    )
+    if knowledge_base is None:
+        raise errors.NotFoundError(msg='知识库不存在')
 
 
 class AIBuddyKnowledgeService:
@@ -280,6 +300,11 @@ class AIBuddyKnowledgeService:
                     )
                 await self._index(db=db, knowledge=knowledge)
 
+    async def reindex_default_binding(self) -> None:
+        """后台重建默认向量模型变更的知识索引，使用独立事务"""
+        async with async_db_session.begin() as db:
+            await self.reindex_all(db=db, default_only=True, only_changed=True)
+
     @staticmethod
     async def get_all(
         *,
@@ -300,10 +325,8 @@ class AIBuddyKnowledgeService:
         :return:
         """
         if knowledge_base_id is not None:
-            from backend.plugin.ai_buddy.service.knowledge_base_service import ai_buddy_knowledge_base_service
-
-            await ai_buddy_knowledge_base_service.get(
-                db=db, pk=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
+            await _require_knowledge_base(
+                db=db, knowledge_base_id=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
             )
         knowledge_rows = await ai_buddy_knowledge_dao.get_all_visible(
             db, knowledge_base_id, user_id=user_id, is_superuser=is_superuser
@@ -330,10 +353,8 @@ class AIBuddyKnowledgeService:
         :return:
         """
         if knowledge_base_id is not None:
-            from backend.plugin.ai_buddy.service.knowledge_base_service import ai_buddy_knowledge_base_service
-
-            await ai_buddy_knowledge_base_service.get(
-                db=db, pk=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
+            await _require_knowledge_base(
+                db=db, knowledge_base_id=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
             )
         knowledge = await ai_buddy_knowledge_dao.get_visible(db, pk, user_id=user_id, is_superuser=is_superuser)
         if knowledge is None or (knowledge_base_id is not None and knowledge.knowledge_base_id != knowledge_base_id):
@@ -363,10 +384,8 @@ class AIBuddyKnowledgeService:
         :return:
         """
         if knowledge_base_id is not None:
-            from backend.plugin.ai_buddy.service.knowledge_base_service import ai_buddy_knowledge_base_service
-
-            await ai_buddy_knowledge_base_service.get(
-                db=db, pk=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
+            await _require_knowledge_base(
+                db=db, knowledge_base_id=knowledge_base_id, user_id=user_id, is_superuser=is_superuser
             )
         knowledge_select = await ai_buddy_knowledge_dao.get_visible_select(
             db, title, knowledge_base_id, user_id=user_id, is_superuser=is_superuser
@@ -441,12 +460,6 @@ class AIBuddyKnowledgeService:
                 elif backend == AIBuddyOcrBackend.mistral:
                     texts = await run_in_threadpool(ocr_images_with_mistral, images)
                 elif backend == AIBuddyOcrBackend.vision:
-                    from pydantic_ai import Agent
-                    from pydantic_ai.messages import BinaryContent
-
-                    from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
-                    from backend.plugin.ai_buddy.utils.http_client import build_retry_http_client
-
                     default = await ai_buddy_default_model_service.get_enabled_or_none(
                         db=db, kind=AIBuddyModelKind.chat
                     )
@@ -603,11 +616,9 @@ class AIBuddyKnowledgeService:
         :return:
         """
         if knowledge_base_id is not None:
-            from backend.plugin.ai_buddy.service.knowledge_base_service import ai_buddy_knowledge_base_service
-
-            await ai_buddy_knowledge_base_service.get(
+            await _require_knowledge_base(
                 db=db,
-                pk=knowledge_base_id,
+                knowledge_base_id=knowledge_base_id,
                 user_id=user_id if user_id is not None else SYSTEM_OWNER_USER_ID,
                 is_superuser=is_superuser or user_id is None,
             )
@@ -731,93 +742,5 @@ class AIBuddyKnowledgeService:
                 break
         return hits
 
-    @staticmethod
-    def schedule_reindex(*, db: AsyncSession | None = None) -> None:
-        """
-        调度知识索引重建，指定会话时等待当前事务提交
-
-        :param db: 默认模型更新使用的数据库会话
-        :return:
-        """
-        if db is not None and db.in_transaction():
-            session = db.sync_session
-            if not event.contains(session, 'after_commit', _schedule_committed_reindex):
-                event.listen(session, 'after_commit', _schedule_committed_reindex)
-                event.listen(session, 'after_rollback', _discard_rolled_back_reindex)
-                event.listen(session, 'after_transaction_end', _clear_finished_reindex)
-            transaction = session.get_nested_transaction() or session.get_transaction()
-            if transaction is not None:
-                pending: set[SessionTransaction] = session.info.setdefault(_PENDING_REINDEX_KEY, set())
-                pending.add(transaction)
-                return
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            return
-        loop.create_task(_reindex_all_task())
-
 
 ai_buddy_knowledge_service: AIBuddyKnowledgeService = AIBuddyKnowledgeService()
-
-
-async def _reindex_all_task() -> None:
-    """后台重建默认向量模型变更的知识索引"""
-    from backend.database.db import async_db_session
-
-    try:
-        async with async_db_session.begin() as db:
-            await ai_buddy_knowledge_service.reindex_all(db=db, default_only=True, only_changed=True)
-    except Exception as exc:
-        log.warning(f'知识索引重建失败: {exc}')
-
-
-_PENDING_REINDEX_KEY = 'ai_buddy_knowledge_reindex_pending'
-
-
-def _schedule_committed_reindex(session: Session) -> None:
-    """
-    最外层事务提交后启动重建，保存点提交只合并请求
-
-    :param session: 事务会话
-    :return:
-    """
-    pending: set[SessionTransaction] | None = session.info.get(_PENDING_REINDEX_KEY)
-    if not pending:
-        return
-    transaction = session.get_nested_transaction()
-    if transaction is not None:
-        if transaction in pending:
-            pending.remove(transaction)
-            if transaction.parent is not None:
-                pending.add(transaction.parent)
-        return
-    session.info.pop(_PENDING_REINDEX_KEY, None)
-    ai_buddy_knowledge_service.schedule_reindex()
-
-
-def _discard_rolled_back_reindex(session: Session) -> None:
-    """
-    丢弃回滚事务内的重建请求
-
-    :param session: 事务会话
-    :return:
-    """
-    transaction = session.get_nested_transaction()
-    if transaction is None:
-        session.info.pop(_PENDING_REINDEX_KEY, None)
-    else:
-        pending: set[SessionTransaction] | None = session.info.get(_PENDING_REINDEX_KEY)
-        if pending is not None:
-            pending.discard(transaction)
-
-
-def _clear_finished_reindex(session: Session, transaction: SessionTransaction) -> None:
-    """
-    事务结束后清理请求，避免关闭会话后复用遗留状态
-
-    :param session: 事务会话
-    :param transaction: 事务
-    :return:
-    """
-    if transaction.parent is None:
-        session.info.pop(_PENDING_REINDEX_KEY, None)

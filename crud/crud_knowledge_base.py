@@ -26,6 +26,23 @@ class CRUDAIBuddyKnowledgeBase(CRUDPlus[AIBuddyKnowledgeBase]):
         """
         return await self.select_model(db, pk, deleted=0)
 
+    async def get_visible(
+        self, db: AsyncSession, pk: int, *, user_id: int, is_superuser: bool = False
+    ) -> AIBuddyKnowledgeBase | None:
+        """
+        获取当前用户可见的知识库
+
+        :param db: 数据库会话
+        :param pk: 知识库 ID
+        :param user_id: 当前用户 ID
+        :param is_superuser: 是否为后台超级管理员
+        :return:
+        """
+        knowledge_base = await self.get(db, pk)
+        if knowledge_base is None or (not is_superuser and knowledge_base.user_id not in visible_owner_ids(user_id)):
+            return None
+        return knowledge_base
+
     async def get_by_name(self, db: AsyncSession, user_id: int, name: str) -> AIBuddyKnowledgeBase | None:
         """
         通过名称获取当前用户知识库

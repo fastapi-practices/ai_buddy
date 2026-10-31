@@ -17,8 +17,10 @@ from backend.plugin.ai_buddy.schema.object import AIBuddyObjectGarbageCollectPar
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.service.follow_up_service import ai_buddy_follow_up_service
 from backend.plugin.ai_buddy.service.gateway_channel_service import ai_buddy_gateway_channel_service
+from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
+from backend.plugin.ai_buddy.utils.knowledge_reindex import register_reindex_runner
 from backend.plugin.ai_buddy.utils.skill_parser import load_builtin_skill_payloads
 
 _RECONCILE_INTERVAL_SECONDS = 30
@@ -124,11 +126,12 @@ def setup(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
-    管理聊天后台任务、各平台通道和残留状态收敛
+    管理聊天后台任务、各平台通道和残留状态收敛，并登记知识索引重建函数
 
     :param app: FastAPI 应用
     :return:
     """
+    register_reindex_runner(ai_buddy_knowledge_service.reindex_default_binding)
     reconcile_task = asyncio.create_task(
         _reconcile_stale_pending_loop(),
         name='ai-chat-stale-pending-reconciler',
