@@ -59,6 +59,8 @@ from backend.plugin.ai_buddy.utils.conversation_title import (
     normalize_conversation_title,
     normalize_generated_conversation_title,
 )
+from backend.plugin.ai_buddy.utils.history_cursor import encode_history_cursor
+from backend.plugin.ai_buddy.utils.media_store import track_copied_attachments
 from backend.plugin.ai_buddy.utils.message_converter import (
     expand_message_row_metadata,
     expand_message_rows,
@@ -521,8 +523,6 @@ class AIBuddyConversationService:
         if message_limit is None:
             message_rows = await ai_buddy_message_dao.get_all_by_message_index(db, conversation.conversation_id)
         else:
-            from backend.plugin.ai_buddy.service.message_history_service import ai_buddy_message_history_service
-
             recent_rows = list(
                 await ai_buddy_message_dao.get_history_page(
                     db, conversation.conversation_id, before=None, limit=message_limit + 1
@@ -531,7 +531,7 @@ class AIBuddyConversationService:
             history_has_more = len(recent_rows) > message_limit
             message_rows = list(reversed(recent_rows[:message_limit]))
             if history_has_more and message_rows:
-                history_cursor = ai_buddy_message_history_service.encode_cursor(row=message_rows[0])
+                history_cursor = encode_history_cursor(row=message_rows[0])
         model_messages, row_model_message_ranges = await expand_message_rows(message_rows)
         message_ids, provider_ids, model_ids, message_indexes, turn_contexts = expand_message_row_metadata(
             message_rows,
@@ -949,6 +949,12 @@ class AIBuddyConversationService:
                     }
                     for row in copied_rows
                 ],
+            )
+            await track_copied_attachments(
+                db=db,
+                conversation_id=new_conversation_id,
+                user_id=user_id,
+                payloads=[row.model_messages for row in copied_rows],
             )
             forked_rows = await ai_buddy_message_dao.get_all_by_message_index(db, new_conversation_id)
             index_to_new_id = {row.message_index: row.id for row in forked_rows}

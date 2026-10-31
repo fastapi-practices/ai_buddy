@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import json
 
 from collections.abc import Sequence
@@ -21,6 +20,7 @@ from backend.plugin.ai_buddy.schema.message_history import (
     GetAIBuddyPlanDetail,
 )
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
+from backend.plugin.ai_buddy.utils.history_cursor import decode_history_cursor, encode_history_cursor
 from backend.plugin.ai_buddy.utils.message_converter import expand_message_row_metadata, expand_message_rows
 from backend.plugin.ai_buddy.utils.message_snapshot import serialize_messages_to_snapshot
 from backend.plugin.ai_buddy.utils.plan_store import get_plan_store
@@ -47,7 +47,7 @@ class AIBuddyMessageHistoryService:
         )
         rows = list(
             await ai_buddy_message_dao.get_history_page(
-                db, conversation_id, before=self._decode_cursor(cursor=before), limit=limit + 1
+                db, conversation_id, before=decode_history_cursor(cursor=before), limit=limit + 1
             )
         )
         has_more = len(rows) > limit
@@ -56,7 +56,7 @@ class AIBuddyMessageHistoryService:
         return GetAIBuddyMessagePageDetail(
             messages_snapshot=snapshot,
             has_more=has_more,
-            next_cursor=self.encode_cursor(row=page[-1]) if has_more and page else None,
+            next_cursor=encode_history_cursor(row=page[-1]) if has_more and page else None,
         )
 
     async def search(
@@ -79,7 +79,7 @@ class AIBuddyMessageHistoryService:
         needle = q.strip().casefold()
         if not needle:
             raise errors.RequestError(msg='搜索内容不能为空')
-        before = self._decode_cursor(cursor=cursor)
+        before = decode_history_cursor(cursor=cursor)
         items: list[GetAIBuddyMessageSearchHitDetail] = []
         scanned = 0
         last = None
@@ -118,14 +118,14 @@ class AIBuddyMessageHistoryService:
                 if len(items) >= limit:
                     more = row is not rows[-1]
                     return GetAIBuddyMessageSearchDetail(
-                        items=items, has_more=more, next_cursor=self.encode_cursor(row=row) if more else None
+                        items=items, has_more=more, next_cursor=encode_history_cursor(row=row) if more else None
                     )
             if len(rows) <= 50:
                 return GetAIBuddyMessageSearchDetail(items=items, has_more=False)
             assert last is not None
             before = (last.message_index, last.id)
         assert last is not None
-        return GetAIBuddyMessageSearchDetail(items=items, has_more=True, next_cursor=self.encode_cursor(row=last))
+        return GetAIBuddyMessageSearchDetail(items=items, has_more=True, next_cursor=encode_history_cursor(row=last))
 
     @staticmethod
     async def plan(*, db: AsyncSession, conversation_id: str, user_id: int) -> GetAIBuddyPlanDetail:
@@ -212,38 +212,6 @@ class AIBuddyMessageHistoryService:
                 )
             )
         return result
-
-    @staticmethod
-    def encode_cursor(*, row: AIBuddyMessage) -> str:
-        """
-        复合顺序游标不依赖连续主键
-
-        :param row: 消息记录
-        :return:
-        """
-        return base64.urlsafe_b64encode(json.dumps([row.message_index, row.id]).encode()).decode().rstrip('=')
-
-    @staticmethod
-    def _decode_cursor(*, cursor: str | None) -> tuple[int, int] | None:
-        """
-        验证不透明历史游标
-
-        :param cursor: 分页游标
-        :return:
-        """
-        if cursor is None:
-            return None
-        try:
-            if len(cursor) > 128:
-                raise ValueError
-            value = json.loads(base64.b64decode(cursor + '=' * (-len(cursor) % 4), altchars=b'-_', validate=True))
-            if not isinstance(value, list) or len(value) != 2:
-                raise ValueError
-            if any(type(item) is not int or item < 0 for item in value) or value[1] == 0:
-                raise ValueError
-            return value[0], value[1]
-        except (ValueError, TypeError, UnicodeError) as exc:
-            raise errors.RequestError(msg='历史消息游标无效') from exc
 
     @staticmethod
     async def _serialize_rows(

@@ -8,13 +8,14 @@ from backend.plugin.ai_buddy.agent.work.runs import has_active_run
 from backend.plugin.ai_buddy.crud.crud_conversation import ai_buddy_conversation_dao
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyOrigin, AIBuddySlashCommand, AIBuddySlashEntry
-from backend.plugin.ai_buddy.schema.chat import AIBuddyChatPolishParam
+from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, AIBuddyChatPolishParam
 from backend.plugin.ai_buddy.schema.conversation import (
     CreateAIBuddyConversationParam,
     UpdateAIBuddyConversationTitleParam,
 )
 from backend.plugin.ai_buddy.schema.slash import GetAIBuddySlashCommandDetail, GetAIBuddySlashResultDetail
 from backend.plugin.ai_buddy.service.chat_polish_service import ai_buddy_chat_polish_service
+from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.utils.conversation_title import normalize_conversation_title
 from backend.plugin.ai_buddy.utils.message_converter import (
@@ -347,9 +348,6 @@ class AIBuddySlashService:
                 last_user = row
         if last_user is None:
             raise errors.RequestError(msg='没有可重试的用户消息')
-        from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
-        from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
-
         context = last_user.turn_context or {}
         if context.get('agent_mode') == AIBuddyAgentMode.coding:
             raise errors.RequestError(msg='编码轮不能通过 /retry 重试，请在桌面重新连接工作区或 ACP Agent 后重新发送')

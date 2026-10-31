@@ -34,6 +34,7 @@ from backend.plugin.ai_buddy.schema.follow_up import (
     SubmitAIBuddyFollowUpParam,
     UpdateAIBuddyFollowUpParam,
 )
+from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.utils.timezone import timezone
 
@@ -325,8 +326,6 @@ class AIBuddyFollowUpService:
         :param conversation_id: 对话 ID
         :return:
         """
-        from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
-
         row = await self.claim(conversation_id=conversation_id)
         if row is None:
             return
