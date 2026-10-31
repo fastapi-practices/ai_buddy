@@ -10,21 +10,20 @@ import re
 from datetime import UTC, datetime, timedelta
 from pathlib import PureWindowsPath
 from posixpath import join, normpath
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import anyio
 
 from opensandbox.adapters import AdapterFactory
-from opensandbox.exceptions import SandboxConnectionException, SandboxTimeoutException
+from opensandbox.exceptions import SandboxApiException, SandboxConnectionException, SandboxTimeoutException
 from opensandbox.models.execd import ExecutionHandlers, ExecutionInit, OutputMessage, RunCommandOpts
 from opensandbox.models.filesystem import ContentReplaceEntry, DirectoryListEntry, MoveEntry, WriteEntry
 from pydantic import TypeAdapter, ValidationError
 
 from backend.common.exception import errors
 from backend.core.conf import settings
-from backend.plugin.ai_buddy.agent.coding.execution_bridge import ExecutionBridge, get_bridge, open_bridge
 from backend.plugin.ai_buddy.enums import (
     AIBuddyCommandReason,
     AIBuddyExecutionBackend,
@@ -42,9 +41,12 @@ from backend.plugin.ai_buddy.schema.execution import AIBuddyExecutionFileEntry
 if TYPE_CHECKING:
     from opensandbox import Sandbox
 
+    from backend.plugin.ai_buddy.agent.coding.execution_bridge import ExecutionBridge
 
-_WORKSPACE = '/workspace'
-_LIVE: dict[str, CodingSandbox] = {}
+
+WORKSPACE_ROOT = '/workspace'
+INPUT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
+LIVE_SANDBOXES: dict[str, CodingSandbox] = {}
 
 
 def _git_command(operation: Literal['status', 'diff'], *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
@@ -257,9 +259,9 @@ def resolve_sandbox_path(path: str) -> str:
     :return:
     """
     raw = (path or '').strip() or '.'
-    full = raw if raw.startswith('/') else join(_WORKSPACE, raw)
+    full = raw if raw.startswith('/') else join(WORKSPACE_ROOT, raw)
     normalized = normpath(full)
-    if normalized != _WORKSPACE and not normalized.startswith(f'{_WORKSPACE}/'):
+    if normalized != WORKSPACE_ROOT and not normalized.startswith(f'{WORKSPACE_ROOT}/'):
         raise errors.RequestError(msg='路径超出工作区')
     return normalized
 
@@ -271,7 +273,7 @@ def get_live_sandbox(conversation_id: str) -> CodingSandbox | None:
     :param conversation_id: 对话 ID
     :return:
     """
-    return _LIVE.get(conversation_id)
+    return LIVE_SANDBOXES.get(conversation_id)
 
 
 def _desktop_path(path: str) -> str:
@@ -313,8 +315,8 @@ class DesktopBridgeWorkspace:
         if self._stopped:
             return
         self._stopped = True
-        if _LIVE.get(self._conversation_id) is self:
-            _LIVE.pop(self._conversation_id, None)
+        if LIVE_SANDBOXES.get(self._conversation_id) is self:
+            LIVE_SANDBOXES.pop(self._conversation_id, None)
         try:
             async with asyncio.timeout(5):
                 await self.bridge.request(AIBuddyExecutionMethod.stop, {}, timeout=5)
@@ -392,7 +394,7 @@ class DesktopBridgeWorkspace:
         :param content: 附件字节
         :return:
         """
-        if len(content) > 10 * 1024 * 1024:
+        if len(content) > INPUT_ATTACHMENT_MAX_BYTES:
             raise errors.RequestError(msg='附件超过 10 MiB 导入上限')
         return await self._text(
             AIBuddyExecutionMethod.write_input_file,
@@ -551,7 +553,7 @@ class OpenSandboxWorkspace:
         self._client = client
         self._conversation_id = conversation_id
         self.execution_backend = AIBuddyExecutionBackend.sandbox
-        self.cwd = _WORKSPACE
+        self.cwd = WORKSPACE_ROOT
         self.user_id = user_id
         self.permission_mode = permission_mode
         self._endpoints = AdapterFactory(client.connection_config).create_sandbox_service()
@@ -563,8 +565,8 @@ class OpenSandboxWorkspace:
             return
         await self._client.close()
         self._stopped = True
-        if _LIVE.get(self._conversation_id) is self:
-            _LIVE.pop(self._conversation_id, None)
+        if LIVE_SANDBOXES.get(self._conversation_id) is self:
+            LIVE_SANDBOXES.pop(self._conversation_id, None)
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
         """
@@ -581,6 +583,36 @@ class OpenSandboxWorkspace:
             rows.append({'path': _relative(item.path), 'is_dir': is_dir, 'size': None if is_dir else item.size})
         return rows
 
+    async def _file_info(self, target: str) -> Any:
+        """
+        读取文件元数据并拒绝目录，文件不存在时 SDK 抛出 404 而不是返回空
+
+        :param target: 工作区内的绝对路径
+        :return:
+        """
+        try:
+            info = (await self._client.files.get_file_info([target])).get(target)
+        except SandboxApiException as exc:
+            if exc.status_code == 404:
+                raise errors.RequestError(msg='文件不存在') from exc
+            raise
+        if info is None:
+            raise errors.RequestError(msg='文件不存在')
+        if (info.entry_type or '').lower() in {'dir', 'directory'}:
+            raise errors.RequestError(msg='路径是目录，请指定文件')
+        return info
+
+    async def _require_text_size(self, target: str) -> None:
+        """
+        读取前按元数据拒绝目录和超限文件，避免把大文件整体拉进内存
+
+        :param target: 工作区内的绝对路径
+        :return:
+        """
+        info = await self._file_info(target)
+        if info.size > settings.AI_BUDDY_AGENT_MAX_FILE_BYTES:
+            raise errors.RequestError(msg='文件过大，请缩小范围或拆分读取')
+
     async def read_file(
         self, *, path: str, offset: int = 0, limit: int | None = None, line_numbers: bool = True
     ) -> str:
@@ -594,10 +626,8 @@ class OpenSandboxWorkspace:
         :return:
         """
         target = resolve_sandbox_path(path)
+        await self._require_text_size(target)
         text = await self._client.files.read_file(target)
-        encoded = text.encode('utf-8')
-        if len(encoded) > settings.AI_BUDDY_AGENT_MAX_FILE_BYTES:
-            raise errors.RequestError(msg='文件过大，请缩小范围或拆分读取')
         if not line_numbers:
             lines = text.splitlines(keepends=True)
             start = max(offset, 0)
@@ -621,7 +651,7 @@ class OpenSandboxWorkspace:
             raise errors.RequestError(msg='写入内容超过文件大小上限')
         target = resolve_sandbox_path(path)
         parent = normpath(join(target, '..'))
-        if parent.startswith(_WORKSPACE):
+        if parent.startswith(WORKSPACE_ROOT):
             await self._client.files.create_directories([WriteEntry(path=parent, mode=755)])
         await self._client.files.write_file(target, content, mode=644)
         return f'已写入 {_relative(target)}'
@@ -635,13 +665,13 @@ class OpenSandboxWorkspace:
         :return:
         """
         digest = hashlib.sha256(content).hexdigest()
-        if len(content) > 10 * 1024 * 1024 or not re.fullmatch(
+        if len(content) > INPUT_ATTACHMENT_MAX_BYTES or not re.fullmatch(
             rf'inbound/{digest}-[A-Za-z0-9][A-Za-z0-9._-]{{0,119}}', path
         ):
             raise errors.RequestError(msg='附件路径或大小无效')
         target = resolve_sandbox_path(path)
         temporary = f'{target}.{uuid4().hex}.tmp'
-        await self._client.files.create_directories([WriteEntry(path=f'{_WORKSPACE}/inbound', mode=700)])
+        await self._client.files.create_directories([WriteEntry(path=f'{WORKSPACE_ROOT}/inbound', mode=700)])
         try:
             await self._client.files.write_file(temporary, content, mode=600)
             await self._client.files.move_files([MoveEntry(src=temporary, dest=target)])
@@ -659,11 +689,7 @@ class OpenSandboxWorkspace:
         :return:
         """
         target = resolve_sandbox_path(path)
-        info = (await self._client.files.get_file_info([target])).get(target)
-        if info is None:
-            raise errors.RequestError(msg='文件不存在')
-        if (info.entry_type or '').lower() in {'dir', 'directory'}:
-            raise errors.RequestError(msg='路径是目录，请指定文件')
+        info = await self._file_info(target)
         if info.size > max_bytes:
             raise errors.RequestError(msg='文件超过交付大小上限')
         return await self._client.files.read_bytes(target)
@@ -678,6 +704,7 @@ class OpenSandboxWorkspace:
         :return:
         """
         target = resolve_sandbox_path(path)
+        await self._require_text_size(target)
         text = await self._client.files.read_file(target)
         count = text.count(old_text)
         if count == 0:
@@ -694,34 +721,14 @@ class OpenSandboxWorkspace:
 
     async def run_bash(self, *, command: str) -> str:
         """
-        在工作区执行命令
+        在工作区执行命令，输出受上限、时限和取消处理约束
 
         :param command: shell 命令
         :return:
         """
-        stripped = command.strip()
-        if not stripped:
-            raise errors.RequestError(msg='命令不能为空')
-
-        execution = await self._client.commands.run(
-            stripped,
-            opts=RunCommandOpts(
-                working_directory=_WORKSPACE,
-                timeout=timedelta(seconds=settings.AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS),
-            ),
-        )
-
-        chunks: list[str] = []
-        for item in execution.logs.stdout or []:
-            text = getattr(item, 'text', None)
-            if text:
-                chunks.append(text)
-        for item in execution.logs.stderr or []:
-            text = getattr(item, 'text', None)
-            if text:
-                chunks.append(text)
-        code = execution.exit_code if execution.exit_code is not None else -1
-        return f'exit {code}\n{"".join(chunks)}'.rstrip()
+        result = await self.run_command(command=command)
+        code = result.exit_code if result.exit_code is not None else -1
+        return f'exit {code}\n{result.stdout}{result.stderr}'.rstrip()
 
     async def git_status(self) -> str:
         """读取 OpenSandbox 工作区 Git 状态"""
@@ -792,7 +799,7 @@ class OpenSandboxWorkspace:
                 result = await self._client.commands.run(
                     params.command,
                     opts=RunCommandOpts(
-                        working_directory=_WORKSPACE,
+                        working_directory=WORKSPACE_ROOT,
                         timeout=timedelta(seconds=deadline),
                     ),
                     handlers=ExecutionHandlers(
@@ -853,7 +860,7 @@ class OpenSandboxWorkspace:
             raise errors.RequestError(msg='命令不能为空')
         execution = await self._client.commands.run(
             stripped,
-            opts=RunCommandOpts(background=True, working_directory=_WORKSPACE, envs=env),
+            opts=RunCommandOpts(background=True, working_directory=WORKSPACE_ROOT, envs=env),
         )
         if not execution.id:
             raise errors.RequestError(msg='后台命令未返回任务 ID')
@@ -926,72 +933,6 @@ class OpenSandboxWorkspace:
         raise errors.RequestError(msg=f'沙箱端口映射超时: {last_error}')
 
 
-async def create_coding_sandbox(
-    *,
-    conversation_id: str,
-    user_id: int,
-    permission_mode: AIBuddyPermissionMode,
-    execution_backend: AIBuddyExecutionBackend = AIBuddyExecutionBackend.local,
-    execution_bridge_id: str | None = None,
-    sandbox_provider: str | None = None,
-) -> CodingSandbox:
-    """
-    按本轮执行后端创建工作区，本机 OS 沙箱只能通过桌面连接执行，服务端沙箱按服务商接回或新建
-
-    :param conversation_id: 对话 ID
-    :param user_id: 用户 ID
-    :param permission_mode: 权限模式
-    :param execution_backend: 执行后端
-    :param execution_bridge_id: 桌面执行连接 ID
-    :param sandbox_provider: 服务端沙箱服务商，为空使用配置的默认服务商
-    :return:
-    """
-    if execution_backend == AIBuddyExecutionBackend.local and not execution_bridge_id:
-        raise errors.RequestError(msg='本机编码需要从桌面端连接 OS 沙箱工作区，不会在服务器执行')
-    if execution_backend == AIBuddyExecutionBackend.sandbox and execution_bridge_id is not None:
-        raise errors.RequestError(msg='服务端沙箱不使用桌面执行连接')
-    live = get_live_sandbox(conversation_id)
-    if live is not None and live.user_id != user_id:
-        raise errors.RequestError(msg='编码工作区不属于当前用户')
-    if execution_backend == AIBuddyExecutionBackend.sandbox:
-        from backend.plugin.ai_buddy.agent.coding.sandbox_providers import open_sandbox
-
-        if live is not None:
-            await live.stop()
-        workspace = await open_sandbox(
-            conversation_id=conversation_id,
-            user_id=user_id,
-            permission_mode=permission_mode,
-            requested_provider=sandbox_provider,
-        )
-        _LIVE[conversation_id] = workspace
-        return workspace
-    if (
-        live is not None
-        and live.execution_backend == execution_backend
-        and live.permission_mode == permission_mode
-        and isinstance(live, DesktopBridgeWorkspace)
-        and live.bridge.bridge_id == execution_bridge_id
-    ):
-        await live.bridge.check_connection()
-        return live
-    await get_bridge(
-        bridge_id=execution_bridge_id, user_id=user_id, backend=execution_backend, permission_mode=permission_mode
-    )
-    if live is not None:
-        await live.stop()
-    bridge = await open_bridge(
-        bridge_id=execution_bridge_id,
-        user_id=user_id,
-        backend=execution_backend,
-        permission_mode=permission_mode,
-        conversation_id=conversation_id,
-    )
-    workspace = DesktopBridgeWorkspace(bridge, conversation_id=conversation_id)
-    _LIVE[conversation_id] = workspace
-    return workspace
-
-
 def _relative(path: str) -> str:
     """
     将沙箱工作区绝对路径转换为相对路径
@@ -999,9 +940,9 @@ def _relative(path: str) -> str:
     :param path: 文件路径
     :return:
     """
-    if path == _WORKSPACE:
+    if path == WORKSPACE_ROOT:
         return '.'
-    prefix = f'{_WORKSPACE}/'
+    prefix = f'{WORKSPACE_ROOT}/'
     if path.startswith(prefix):
         return path[len(prefix) :]
     return path

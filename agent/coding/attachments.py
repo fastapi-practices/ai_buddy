@@ -5,6 +5,7 @@ import re
 from pydantic_ai.messages import BinaryContent, UserContent
 
 from backend.common.exception import errors
+from backend.plugin.ai_buddy.agent.coding.sandbox import INPUT_ATTACHMENT_MAX_BYTES
 from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
 
 
@@ -15,7 +16,7 @@ def input_attachment_path(attachment: BinaryContent) -> str:
     :param attachment: 已解码用户附件
     :return:
     """
-    if len(attachment.data) > 10 * 1024 * 1024:
+    if len(attachment.data) > INPUT_ATTACHMENT_MAX_BYTES:
         raise errors.RequestError(msg='附件超过 10 MiB 工作区导入上限')
     digest = hashlib.sha256(attachment.data).hexdigest()
     suffix = mimetypes.guess_extension(attachment.media_type) or '.bin'
@@ -59,7 +60,9 @@ def coding_user_content(
             result.append(item)
             continue
         index += 1
-        if historical:
+        if len(item.data) > INPUT_ATTACHMENT_MAX_BYTES:
+            delivery = '超过 10 MiB，无法导入工作区，请让用户提供更小的文件'
+        elif historical:
             delivery = '这是历史附件，编号不属于本轮 import_attachment；若此前已导入，请按工具结果中的实际路径读取'
         elif can_import:
             path = input_attachment_path(item)

@@ -9,7 +9,7 @@ from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.bridge import get_bridge
 from backend.plugin.ai_buddy.agent.coding.protocol.base import CodingHostSpec
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.adapter import pydantic_ai_coding_protocol_adapter
-from backend.plugin.ai_buddy.agent.coding.sandbox import DesktopBridgeWorkspace, create_coding_sandbox
+from backend.plugin.ai_buddy.agent.coding.sandbox_providers import create_coding_sandbox
 from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool, build_buddy_resource_tools
 from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext, AgentUsage
 from backend.plugin.ai_buddy.crud.crud_model import ai_buddy_model_dao
@@ -121,7 +121,7 @@ class CodingSession:
         try:
             await self._host.aclose()
         finally:
-            if isinstance(self.run_context.sandbox, DesktopBridgeWorkspace):
+            if self.run_context.sandbox is not None:
                 await self.run_context.sandbox.stop()
 
 
@@ -328,7 +328,7 @@ async def open_coding_session(
             if host is not None:
                 await host.aclose()
         finally:
-            if isinstance(sandbox, DesktopBridgeWorkspace):
+            if sandbox is not None:
                 await sandbox.stop()
         raise
     _LIVE_SESSIONS[conversation_id] = session

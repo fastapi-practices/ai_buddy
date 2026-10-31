@@ -21,8 +21,9 @@ from pydantic_ai.workspaces import (
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.plugin.ai_buddy.agent.coding.sandbox import (
-    _LIVE,
-    _WORKSPACE,
+    INPUT_ATTACHMENT_MAX_BYTES,
+    LIVE_SANDBOXES,
+    WORKSPACE_ROOT,
     _git_command,
     _relative,
     resolve_sandbox_path,
@@ -39,7 +40,7 @@ from backend.plugin.ai_buddy.schema.command import (
     AIBuddyCommandResult,
 )
 
-_BACKGROUND_DIR = f'{_WORKSPACE}/.fba/background'
+_BACKGROUND_DIR = f'{WORKSPACE_ROOT}/.fba/background'
 _TASK_ID = re.compile(r'^[a-f0-9]{32}$')
 
 
@@ -69,14 +70,14 @@ class WorkspaceSandbox:
         self.provider = provider
         self._conversation_id = conversation_id
         self.execution_backend = AIBuddyExecutionBackend.sandbox
-        self.cwd = _WORKSPACE
+        self.cwd = WORKSPACE_ROOT
         self.user_id = user_id
         self.permission_mode = permission_mode
 
     async def stop(self) -> None:
         """从本进程摘除，沙箱本身由服务商的空闲与寿命策略回收，销毁见 destroy_conversation_sandbox"""
-        if _LIVE.get(self._conversation_id) is self:
-            _LIVE.pop(self._conversation_id, None)
+        if LIVE_SANDBOXES.get(self._conversation_id) is self:
+            LIVE_SANDBOXES.pop(self._conversation_id, None)
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
         """
@@ -91,6 +92,19 @@ class WorkspaceSandbox:
             for item in entries
         ]
 
+    async def _require_text_size(self, target: str) -> None:
+        """
+        读取前按元数据拒绝目录和超限文件，避免把大文件整体拉进内存
+
+        :param target: 工作区内的绝对路径
+        :return:
+        """
+        entry = await self._call(self._workspace.stat(target))
+        if entry.is_dir:
+            raise errors.RequestError(msg='路径是目录，请指定文件')
+        if (entry.size or 0) > settings.AI_BUDDY_AGENT_MAX_FILE_BYTES:
+            raise errors.RequestError(msg='文件过大，请缩小范围或拆分读取')
+
     async def read_file(
         self, *, path: str, offset: int = 0, limit: int | None = None, line_numbers: bool = True
     ) -> str:
@@ -103,9 +117,9 @@ class WorkspaceSandbox:
         :param line_numbers: 是否输出行号
         :return:
         """
-        text = await self._call(self._workspace.read_text(resolve_sandbox_path(path)))
-        if len(text.encode('utf-8')) > settings.AI_BUDDY_AGENT_MAX_FILE_BYTES:
-            raise errors.RequestError(msg='文件过大，请缩小范围或拆分读取')
+        target = resolve_sandbox_path(path)
+        await self._require_text_size(target)
+        text = await self._call(self._workspace.read_text(target))
         start = max(offset, 0)
         if not line_numbers:
             end = None if limit is None else start + max(limit, 0)
@@ -137,7 +151,7 @@ class WorkspaceSandbox:
         :return:
         """
         digest = hashlib.sha256(content).hexdigest()
-        if len(content) > 10 * 1024 * 1024 or not re.fullmatch(
+        if len(content) > INPUT_ATTACHMENT_MAX_BYTES or not re.fullmatch(
             rf'inbound/{digest}-[A-Za-z0-9][A-Za-z0-9._-]{{0,119}}', path
         ):
             raise errors.RequestError(msg='附件路径或大小无效')
@@ -180,6 +194,7 @@ class WorkspaceSandbox:
         :return:
         """
         target = resolve_sandbox_path(path)
+        await self._require_text_size(target)
         text = await self._call(self._workspace.read_text(target))
         count = text.count(old_text)
         if count == 0:
@@ -283,7 +298,7 @@ class WorkspaceSandbox:
         stripped = AIBuddyCommandParam(command=command).command.strip()
         task_id = uuid4().hex
         base = f'{_BACKGROUND_DIR}/{task_id}'
-        inner = quote(f'{stripped}\necho $? > {base}.exit')
+        inner = quote(f'(\n{stripped}\n)\necho $? > {base}.exit')
         script = (
             f'mkdir -p {_BACKGROUND_DIR}; S=; command -v setsid >/dev/null 2>&1 && S=setsid; '
             f'$S nohup sh -c {inner} > {base}.log 2>&1 < /dev/null & echo $! > {base}.pid'

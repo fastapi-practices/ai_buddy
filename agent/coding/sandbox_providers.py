@@ -15,10 +15,18 @@ from backend.common.exception import errors
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.database.db import async_db_session
-from backend.plugin.ai_buddy.agent.coding.sandbox import _LIVE, _WORKSPACE, CodingSandbox, OpenSandboxWorkspace
+from backend.plugin.ai_buddy.agent.coding.execution_bridge import get_bridge, open_bridge
+from backend.plugin.ai_buddy.agent.coding.sandbox import (
+    LIVE_SANDBOXES,
+    WORKSPACE_ROOT,
+    CodingSandbox,
+    DesktopBridgeWorkspace,
+    OpenSandboxWorkspace,
+    get_live_sandbox,
+)
 from backend.plugin.ai_buddy.agent.coding.workspace_sandbox import WorkspaceSandbox
 from backend.plugin.ai_buddy.crud.crud_sandbox_workspace import ai_buddy_sandbox_workspace_dao
-from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode, AIBuddySandboxProvider
+from backend.plugin.ai_buddy.enums import AIBuddyExecutionBackend, AIBuddyPermissionMode, AIBuddySandboxProvider
 from backend.plugin.ai_buddy.model.sandbox_workspace import AIBuddySandboxWorkspace
 from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
 
@@ -156,7 +164,7 @@ async def _create_opensandbox(
         connection_config=_connection_config(),
     )
     try:
-        await client.files.create_directories([WriteEntry(path=_WORKSPACE, mode=755)])
+        await client.files.create_directories([WriteEntry(path=WORKSPACE_ROOT, mode=755)])
     except BaseException:
         await client.close()
         raise
@@ -210,7 +218,7 @@ async def _create_harness(
     :return:
     """
     spec, _, backend_cls = _load_harness(provider)
-    kwargs: dict[str, object] = {'working_dir': _WORKSPACE}
+    kwargs: dict[str, object] = {'working_dir': WORKSPACE_ROOT}
     if spec.image_kwarg:
         kwargs[spec.image_kwarg] = settings.AI_BUDDY_AGENT_SANDBOX_IMAGE
     if spec.network_kwarg:
@@ -218,7 +226,7 @@ async def _create_harness(
     backend = backend_cls(**kwargs)
     workspace = Workspace(backend)
     try:
-        await workspace.run(['mkdir', '-p', _WORKSPACE], timeout=300)
+        await workspace.run(['mkdir', '-p', WORKSPACE_ROOT], timeout=300)
     except WorkspaceError as exc:
         raise errors.RequestError(msg=f'沙箱服务商 {provider} 创建沙箱失败：{exc}') from exc
     ref = backend.ref
@@ -333,7 +341,7 @@ async def destroy_conversation_sandbox(*, user_id: int, conversation_id: str) ->
     :param conversation_id: 对话 ID
     :return:
     """
-    live = _LIVE.pop(conversation_id, None)
+    live = LIVE_SANDBOXES.pop(conversation_id, None)
     if live is not None:
         await live.stop()
     async with async_db_session.begin() as db:
@@ -341,3 +349,67 @@ async def destroy_conversation_sandbox(*, user_id: int, conversation_id: str) ->
         if record is not None:
             await _destroy(record)
             await ai_buddy_sandbox_workspace_dao.delete(db, record)
+
+
+async def create_coding_sandbox(
+    *,
+    conversation_id: str,
+    user_id: int,
+    permission_mode: AIBuddyPermissionMode,
+    execution_backend: AIBuddyExecutionBackend = AIBuddyExecutionBackend.local,
+    execution_bridge_id: str | None = None,
+    sandbox_provider: str | None = None,
+) -> CodingSandbox:
+    """
+    按本轮执行后端创建工作区，本机 OS 沙箱只能通过桌面连接执行，服务端沙箱按服务商接回或新建
+
+    :param conversation_id: 对话 ID
+    :param user_id: 用户 ID
+    :param permission_mode: 权限模式
+    :param execution_backend: 执行后端
+    :param execution_bridge_id: 桌面执行连接 ID
+    :param sandbox_provider: 服务端沙箱服务商，为空使用配置的默认服务商
+    :return:
+    """
+    if execution_backend == AIBuddyExecutionBackend.local and not execution_bridge_id:
+        raise errors.RequestError(msg='本机编码需要从桌面端连接 OS 沙箱工作区，不会在服务器执行')
+    if execution_backend == AIBuddyExecutionBackend.sandbox and execution_bridge_id is not None:
+        raise errors.RequestError(msg='服务端沙箱不使用桌面执行连接')
+    live = get_live_sandbox(conversation_id)
+    if live is not None and live.user_id != user_id:
+        raise errors.RequestError(msg='编码工作区不属于当前用户')
+    if execution_backend == AIBuddyExecutionBackend.sandbox:
+        if live is not None:
+            await live.stop()
+        workspace = await open_sandbox(
+            conversation_id=conversation_id,
+            user_id=user_id,
+            permission_mode=permission_mode,
+            requested_provider=sandbox_provider,
+        )
+        LIVE_SANDBOXES[conversation_id] = workspace
+        return workspace
+    if (
+        live is not None
+        and live.execution_backend == execution_backend
+        and live.permission_mode == permission_mode
+        and isinstance(live, DesktopBridgeWorkspace)
+        and live.bridge.bridge_id == execution_bridge_id
+    ):
+        await live.bridge.check_connection()
+        return live
+    await get_bridge(
+        bridge_id=execution_bridge_id, user_id=user_id, backend=execution_backend, permission_mode=permission_mode
+    )
+    if live is not None:
+        await live.stop()
+    bridge = await open_bridge(
+        bridge_id=execution_bridge_id,
+        user_id=user_id,
+        backend=execution_backend,
+        permission_mode=permission_mode,
+        conversation_id=conversation_id,
+    )
+    workspace = DesktopBridgeWorkspace(bridge, conversation_id=conversation_id)
+    LIVE_SANDBOXES[conversation_id] = workspace
+    return workspace
