@@ -125,6 +125,14 @@ class AIBuddyObjectService:
             obj.sha256 = sha256 or obj.sha256
             obj.size = size if size is not None else obj.size
             obj.mime_type = mime_type or obj.mime_type
+            if obj.state == AIBuddyObjectState.deleted.value:
+                # 调用方已重新写入存储内容，旧记录恢复为可引用的新对象
+                obj.state = AIBuddyObjectState.active.value
+                obj.ref_count = 0
+                obj.tombstoned_time = None
+                obj.delete_after_time = None
+                obj.physically_deleted_time = None
+                await self.record(db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id)
             return obj
         obj = AIBuddyObject(
             user_id=user_id,
@@ -196,6 +204,7 @@ class AIBuddyObjectService:
         :param actor_id: 操作用户 ID
         :return:
         """
+        obj = await ai_buddy_object_dao.get_for_update(db, obj.id) or obj
         if obj.state == AIBuddyObjectState.deleted.value:
             raise errors.ConflictError(msg='对象已被物理删除，无法再引用')
         if await ai_buddy_object_ref_dao.get_by_owner(db, obj.id, owner_type, owner_id) is None:
@@ -229,6 +238,7 @@ class AIBuddyObjectService:
         :param actor_id: 操作用户 ID
         :return:
         """
+        obj = await ai_buddy_object_dao.get_for_update(db, obj.id) or obj
         removed = await ai_buddy_object_ref_dao.delete_by_owner(db, obj.id, owner_type, owner_id)
         if removed:
             await self.record(
@@ -373,6 +383,10 @@ class AIBuddyObjectService:
         if obj.dry_run:
             return result
         for item in candidates:
+            if await ai_buddy_object_ref_dao.count(db, item.id) > 0:
+                # 候选查询之后又出现了新引用，计数落后于事实，交给引用方的流程恢复
+                result.candidates.remove(item.id)
+                continue
             try:
                 await self._delete_physically(db=db, obj=item)
             except Exception as exc:

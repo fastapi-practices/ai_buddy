@@ -10,6 +10,7 @@ from backend.plugin.ai_buddy.model.object import AIBuddyObject
 from backend.plugin.ai_buddy.schema.attachment import GetAIBuddyAttachmentDetail
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
+from backend.plugin.ai_buddy.utils.media_store import attachment_object_key
 from backend.plugin.ai_buddy.utils.remote_download import download_public_file, match_content_type
 from backend.plugin.s3.utils.text_store import require_storage, write_bytes
 
@@ -110,7 +111,7 @@ class AIBuddyAttachmentService:
         if not match_content_type(content_type, _ALLOWED_TYPES):
             raise errors.RequestError(msg=f'不支持的文件类型：{content_type or "未知"}')
         digest = hashlib.sha256(data).hexdigest()
-        object_key = f'ai_buddy/attachments/{digest}'
+        object_key = attachment_object_key(digest=digest, user_id=user_id)
         storage = await require_storage(db=db)
         await write_bytes(db=db, key=object_key, data=data, storage_id=storage.id)
         obj = await ai_buddy_object_service.register_expiring(

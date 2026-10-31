@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import hashlib
+import re
 
 from typing import Any
 
@@ -11,25 +12,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.log import log
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.crud.crud_conversation import ai_buddy_conversation_dao
-from backend.plugin.ai_buddy.enums import AIBuddyConversationSource, AIBuddyObjectKind
+from backend.plugin.ai_buddy.crud.crud_object import ai_buddy_object_dao
+from backend.plugin.ai_buddy.enums import AIBuddyConversationSource, AIBuddyObjectKind, AIBuddyObjectLocation
+from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.s3.crud.crud_storage import s3_storage_dao
 from backend.plugin.s3.model import S3Storage
 from backend.plugin.s3.utils.file_ops import get_bytes, put_bytes
 
 _ATTACHMENT_PREFIX = 'ai_buddy/attachments/'
+_ATTACHMENT_KEY = re.compile(rf'{_ATTACHMENT_PREFIX}(?:[0-9]+/)?[0-9a-f]{{64}}')
 _OVERFLOW_PREFIX = 'ai_buddy/overflow/'
 
 
-def _decode_binary_payload(data: str) -> tuple[bytes, str]:
+def attachment_object_key(*, digest: str, user_id: int | None) -> str:
+    """
+    构建聊天附件对象键，按用户隔离，避免相同内容在不同用户之间共用同一条对象记录
+
+    :param digest: 内容 SHA-256 摘要
+    :param user_id: 附件所属用户 ID，为空时使用不区分用户的键
+    :return:
+    """
+    return f'{_ATTACHMENT_PREFIX}{digest}' if user_id is None else f'{_ATTACHMENT_PREFIX}{user_id}/{digest}'
+
+
+def _decode_binary_payload(data: str, user_id: int | None) -> tuple[bytes, str]:
     """
     在线程池内解码附件并计算对象键，避免大附件阻塞事件循环
 
     :param data: 输入数据
+    :param user_id: 附件所属用户 ID
     :return:
     """
     raw = base64.b64decode(data)
-    return raw, f'{_ATTACHMENT_PREFIX}{hashlib.sha256(raw).hexdigest()}'
+    return raw, attachment_object_key(digest=hashlib.sha256(raw).hexdigest(), user_id=user_id)
 
 
 class S3OverflowStore:
@@ -132,31 +148,41 @@ async def get_overflow_store(*, user_id: int) -> OverflowStore | None:
     return S3OverflowStore(storage, user_id=user_id)
 
 
-async def _store_binaries(node: object, *, storage: S3Storage, written: list[dict[str, Any]]) -> object:
+async def _store_binaries(
+    node: object, *, storage: S3Storage, written: list[dict[str, Any]], user_id: int | None
+) -> object:
     """
     递归将内联二进制写入 S3
 
     :param node: 待处理数据
     :param storage: S3 存储
     :param written: 已写入对象记录
+    :param user_id: 附件所属用户 ID
     :return:
     """
     if isinstance(node, list):
         if not node:
             return []
-        return list(await asyncio.gather(*[_store_binaries(item, storage=storage, written=written) for item in node]))
+        return list(
+            await asyncio.gather(*[
+                _store_binaries(item, storage=storage, written=written, user_id=user_id) for item in node
+            ])
+        )
     if not isinstance(node, dict):
         return node
     data = node.get('data')
     if node.get('kind') == 'binary' and isinstance(data, str):
-        body, object_key = await asyncio.to_thread(_decode_binary_payload, data)
+        body, object_key = await asyncio.to_thread(_decode_binary_payload, data, user_id)
         await put_bytes(storage, object_key, body)
         written.append({'object_key': object_key, 'size': len(body), 'mime_type': node.get('media_type')})
         stored = {key: value for key, value in node.items() if key != 'data'}
         stored['object_key'] = object_key
         stored['storage_id'] = storage.id
         return stored
-    return {key: await _store_binaries(value, storage=storage, written=written) for key, value in node.items()}
+    return {
+        key: await _store_binaries(value, storage=storage, written=written, user_id=user_id)
+        for key, value in node.items()
+    }
 
 
 async def _restore_binaries(node: object, *, storage: S3Storage) -> object:
@@ -174,7 +200,14 @@ async def _restore_binaries(node: object, *, storage: S3Storage) -> object:
     if not isinstance(node, dict):
         return node
     object_key = node.get('object_key')
-    if node.get('kind') == 'binary' and isinstance(object_key, str) and 'data' not in node:
+    # 持久化的消息里也会有模型和 MCP 写入的任意 JSON，只还原由内容摘要命名的附件键，
+    # 不能按消息里自带的键读取其他用户的产物、知识或技能对象
+    if (
+        node.get('kind') == 'binary'
+        and isinstance(object_key, str)
+        and _ATTACHMENT_KEY.fullmatch(object_key)
+        and 'data' not in node
+    ):
         stored_id = node.get('storage_id')
         source = await _load_storage(stored_id) if isinstance(stored_id, int) and stored_id != storage.id else storage
         if source is None:
@@ -207,6 +240,53 @@ async def _track_attachments(
         )
 
 
+def _collect_attachment_refs(node: object, found: set[tuple[int, str]]) -> None:
+    """
+    递归收集消息树中由服务端写入的附件引用
+
+    :param node: JSON 形态的消息树
+    :param found: 收集到的（存储 ID，对象键）
+    :return:
+    """
+    if isinstance(node, list):
+        for item in node:
+            _collect_attachment_refs(item, found)
+    elif isinstance(node, dict):
+        object_key, storage_id = node.get('object_key'), node.get('storage_id')
+        if (
+            node.get('kind') == 'binary'
+            and isinstance(object_key, str)
+            and _ATTACHMENT_KEY.fullmatch(object_key)
+            and isinstance(storage_id, int)
+        ):
+            found.add((storage_id, object_key))
+        for value in node.values():
+            _collect_attachment_refs(value, found)
+
+
+async def track_copied_attachments(
+    *, db: AsyncSession, conversation_id: str, user_id: int, payloads: list[Any]
+) -> None:
+    """
+    让复制出的对话引用消息里的既有附件，源对话被删除后附件仍有持有者
+
+    :param db: 数据库会话
+    :param conversation_id: 新对话 ID
+    :param user_id: 新对话所属用户 ID
+    :param payloads: 复制的模型消息 JSON
+    :return:
+    """
+    found: set[tuple[int, str]] = set()
+    _collect_attachment_refs(payloads, found)
+    for storage_id, object_key in sorted(found):
+        stored = await ai_buddy_object_dao.get_by_key(db, AIBuddyObjectLocation.s3.value, storage_id, object_key)
+        # 只引用本人的对象，旧版共享键的对象可能属于他人
+        if stored is not None and stored.user_id == user_id:
+            await ai_buddy_object_service.add_reference(
+                db=db, obj=stored, owner_type='conversation', owner_id=conversation_id, actor_id=user_id
+            )
+
+
 def _has_binary(node: object) -> bool:
     """
     判断消息树中是否含有二进制附件
@@ -221,20 +301,18 @@ def _has_binary(node: object) -> bool:
     return False
 
 
-async def _is_local_conversation(*, conversation_id: str, db: AsyncSession | None) -> bool:
+async def _load_conversation(*, conversation_id: str, db: AsyncSession | None) -> AIBuddyConversation | None:
     """
-    判断对话是否以本机为事实源，本机会话的附件不进入云端对象存储
+    读取附件所属对话，所属对话尚未提交时必须使用调用方事务
 
     :param conversation_id: 对话 ID
-    :param db: 调用方事务，所属对话尚未提交时必须传入
+    :param db: 调用方事务
     :return:
     """
     if db is not None:
-        conversation = await ai_buddy_conversation_dao.get_by_conversation_id(db, conversation_id)
-    else:
-        async with async_db_session() as own_db:
-            conversation = await ai_buddy_conversation_dao.get_by_conversation_id(own_db, conversation_id)
-    return conversation is not None and conversation.source == AIBuddyConversationSource.local
+        return await ai_buddy_conversation_dao.get_by_conversation_id(db, conversation_id)
+    async with async_db_session() as own_db:
+        return await ai_buddy_conversation_dao.get_by_conversation_id(own_db, conversation_id)
 
 
 async def _encode_media_payload(
@@ -248,18 +326,19 @@ async def _encode_media_payload(
     :param db: 调用方事务，所属对话尚未提交时必须传入；为空时登记引用会使用独立事务
     :return:
     """
-    if (
-        conversation_id
-        and _has_binary(payload)
-        and await _is_local_conversation(conversation_id=conversation_id, db=db)
-    ):
-        return payload
+    owner_id = None
+    if conversation_id and _has_binary(payload):
+        conversation = await _load_conversation(conversation_id=conversation_id, db=db)
+        # 以本机为事实源的对话附件保持内联，不进入云端对象存储
+        if conversation is not None and conversation.source == AIBuddyConversationSource.local:
+            return payload
+        owner_id = None if conversation is None else conversation.user_id
     storage = await _load_default_storage()
     if storage is None:
         return payload
     written: list[dict[str, Any]] = []
     try:
-        encoded = await _store_binaries(payload, storage=storage, written=written)
+        encoded = await _store_binaries(payload, storage=storage, written=written, user_id=owner_id)
     except Exception as exc:
         log.warning(f'写入聊天附件失败，改为内联保存: {exc}')
         return payload

@@ -23,6 +23,17 @@ class CRUDAIBuddyObject(CRUDPlus[AIBuddyObject]):
         """
         return await self.select_model_by_column(db, id=pk, user_id=user_id)
 
+    async def get_for_update(self, db: AsyncSession, pk: int) -> AIBuddyObject | None:
+        """
+        锁定并获取对象，引用计数与状态的读改写必须串行
+
+        :param db: 数据库会话
+        :param pk: 对象 ID
+        :return:
+        """
+        stmt = select(self.model).where(self.model.id == pk).with_for_update()
+        return (await db.execute(stmt.execution_options(populate_existing=True))).scalar_one_or_none()
+
     async def get_by_key(
         self, db: AsyncSession, location: str, storage_id: int | None, object_key: str
     ) -> AIBuddyObject | None:
@@ -60,7 +71,8 @@ class CRUDAIBuddyObject(CRUDPlus[AIBuddyObject]):
         )
         if user_id is not None:
             stmt = stmt.where(self.model.user_id == user_id)
-        return (await db.execute(stmt.order_by(self.model.id.asc()).limit(limit))).scalars().all()
+        stmt = stmt.order_by(self.model.id.asc()).limit(limit).with_for_update(skip_locked=True)
+        return (await db.execute(stmt)).scalars().all()
 
     @staticmethod
     async def create(db: AsyncSession, obj: AIBuddyObject) -> None:
