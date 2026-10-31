@@ -106,6 +106,18 @@ drop table if exists ai_buddy_workspace_file;
 drop table if exists ai_buddy_workspace;
 
 drop table if exists ai_buddy_sandbox_workspace;
+drop table if exists ai_buddy_step_tool_effect;
+drop table if exists ai_buddy_step_snapshot;
+drop table if exists ai_buddy_step_message;
+drop table if exists ai_buddy_step_event;
+drop table if exists ai_buddy_step_run;
+drop table if exists ai_buddy_object_audit;
+drop table if exists ai_buddy_object_ref;
+drop table if exists ai_buddy_object;
+drop table if exists ai_buddy_conversation_audit;
+drop table if exists ai_buddy_approval_audit;
+drop table if exists ai_buddy_mcp_oauth;
+drop table if exists ai_buddy_mcp_oauth_config;
 
 DROP TABLE IF EXISTS ai_buddy_approval_audit;
 
