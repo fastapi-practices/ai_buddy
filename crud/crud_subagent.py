@@ -4,9 +4,9 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
-from backend.plugin.ai_buddy.model.subagent import SYSTEM_SUBAGENT_USER_ID, AIBuddySubagent
+from backend.plugin.ai_buddy.model.subagent import AIBuddySubagent
 from backend.plugin.ai_buddy.schema.subagent import CreateAIBuddySubagentParam, UpdateAIBuddySubagentParam
-from backend.plugin.ai_buddy.utils.ownership import visible_owner_ids
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID, visible_owner_ids
 from backend.utils.timezone import timezone
 
 
@@ -33,7 +33,7 @@ class CRUDAIBuddySubagent(CRUDPlus[AIBuddySubagent]):
         :return:
         """
         subagent = await self.select_model(db, pk, deleted=0)
-        if subagent is None or subagent.user_id not in {user_id, SYSTEM_SUBAGENT_USER_ID}:
+        if subagent is None or subagent.user_id not in {user_id, SYSTEM_OWNER_USER_ID}:
             return None
         return subagent
 
@@ -75,7 +75,7 @@ class CRUDAIBuddySubagent(CRUDPlus[AIBuddySubagent]):
             db,
             ['sort', 'id'],
             ['asc', 'desc'],
-            user_id__in=[SYSTEM_SUBAGENT_USER_ID, user_id],
+            user_id__in=[SYSTEM_OWNER_USER_ID, user_id],
             deleted=0,
         )
 

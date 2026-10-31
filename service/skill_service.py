@@ -12,7 +12,7 @@ from backend.common.exception import errors
 from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_skill import ai_buddy_skill_dao
 from backend.plugin.ai_buddy.enums import AIBuddyObjectKind, AIBuddyObjectLocation
-from backend.plugin.ai_buddy.model.skill import SYSTEM_SKILL_USER_ID, AIBuddySkill
+from backend.plugin.ai_buddy.model.skill import AIBuddySkill
 from backend.plugin.ai_buddy.schema.skill import (
     CreateAIBuddySkillParam,
     GetAIBuddySkillSearchDetail,
@@ -20,13 +20,14 @@ from backend.plugin.ai_buddy.schema.skill import (
 )
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.utils.object_key import build_skill_key, skill_markdown_key
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 from backend.plugin.ai_buddy.utils.skill_parser import parse_skill_upload, rewrite_skill_markdown
-from backend.plugin.s3.service.storage_service import s3_storage_service
 from backend.plugin.s3.utils.file_ops import get_operator
 from backend.plugin.s3.utils.text_store import read_text, require_storage, write_bytes
 
 _SKILL_FILE_MAX_BYTES = 1024 * 1024
 _SKILL_FILE_PAGE_CHARS = 12000
+_SKILL_PACKAGE_MAX_FILES = 500
 
 
 class AIBuddySkillService:
@@ -109,8 +110,7 @@ class AIBuddySkillService:
         if skill is None:
             raise errors.NotFoundError(msg='技能不存在')
         key, filename = self._skill_file_key(object_key=skill.object_key, path=path)
-        storage = await s3_storage_service.get_default(db=db)
-        operator = get_operator(storage)
+        operator = get_operator(await require_storage(db=db, storage_id=skill.storage_id))
         try:
             metadata = await operator.stat(key)
         except Exception as exc:
@@ -138,6 +138,34 @@ class AIBuddySkillService:
         return (
             f'## 技能 #{skill.id} 文件：{filename}（字符 {offset}-{next_offset}，共 {len(content)}）\n\n{page}{suffix}'
         )
+
+    async def get_package(
+        self, *, db: AsyncSession, pk: int, user_id: int
+    ) -> tuple[AIBuddySkill, list[tuple[str, bytes | None]]]:
+        """
+        校验权限并读取技能包全部文件，超过单文件上限的文件只返回路径，内容为 None
+
+        :param db: 数据库会话
+        :param pk: 技能 ID
+        :param user_id: 用户 ID
+        :return:
+        """
+        skill = await ai_buddy_skill_dao.get_by_id_and_user_id(db, pk, user_id)
+        if skill is None:
+            raise errors.NotFoundError(msg='技能不存在')
+        marker, _ = self._skill_file_key(object_key=skill.object_key, path='SKILL.md')
+        prefix = f'{marker.rsplit("/", 1)[0]}/'
+        operator = get_operator(await require_storage(db=db, storage_id=skill.storage_id))
+        files: list[tuple[str, bytes | None]] = []
+        async for entry in await operator.list(prefix, recursive=True):
+            if entry.path.endswith('/'):
+                continue
+            if len(files) >= _SKILL_PACKAGE_MAX_FILES:
+                raise errors.RequestError(msg=f'技能包文件超过 {_SKILL_PACKAGE_MAX_FILES} 个')
+            metadata = await operator.stat(entry.path)
+            data = bytes(await operator.read(entry.path)) if metadata.content_length <= _SKILL_FILE_MAX_BYTES else None
+            files.append((entry.path.removeprefix(prefix), data))
+        return skill, files
 
     @staticmethod
     async def get_list(
@@ -234,9 +262,9 @@ class AIBuddySkillService:
         :return:
         """
         skill = await ai_buddy_skill_dao.get(db, pk)
-        if skill is None or skill.user_id not in {user_id, SYSTEM_SKILL_USER_ID}:
+        if skill is None or skill.user_id not in {user_id, SYSTEM_OWNER_USER_ID}:
             raise errors.NotFoundError(msg='技能不存在')
-        if skill.user_id == SYSTEM_SKILL_USER_ID:
+        if skill.user_id == SYSTEM_OWNER_USER_ID:
             raise errors.ForbiddenError(msg='系统内置技能不允许修改')
         key = skill_markdown_key(skill.object_key)
         current = await read_text(db=db, key=key, storage_id=skill.storage_id)
@@ -258,12 +286,12 @@ class AIBuddySkillService:
         :return:
         """
         uploaded = await run_in_threadpool(parse_skill_upload, files=payloads)
-        existing = await ai_buddy_skill_dao.get_by_name(db, SYSTEM_SKILL_USER_ID, uploaded.name)
+        existing = await ai_buddy_skill_dao.get_by_name(db, SYSTEM_OWNER_USER_ID, uploaded.name)
         if existing:
             if _version_key(existing.version) >= _version_key(uploaded.version):
                 return False
-            await self.delete(db=db, pk=existing.id, user_id=SYSTEM_SKILL_USER_ID, is_superuser=True)
-        await self.create_from_payloads(db=db, user_id=SYSTEM_SKILL_USER_ID, payloads=payloads)
+            await self.delete(db=db, pk=existing.id, user_id=SYSTEM_OWNER_USER_ID, is_superuser=True)
+        await self.create_from_payloads(db=db, user_id=SYSTEM_OWNER_USER_ID, payloads=payloads)
         return True
 
     async def delete(self, *, db: AsyncSession, pk: int, user_id: int, is_superuser: bool) -> int:
@@ -279,9 +307,9 @@ class AIBuddySkillService:
         skill = await ai_buddy_skill_dao.get(db, pk)
         if skill is None:
             raise errors.NotFoundError(msg='技能不存在')
-        if skill.user_id == SYSTEM_SKILL_USER_ID and not is_superuser:
+        if skill.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统内置技能不允许删除')
-        if skill.user_id not in {user_id, SYSTEM_SKILL_USER_ID} and not is_superuser:
+        if skill.user_id not in {user_id, SYSTEM_OWNER_USER_ID} and not is_superuser:
             raise errors.ForbiddenError(msg='技能不存在')
         await self._track_object(db=db, skill=skill, released=True)
         return await ai_buddy_skill_dao.delete(db, pk, skill.user_id)

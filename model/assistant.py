@@ -3,10 +3,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, UniversalText, id_key
-from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 # 系统默认助手归属，所有用户可读可绑定，仅超级管理员可改
-SYSTEM_ASSISTANT_USER_ID = SYSTEM_OWNER_USER_ID
 
 
 class AIBuddyAssistant(Base):

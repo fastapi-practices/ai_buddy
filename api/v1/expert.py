@@ -8,7 +8,6 @@ from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
-from backend.plugin.ai_buddy.model.expert import SYSTEM_EXPERT_USER_ID
 from backend.plugin.ai_buddy.schema.expert import (
     AIBuddyExpertQueryParam,
     ApplyAIBuddyExpertParam,
@@ -18,6 +17,7 @@ from backend.plugin.ai_buddy.schema.expert import (
     UpdateAIBuddyExpertParam,
 )
 from backend.plugin.ai_buddy.service.expert_service import ai_buddy_expert_service
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 router = APIRouter()
 
@@ -81,7 +81,7 @@ async def create_ai_buddy_expert(
     db: CurrentSessionTransaction,
     obj: CreateAIBuddyExpertParam,
 ) -> ResponseModel:
-    await ai_buddy_expert_service.create(db=db, obj=obj, user_id=SYSTEM_EXPERT_USER_ID)
+    await ai_buddy_expert_service.create(db=db, obj=obj, user_id=SYSTEM_OWNER_USER_ID)
     return response_base.success()
 
 

@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.exception import errors
 from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_subagent import ai_buddy_subagent_dao
-from backend.plugin.ai_buddy.model.subagent import SYSTEM_SUBAGENT_USER_ID, AIBuddySubagent
+from backend.plugin.ai_buddy.model.subagent import AIBuddySubagent
 from backend.plugin.ai_buddy.schema.subagent import CreateAIBuddySubagentParam, UpdateAIBuddySubagentParam
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 
 class AIBuddySubagentService:
@@ -97,7 +98,7 @@ class AIBuddySubagentService:
         :return:
         """
         subagent = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if subagent.user_id == SYSTEM_SUBAGENT_USER_ID and not is_superuser:
+        if subagent.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统子代理不允许修改')
         obj = self._normalize(obj=obj)
         existed = await ai_buddy_subagent_dao.get_by_name(db, subagent.user_id, obj.name)
@@ -116,7 +117,7 @@ class AIBuddySubagentService:
         :return:
         """
         subagent = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if subagent.user_id == SYSTEM_SUBAGENT_USER_ID and not is_superuser:
+        if subagent.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统子代理不允许删除')
         return await ai_buddy_subagent_dao.delete(db, pk, subagent.user_id)
 

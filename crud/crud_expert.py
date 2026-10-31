@@ -4,9 +4,9 @@ from sqlalchemy import Select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
-from backend.plugin.ai_buddy.model.expert import SYSTEM_EXPERT_USER_ID, AIBuddyExpert
+from backend.plugin.ai_buddy.model.expert import AIBuddyExpert
 from backend.plugin.ai_buddy.schema.expert import CreateAIBuddyExpertParam, UpdateAIBuddyExpertParam
-from backend.plugin.ai_buddy.utils.ownership import visible_owner_ids
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID, visible_owner_ids
 from backend.utils.timezone import timezone
 
 
@@ -33,7 +33,7 @@ class CRUDAIBuddyExpert(CRUDPlus[AIBuddyExpert]):
         :return:
         """
         expert = await self.select_model(db, pk, deleted=0)
-        if expert is None or expert.user_id not in {user_id, SYSTEM_EXPERT_USER_ID}:
+        if expert is None or expert.user_id not in {user_id, SYSTEM_OWNER_USER_ID}:
             return None
         return expert
 
@@ -75,7 +75,7 @@ class CRUDAIBuddyExpert(CRUDPlus[AIBuddyExpert]):
             db,
             ['sort', 'id'],
             ['desc', 'desc'],
-            user_id__in=[SYSTEM_EXPERT_USER_ID, user_id],
+            user_id__in=[SYSTEM_OWNER_USER_ID, user_id],
             deleted=0,
         )
 

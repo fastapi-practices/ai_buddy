@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
 from backend.plugin.ai_buddy.enums import AIBuddyAssistantCategory, AIBuddyAssistantSortType
-from backend.plugin.ai_buddy.model.assistant import SYSTEM_ASSISTANT_USER_ID, AIBuddyAssistant
+from backend.plugin.ai_buddy.model.assistant import AIBuddyAssistant
 from backend.plugin.ai_buddy.schema.assistant import CreateAIBuddyAssistantParam, UpdateAIBuddyAssistantParam
-from backend.plugin.ai_buddy.utils.ownership import visible_owner_ids
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID, visible_owner_ids
 from backend.utils.timezone import timezone
 
 
@@ -50,7 +50,7 @@ class CRUDAIBuddyAssistant(CRUDPlus[AIBuddyAssistant]):
         :return:
         """
         assistant = await self.select_model(db, pk, deleted=0)
-        if assistant is None or assistant.user_id not in {user_id, SYSTEM_ASSISTANT_USER_ID}:
+        if assistant is None or assistant.user_id not in {user_id, SYSTEM_OWNER_USER_ID}:
             return None
         return assistant
 
@@ -110,7 +110,7 @@ class CRUDAIBuddyAssistant(CRUDPlus[AIBuddyAssistant]):
             db,
             sort_columns,
             sort_orders,
-            user_id__in=[SYSTEM_ASSISTANT_USER_ID, user_id],
+            user_id__in=[SYSTEM_OWNER_USER_ID, user_id],
             deleted=0,
         )
 

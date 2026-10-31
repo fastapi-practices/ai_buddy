@@ -8,7 +8,6 @@ from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
-from backend.plugin.ai_buddy.model.skill import SYSTEM_SKILL_USER_ID
 from backend.plugin.ai_buddy.schema.skill import (
     AIBuddySkillQueryParam,
     AIBuddySkillSearchQueryParam,
@@ -16,6 +15,7 @@ from backend.plugin.ai_buddy.schema.skill import (
     GetAIBuddySkillSearchDetail,
 )
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 router = APIRouter()
 
@@ -88,7 +88,7 @@ async def create_ai_buddy_skill(
     db: CurrentSessionTransaction,
     file: Annotated[list[UploadFile], File(description='技能目录或包含技能目录的 zip')],
 ) -> ResponseModel:
-    await ai_buddy_skill_service.create(db=db, user_id=SYSTEM_SKILL_USER_ID, files=file)
+    await ai_buddy_skill_service.create(db=db, user_id=SYSTEM_OWNER_USER_ID, files=file)
     return response_base.success()
 
 

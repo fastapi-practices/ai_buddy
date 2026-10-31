@@ -8,7 +8,6 @@ from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
-from backend.plugin.ai_buddy.model.quick_phrase import SYSTEM_QUICK_PHRASE_USER_ID
 from backend.plugin.ai_buddy.schema.quick_phrase import (
     AIBuddyQuickPhraseQueryParam,
     CreateAIBuddyQuickPhraseParam,
@@ -16,6 +15,7 @@ from backend.plugin.ai_buddy.schema.quick_phrase import (
     UpdateAIBuddyQuickPhraseParam,
 )
 from backend.plugin.ai_buddy.service.quick_phrase_service import ai_buddy_quick_phrase_service
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 router = APIRouter()
 
@@ -78,7 +78,7 @@ async def create_ai_buddy_quick_phrase(
     db: CurrentSessionTransaction,
     obj: CreateAIBuddyQuickPhraseParam,
 ) -> ResponseModel:
-    await ai_buddy_quick_phrase_service.create(db=db, obj=obj, user_id=SYSTEM_QUICK_PHRASE_USER_ID)
+    await ai_buddy_quick_phrase_service.create(db=db, obj=obj, user_id=SYSTEM_OWNER_USER_ID)
     return response_base.success()
 
 

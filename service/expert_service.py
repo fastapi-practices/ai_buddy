@@ -10,7 +10,7 @@ from backend.plugin.ai_buddy.crud.crud_expert import ai_buddy_expert_dao
 from backend.plugin.ai_buddy.crud.crud_knowledge_base import ai_buddy_knowledge_base_dao
 from backend.plugin.ai_buddy.crud.crud_mcp import ai_buddy_mcp_dao
 from backend.plugin.ai_buddy.crud.crud_skill import ai_buddy_skill_dao
-from backend.plugin.ai_buddy.model.expert import SYSTEM_EXPERT_USER_ID, AIBuddyExpert
+from backend.plugin.ai_buddy.model.expert import AIBuddyExpert
 from backend.plugin.ai_buddy.schema.assistant import CreateAIBuddyAssistantParam
 from backend.plugin.ai_buddy.schema.expert import (
     CreateAIBuddyExpertParam,
@@ -21,6 +21,7 @@ from backend.plugin.ai_buddy.schema.knowledge_base import GetAIBuddyKnowledgeBas
 from backend.plugin.ai_buddy.schema.mcp import GetAIBuddyMcpDetail
 from backend.plugin.ai_buddy.schema.skill import GetAIBuddySkillSearchDetail
 from backend.plugin.ai_buddy.service.assistant_service import ai_buddy_assistant_service
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 
 class AIBuddyExpertService:
@@ -147,7 +148,7 @@ class AIBuddyExpertService:
         :return:
         """
         expert = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if expert.user_id == SYSTEM_EXPERT_USER_ID and not is_superuser:
+        if expert.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统专家模板不允许修改')
         obj = self._normalize(obj=obj)
         await self._validate_relations(db=db, owner_id=expert.user_id, obj=obj, expert=expert)
@@ -167,7 +168,7 @@ class AIBuddyExpertService:
         :return:
         """
         expert = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if expert.user_id == SYSTEM_EXPERT_USER_ID and not is_superuser:
+        if expert.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统专家模板不允许删除')
         return await ai_buddy_expert_dao.delete(db, pk, expert.user_id)
 

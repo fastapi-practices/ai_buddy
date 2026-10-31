@@ -9,7 +9,6 @@ from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
 from backend.plugin.ai_buddy.enums import ASSISTANT_CATEGORY_META
-from backend.plugin.ai_buddy.model.assistant import SYSTEM_ASSISTANT_USER_ID
 from backend.plugin.ai_buddy.schema.assistant import (
     AIBuddyAssistantQueryParam,
     AIBuddyAssistantSortQueryParam,
@@ -19,6 +18,7 @@ from backend.plugin.ai_buddy.schema.assistant import (
     UpdateAIBuddyAssistantParam,
 )
 from backend.plugin.ai_buddy.service.assistant_service import ai_buddy_assistant_service
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 router = APIRouter()
 
@@ -90,7 +90,7 @@ async def create_ai_buddy_assistant(
     db: CurrentSessionTransaction,
     obj: CreateAIBuddyAssistantParam,
 ) -> ResponseModel:
-    await ai_buddy_assistant_service.create(db=db, obj=obj, user_id=SYSTEM_ASSISTANT_USER_ID)
+    await ai_buddy_assistant_service.create(db=db, obj=obj, user_id=SYSTEM_OWNER_USER_ID)
     return response_base.success()
 
 

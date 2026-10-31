@@ -6,11 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.exception import errors
 from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_quick_phrase import ai_buddy_quick_phrase_dao
-from backend.plugin.ai_buddy.model.quick_phrase import SYSTEM_QUICK_PHRASE_USER_ID, AIBuddyQuickPhrase
+from backend.plugin.ai_buddy.model.quick_phrase import AIBuddyQuickPhrase
 from backend.plugin.ai_buddy.schema.quick_phrase import (
     CreateAIBuddyQuickPhraseParam,
     UpdateAIBuddyQuickPhraseParam,
 )
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 
 class AIBuddyQuickPhraseService:
@@ -113,7 +114,7 @@ class AIBuddyQuickPhraseService:
             quick_phrase = await ai_buddy_quick_phrase_dao.get_by_id_and_user_id(db, pk, user_id)
         if not quick_phrase:
             raise errors.NotFoundError(msg='快捷短语不存在')
-        if quick_phrase.user_id == SYSTEM_QUICK_PHRASE_USER_ID and not is_superuser:
+        if quick_phrase.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统内置快捷短语不允许修改')
         title = obj.title.strip()
         if not title:
@@ -144,7 +145,7 @@ class AIBuddyQuickPhraseService:
             quick_phrase = await ai_buddy_quick_phrase_dao.get_by_id_and_user_id(db, pk, user_id)
         if not quick_phrase:
             raise errors.NotFoundError(msg='快捷短语不存在')
-        if quick_phrase.user_id == SYSTEM_QUICK_PHRASE_USER_ID and not is_superuser:
+        if quick_phrase.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统内置快捷短语不允许删除')
         return await ai_buddy_quick_phrase_dao.delete(db, pk, quick_phrase.user_id)
 

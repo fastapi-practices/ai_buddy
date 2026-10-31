@@ -8,8 +8,9 @@ from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_assistant import ai_buddy_assistant_dao
 from backend.plugin.ai_buddy.crud.crud_conversation import ai_buddy_conversation_dao
 from backend.plugin.ai_buddy.enums import AIBuddyAssistantCategory, AIBuddyAssistantSortType
-from backend.plugin.ai_buddy.model.assistant import SYSTEM_ASSISTANT_USER_ID, AIBuddyAssistant
+from backend.plugin.ai_buddy.model.assistant import AIBuddyAssistant
 from backend.plugin.ai_buddy.schema.assistant import CreateAIBuddyAssistantParam, UpdateAIBuddyAssistantParam
+from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 
 
 class AIBuddyAssistantService:
@@ -127,7 +128,7 @@ class AIBuddyAssistantService:
         :return:
         """
         assistant = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if assistant.user_id == SYSTEM_ASSISTANT_USER_ID and not is_superuser:
+        if assistant.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统默认助手不允许修改')
         obj = self._normalize(obj=obj)
         existed = await ai_buddy_assistant_dao.get_by_name(db, assistant.user_id, obj.name)
@@ -146,7 +147,7 @@ class AIBuddyAssistantService:
         :return:
         """
         assistant = await self.get(db=db, pk=pk, user_id=user_id, is_superuser=is_superuser)
-        if assistant.user_id == SYSTEM_ASSISTANT_USER_ID and not is_superuser:
+        if assistant.user_id == SYSTEM_OWNER_USER_ID and not is_superuser:
             raise errors.ForbiddenError(msg='系统默认助手不允许删除')
         await ai_buddy_conversation_dao.clear_assistant(db, pk)
         return await ai_buddy_assistant_dao.delete(db, pk, assistant.user_id)
