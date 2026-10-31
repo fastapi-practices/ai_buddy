@@ -38,12 +38,14 @@ from backend.plugin.ai_buddy.agent.work.capabilities.files import build_file_und
 from backend.plugin.ai_buddy.agent.work.capabilities.guardrails import build_guardrail_capabilities
 from backend.plugin.ai_buddy.agent.work.capabilities.mcp import build_mcp_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.memory import build_memory_capability
+from backend.plugin.ai_buddy.agent.work.capabilities.office_attachments import build_office_attachments_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.planning import build_planning_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.project import build_project_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.reminders import build_reminder_capabilities
 from backend.plugin.ai_buddy.agent.work.capabilities.resource_tools import build_resource_tools_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import build_runtime_hooks_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.sandbox import build_sandbox_capabilities
+from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import build_sandbox_tools_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.search import build_search_capabilities
 from backend.plugin.ai_buddy.agent.work.capabilities.skills import build_skills_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.subagents import build_subagents_capability
@@ -71,6 +73,8 @@ _TOOL_EXECUTOR = ThreadPoolExecutor(
 )
 
 _CAPABILITY_BUILDERS: tuple[CapabilityBuilder, ...] = (
+    # 先于文件理解，让 Office 附件直接转为文本而不是交给辅助模型描述
+    build_office_attachments_capability,
     build_file_understanding_capability,
     # 压缩先更新持久历史，提醒和记忆随后仅注入当前请求
     build_compaction_capability,
@@ -82,6 +86,7 @@ _CAPABILITY_BUILDERS: tuple[CapabilityBuilder, ...] = (
     build_skills_capability,
     build_workspace_capability,
     build_workspace_tools_capability,
+    build_sandbox_tools_capability,
     build_resource_tools_capability,
     build_user_input_capability,
     build_mcp_capability,

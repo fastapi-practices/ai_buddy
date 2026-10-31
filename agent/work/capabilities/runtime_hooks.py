@@ -9,7 +9,12 @@ from pydantic_ai.tools import ToolDefinition
 from backend.common.log import log
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyToolPolicy
-from backend.plugin.ai_buddy.security.tool_policy import RESOURCE_WRITE_TOOLS, is_mcp_tool, resolve_tool_policy
+from backend.plugin.ai_buddy.security.tool_policy import (
+    RESOURCE_WRITE_TOOLS,
+    SANDBOX_CONFIRM_TOOLS,
+    is_mcp_tool,
+    resolve_tool_policy,
+)
 from backend.plugin.ai_buddy.service.approval_audit_service import ai_buddy_approval_audit_service
 
 
@@ -27,7 +32,11 @@ def resolve_work_tool_policy(
     :param mcp_approve_writes: MCP 默认询问
     :return:
     """
-    needs_confirm = tool_def.name in RESOURCE_WRITE_TOOLS or (mcp_approve_writes and is_mcp_tool(tool_def))
+    needs_confirm = (
+        tool_def.name in RESOURCE_WRITE_TOOLS
+        or tool_def.name in SANDBOX_CONFIRM_TOOLS
+        or (mcp_approve_writes and is_mcp_tool(tool_def))
+    )
     default = AIBuddyToolPolicy.ask if needs_confirm else AIBuddyToolPolicy.allow
     return resolve_tool_policy(tool_name=tool_def.name, policies=policies, default=default)
 

@@ -15,6 +15,9 @@ RESOURCE_WRITE_TOOLS = frozenset({
     'update_skill',
 })
 
+# 在沙箱中执行命令和交付文件的工具，默认需要用户确认
+SANDBOX_CONFIRM_TOOLS = frozenset({'bash', 'deliver_file'})
+
 
 def resolve_tool_policy(
     *,
