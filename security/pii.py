@@ -6,7 +6,7 @@ from pydantic_ai_harness.guardrails import GuardrailResult
 
 _PHONE = re.compile(r'(?<!\d)(?:\+?86[-\s]?)?1[3-9]\d[-\s]?\d{4}[-\s]?\d{4}(?!\d)')
 _ID_CARD = re.compile(r'(?<!\d)[1-9]\d{5}(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?!\d)')
-_EMAIL = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
+_EMAIL = re.compile(r'\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b')
 _BANK_CARD = re.compile(r'(?<!\d)(?:\d[ -]*?){13,19}(?!\d)')
 
 

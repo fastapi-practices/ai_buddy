@@ -12,9 +12,9 @@ def mask_api_key(key: str) -> str:
     """
     if not key:
         return key
-    if len(key) <= 12:
+    if len(key) < 32:
         return _MASK
-    return key[:8] + _MASK + key[-4:]
+    return key[:4] + _MASK + key[-4:]
 
 
 def mask_sensitive_data(value: Any) -> Any:

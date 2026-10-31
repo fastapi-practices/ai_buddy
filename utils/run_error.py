@@ -1,6 +1,7 @@
 from typing import Any
 
 from pydantic_ai.exceptions import (
+    AgentRunError,
     ModelAuthenticationError,
     ModelConnectionError,
     ModelContextWindowExceededError,
@@ -15,7 +16,12 @@ from pydantic_ai.exceptions import (
     RunTimedOut,
 )
 
+from backend.common.exception import errors
+from backend.common.log import log
+
 _DEFAULT_ERROR_MESSAGE = '生成失败'
+# 文本可以安全展示给用户的异常：模型供应商错误、运行时限和已转为业务文案的错误
+_EXPOSED_ERRORS = (AgentRunError, errors.BaseExceptionError)
 _MAX_BODY_CHARS = 8000
 
 
@@ -53,6 +59,10 @@ def build_run_error_payload(
         text = error.strip() or _DEFAULT_ERROR_MESSAGE
         payload['message'] = text
         payload['reason'] = text
+    elif isinstance(error, BaseException) and not isinstance(error, _EXPOSED_ERRORS):
+        # 数据库、Redis、HTTP 客户端等内部异常的文本可能含主机、SQL 和内部地址，只在日志中保留
+        log.warning(f'运行异常详情已隐藏: {type(error).__qualname__}: {error}')
+        payload['type'] = type(error).__qualname__
     elif isinstance(error, BaseException):
         payload['type'] = type(error).__qualname__
         payload['module'] = type(error).__module__
