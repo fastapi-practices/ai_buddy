@@ -22,7 +22,7 @@ from backend.plugin.ai_buddy.schema.test_report import AIBuddyTestReportArchive,
 from backend.plugin.ai_buddy.service.artifact_service import ai_buddy_artifact_service
 
 if TYPE_CHECKING:
-    from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
+    from backend.plugin.ai_buddy.dataclasses import AgentRunContext
 
 _PREVIEW_CHARS = 12000
 

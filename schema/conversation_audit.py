@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import ConfigDict, Field
 
 from backend.common.schema import SchemaBase
-from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction
+from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction, AIBuddyQueryLimit
 
 
 class AIBuddyConversationAuditQueryParam(SchemaBase):
@@ -11,7 +11,7 @@ class AIBuddyConversationAuditQueryParam(SchemaBase):
 
     conversation_id: str | None = Field(None, description='限定的对话 ID')
     before: int | None = Field(None, description='上一页最小审计 ID')
-    limit: int = Field(50, description='返回条数')
+    limit: int = Field(50, ge=1, le=AIBuddyQueryLimit.audit.value, description='返回条数')
 
 
 class GetAIBuddyConversationAuditDetail(SchemaBase):

@@ -10,9 +10,10 @@ from typing import Any
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.core.path_conf import STATIC_DIR
+from backend.plugin.ai_buddy.dataclasses import KnowledgeSegment
 from backend.plugin.ai_buddy.enums import AIBuddyDocumentExtractBackend, AIBuddyOcrBackend
 from backend.plugin.ai_buddy.utils.knowledge_extract import extract_with_backend
-from backend.plugin.ai_buddy.utils.knowledge_parser import KnowledgeSegment, join_knowledge_text_segments
+from backend.plugin.ai_buddy.utils.knowledge_parser import join_knowledge_text_segments
 
 
 def resolve_ocr_backend(value: str | None = None) -> AIBuddyOcrBackend:

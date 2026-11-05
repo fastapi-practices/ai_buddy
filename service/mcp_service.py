@@ -78,8 +78,7 @@ class AIBuddyMcpService:
             return mcps
         return [item for item in mcps if item.type != AIBuddyMcpType.stdio]
 
-    @staticmethod
-    async def get(*, db: AsyncSession, pk: int, user_id: int, is_superuser: bool = False) -> AIBuddyMcp:
+    async def get(self, *, db: AsyncSession, pk: int, user_id: int, is_superuser: bool = False) -> AIBuddyMcp:
         """
         获取 MCP
 
@@ -92,6 +91,7 @@ class AIBuddyMcpService:
         mcp = await ai_buddy_mcp_dao.get(db, pk, None if is_superuser else user_id)
         if not mcp:
             raise errors.NotFoundError(msg='MCP 不存在')
+        self._validate_transport_permission(type=AIBuddyMcpType(mcp.type), is_superuser=is_superuser)
         return mcp
 
     async def get_by_ids(

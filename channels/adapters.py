@@ -5,7 +5,7 @@ from typing import Any
 from octop_gateway.models import InboundMessage as GatewayInboundMessage
 
 from backend.common.exception import errors
-from backend.plugin.ai_buddy.channels.types import InboundMessage
+from backend.plugin.ai_buddy.dataclasses import InboundMessage
 from backend.plugin.ai_buddy.enums import AIBuddyChannelType
 
 

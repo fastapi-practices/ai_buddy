@@ -10,6 +10,7 @@ from backend.plugin.ai_buddy.schema.workspace_file import (
     CreateAIBuddyWorkspaceFileParam,
     UpsertAIBuddyWorkspaceFileParam,
 )
+from backend.utils.timezone import timezone
 
 
 class CRUDAIBuddyWorkspaceFile(CRUDPlus[AIBuddyWorkspaceFile]):
@@ -74,6 +75,27 @@ class CRUDAIBuddyWorkspaceFile(CRUDPlus[AIBuddyWorkspaceFile]):
         :return:
         """
         return await self.create_model(db, obj, user_id=user_id, workspace_id=workspace_id, flush=True)
+
+    async def delete_all(self, db: AsyncSession, user_id: int, workspace_id: str) -> int:
+        """
+        逻辑删除工作区全部文件清单
+
+        :param db: 数据库会话
+        :param user_id: 用户 ID
+        :param workspace_id: 工作区 ID
+        :return:
+        """
+        return await self.delete_model_by_column(
+            db,
+            logical_deletion=True,
+            deleted_flag_column='deleted',
+            deleted_flag_value=self.model.id,
+            deleted_at_column='deleted_time',
+            deleted_at_factory=timezone.now(),
+            user_id=user_id,
+            workspace_id=workspace_id,
+            deleted=0,
+        )
 
     async def update(self, db: AsyncSession, pk: int, obj: dict) -> int:
         """

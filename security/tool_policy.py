@@ -26,12 +26,6 @@ TOOL_POLICY_DEPENDENCIES: dict[str, tuple[str, ...]] = {
     'smart_search': ('bash', 'read'),
 }
 
-_POLICY_PRIORITY = {
-    AIBuddyToolPolicy.allow: 0,
-    AIBuddyToolPolicy.ask: 1,
-    AIBuddyToolPolicy.deny: 2,
-}
-
 
 def resolve_tool_policy(
     *,
@@ -90,7 +84,7 @@ def resolve_tool_policy_with_dependencies(
             policies=policies,
             default=dependency_defaults.get(dependency, AIBuddyToolPolicy.allow),
         )
-        policy = max(policy, dependency_policy, key=_POLICY_PRIORITY.__getitem__)
+        policy = max(policy, dependency_policy, key=lambda item: item.priority)
     return policy
 
 

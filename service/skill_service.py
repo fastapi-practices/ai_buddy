@@ -11,7 +11,7 @@ from starlette.concurrency import run_in_threadpool
 from backend.common.exception import errors
 from backend.common.pagination import paging_data
 from backend.plugin.ai_buddy.crud.crud_skill import ai_buddy_skill_dao
-from backend.plugin.ai_buddy.enums import AIBuddyObjectKind, AIBuddyObjectLocation
+from backend.plugin.ai_buddy.enums import AIBuddyObjectKind
 from backend.plugin.ai_buddy.model.skill import AIBuddySkill
 from backend.plugin.ai_buddy.schema.skill import (
     CreateAIBuddySkillParam,
@@ -330,7 +330,6 @@ class AIBuddySkillService:
             db=db,
             user_id=skill.user_id,
             kind=AIBuddyObjectKind.skill,
-            location=AIBuddyObjectLocation.s3,
             object_key=f'{skill.object_key.rstrip("/")}/',
             storage_id=skill.storage_id,
         )

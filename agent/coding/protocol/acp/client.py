@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, NoReturn
 from uuid import uuid4
 
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.permissions import ACPPermissionAdapter
-from backend.plugin.ai_buddy.agent.coding.types import AgentToolCall
+from backend.plugin.ai_buddy.dataclasses import AgentToolCall
 from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode
 
 if TYPE_CHECKING:

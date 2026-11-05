@@ -213,6 +213,28 @@ class AIBuddyAgentMode(StrEnum):
     coding = 'coding'
 
 
+class AIBuddyCapabilityScope(StrEnum):
+    """能力构建器适用的 Agent 模式范围"""
+
+    all = 'all'
+    chat_and_work = 'chat_and_work'
+    work_only = 'work_only'
+    work_and_coding = 'work_and_coding'
+
+    @property
+    def modes(self) -> frozenset[AIBuddyAgentMode]:
+        """展开为具体 Agent 模式"""
+        return {
+            AIBuddyCapabilityScope.all: frozenset(AIBuddyAgentMode),
+            AIBuddyCapabilityScope.chat_and_work: frozenset({AIBuddyAgentMode.chat, AIBuddyAgentMode.work}),
+            AIBuddyCapabilityScope.work_only: frozenset({AIBuddyAgentMode.work}),
+            AIBuddyCapabilityScope.work_and_coding: frozenset({
+                AIBuddyAgentMode.work,
+                AIBuddyAgentMode.coding,
+            }),
+        }[self]
+
+
 class AIBuddyPermissionMode(StrEnum):
     """Agent 权限模式"""
 
@@ -272,6 +294,15 @@ class AIBuddyToolPolicy(StrEnum):
     allow = 'allow'
     ask = 'ask'
     deny = 'deny'
+
+    @property
+    def priority(self) -> int:
+        """策略严格程度，数值越大越严格"""
+        return {
+            AIBuddyToolPolicy.allow: 0,
+            AIBuddyToolPolicy.ask: 1,
+            AIBuddyToolPolicy.deny: 2,
+        }[self]
 
 
 class AIBuddySlashEntry(StrEnum):
@@ -615,3 +646,14 @@ class AIBuddyAcpToolParseMode(StrEnum):
     call_title = 'call_title'
     update_detail = 'update_detail'
     call_detail = 'call_detail'
+
+
+class AIBuddyQueryLimit(IntEnum):
+    """查询与批量处理的单次上限"""
+
+    message_history = 200
+    message_search = 100
+    conversation_messages = 500
+    sync_changes = 500
+    audit = 200
+    garbage_collect = 1000

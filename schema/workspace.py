@@ -5,6 +5,7 @@ from pydantic import ConfigDict, Field, field_validator
 from backend.common.exception import errors
 from backend.common.schema import SchemaBase
 from backend.plugin.ai_buddy.enums import (
+    AIBuddyQueryLimit,
     AIBuddyWorkspaceBackend,
     AIBuddyWorkspaceState,
 )
@@ -67,7 +68,12 @@ class AIBuddyWorkspaceGarbageCollectParam(SchemaBase):
 
     dry_run: bool = Field(True, description='默认仅预览，不删除对象')
     revision: int = Field(description='客户端基于的工作区版本')
-    limit: int = Field(100, description='单次扫描对象数上限')
+    limit: int = Field(
+        100,
+        ge=1,
+        le=AIBuddyQueryLimit.garbage_collect.value,
+        description='单次扫描对象数上限',
+    )
     cursor: str | None = Field(None, description='上次扫描返回的游标')
 
 

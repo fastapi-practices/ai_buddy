@@ -144,8 +144,12 @@ async def list_artifacts(ctx: RunContext[ChatAgentDeps]) -> str:
     :param ctx: 运行上下文
     :return:
     """
+    if not ctx.deps.conversation_id:
+        return '当前对话不能访问产物'
     async with async_db_session() as db:
-        rows = await ai_buddy_artifact_service.get_all(db=db, user_id=ctx.deps.user_id)
+        rows = await ai_buddy_artifact_service.get_all(
+            db=db, user_id=ctx.deps.user_id, conversation_id=ctx.deps.conversation_id
+        )
     if not rows:
         return '没有可用产物'
     lines = [f'- #{item.id} {item.title}（{item.kind}）' for item in rows]
@@ -160,9 +164,16 @@ async def get_artifact(ctx: RunContext[ChatAgentDeps], artifact_id: int) -> str:
     :param artifact_id: 产物 ID
     :return:
     """
+    if not ctx.deps.conversation_id:
+        return '当前对话不能访问产物'
     try:
         async with async_db_session() as db:
-            artifact = await ai_buddy_artifact_service.get(db=db, pk=artifact_id, user_id=ctx.deps.user_id)
+            artifact = await ai_buddy_artifact_service.get(
+                db=db,
+                pk=artifact_id,
+                user_id=ctx.deps.user_id,
+                conversation_id=ctx.deps.conversation_id,
+            )
     except errors.NotFoundError:
         return '产物不存在'
     content = artifact.content
@@ -188,6 +199,8 @@ async def write_artifact(
     :param artifact_id: 产物 ID
     :return:
     """
+    if not ctx.deps.conversation_id:
+        return '当前对话不能保存产物'
     title_text = title.strip()
     content_text = content.strip()
     if not title_text or not content_text:
@@ -200,6 +213,7 @@ async def write_artifact(
                     pk=artifact_id,
                     user_id=ctx.deps.user_id,
                     obj=UpdateAIBuddyArtifactParam(title=title_text, kind=kind, content=content_text),
+                    conversation_id=ctx.deps.conversation_id,
                 )
             except errors.NotFoundError:
                 return '产物不存在'
@@ -208,5 +222,6 @@ async def write_artifact(
             db=db,
             user_id=ctx.deps.user_id,
             obj=CreateAIBuddyArtifactParam(title=title_text, kind=kind, content=content_text),
+            conversation_id=ctx.deps.conversation_id,
         )
         return f'已创建产物 #{created.id}'

@@ -11,7 +11,7 @@ from backend.plugin.ai_buddy.agent.coding.protocol.acp.bridge import get_bridge,
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.client import ACPHostedClient
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.models import ACPConfig, ACPError
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.tool_adapter import build_acp_prompt
-from backend.plugin.ai_buddy.agent.coding.types import AgentToolCall
+from backend.plugin.ai_buddy.dataclasses import AgentToolCall
 
 if TYPE_CHECKING:
     from acp.schema import PromptCapabilities

@@ -15,6 +15,7 @@ from backend.core.conf import settings
 from backend.plugin.ai_buddy.crud.crud_workspace import ai_buddy_workspace_dao
 from backend.plugin.ai_buddy.crud.crud_workspace_file import ai_buddy_workspace_file_dao
 from backend.plugin.ai_buddy.enums import (
+    AIBuddyQueryLimit,
     AIBuddyWorkspaceBackend,
     AIBuddyWorkspaceFileState,
 )
@@ -178,7 +179,9 @@ class AIBuddyWorkspaceService:
         :return:
         """
         workspace = await self.get(db=db, user_id=user_id, workspace_id=workspace_id, for_update=True)
-        return await ai_buddy_workspace_dao.delete(db, user_id, workspace.workspace_id)
+        async with db.begin_nested():
+            await ai_buddy_workspace_file_dao.delete_all(db, user_id, workspace.workspace_id)
+            return await ai_buddy_workspace_dao.delete(db, user_id, workspace.workspace_id)
 
     async def get_files(self, *, db: AsyncSession, user_id: int, workspace_id: str) -> Sequence[AIBuddyWorkspaceFile]:
         """
@@ -384,6 +387,7 @@ class AIBuddyWorkspaceService:
         self._check_revision(expected=obj.revision, current=workspace.revision, label='工作区')
         if workspace.backend != AIBuddyWorkspaceBackend.cloud:
             raise errors.RequestError(msg='对象回收仅适用于云端工作区')
+        limit = min(max(1, obj.limit), AIBuddyQueryLimit.garbage_collect.value)
         prefix = f'{workspace.object_prefix}/objects/'
         if obj.cursor is not None and not obj.cursor.startswith(prefix):
             raise errors.RequestError(msg='回收游标不属于当前工作区')
@@ -402,7 +406,7 @@ class AIBuddyWorkspaceService:
         entries = await operator.list(prefix, recursive=True, start_after=obj.cursor)
         last_path = None
         async for entry in entries:
-            if result.scanned >= obj.limit:
+            if result.scanned >= limit:
                 result.next_cursor = last_path
                 break
             result.scanned += 1

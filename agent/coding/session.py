@@ -7,14 +7,19 @@ from pydantic_ai.messages import BinaryContent
 from backend.common.context import ctx as request_ctx
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.bridge import get_bridge
-from backend.plugin.ai_buddy.agent.coding.protocol.base import CodingHostSpec
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.adapter import pydantic_ai_coding_protocol_adapter
 from backend.plugin.ai_buddy.agent.coding.sandbox_providers import create_coding_sandbox
-from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool, build_buddy_resource_tools
-from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext, AgentUsage
+from backend.plugin.ai_buddy.agent.coding.tools import build_buddy_resource_tools
 from backend.plugin.ai_buddy.crud.crud_model import ai_buddy_model_dao
 from backend.plugin.ai_buddy.crud.crud_project import ai_buddy_project_dao
 from backend.plugin.ai_buddy.crud.crud_provider import ai_buddy_provider_dao
+from backend.plugin.ai_buddy.dataclasses import (
+    AIBuddyInvocationContext,
+    AgentRunContext,
+    AgentUsage,
+    BoundAgentTool,
+    CodingHostSpec,
+)
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
     AIBuddyMessageStatus,
@@ -23,7 +28,6 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyPermissionMode,
     AIBuddyProviderType,
 )
-from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.policy.registry import validate_ai_buddy_invocation
 from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.service.workspace_service import ai_buddy_workspace_service

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plugin.ai_buddy.crud.crud_conversation import ai_buddy_conversation_dao
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
-from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction
+from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction, AIBuddyQueryLimit
 from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage
 from backend.plugin.ai_buddy.schema.sync import GetAIBuddySyncChangeDetail, GetAIBuddySyncDetail
@@ -71,6 +71,7 @@ class AIBuddySyncService:
         :param client: 访问来源，首次同步时写入审计
         :return:
         """
+        limit = min(max(1, limit), AIBuddyQueryLimit.sync_changes.value)
         if cursor is None:
             # 不带游标代表一台设备从头开始同步，记录跨设备访问；增量轮询不记录
             await ai_buddy_conversation_audit_service.record(

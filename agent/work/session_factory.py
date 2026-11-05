@@ -7,6 +7,7 @@ from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.work.generation.handlers import get_generation_handler
 from backend.plugin.ai_buddy.agent.work.session import AgentSession
 from backend.plugin.ai_buddy.agent.work.types import ChatAgent
+from backend.plugin.ai_buddy.dataclasses import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
     AIBuddyChatGenerationType,
@@ -14,7 +15,6 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyOrigin,
     AIBuddyProviderType,
 )
-from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.policy.registry import validate_ai_buddy_invocation
 from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, AIBuddyForwardedPropsParam

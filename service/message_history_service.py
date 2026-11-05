@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.crud.crud_message_error import ai_buddy_message_error_dao
-from backend.plugin.ai_buddy.enums import AIBuddyMessageRole, AIBuddyMessageStatus
+from backend.plugin.ai_buddy.enums import AIBuddyMessageRole, AIBuddyMessageStatus, AIBuddyQueryLimit
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage
 from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesSnapshotDetail
 from backend.plugin.ai_buddy.schema.message_history import (
@@ -45,6 +45,7 @@ class AIBuddyMessageHistoryService:
         await ai_buddy_conversation_service.get_owned_conversation(
             db=db, conversation_id=conversation_id, user_id=user_id
         )
+        limit = min(max(1, limit), AIBuddyQueryLimit.message_history.value)
         rows = list(
             await ai_buddy_message_dao.get_history_page(
                 db, conversation_id, before=decode_history_cursor(cursor=before), limit=limit + 1
@@ -79,6 +80,7 @@ class AIBuddyMessageHistoryService:
         needle = q.strip().casefold()
         if not needle:
             raise errors.RequestError(msg='搜索内容不能为空')
+        limit = min(max(1, limit), AIBuddyQueryLimit.message_search.value)
         before = decode_history_cursor(cursor=cursor)
         items: list[GetAIBuddyMessageSearchHitDetail] = []
         scanned = 0

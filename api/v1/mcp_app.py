@@ -7,7 +7,10 @@ from backend.common.security.jwt import DependsJwtAuth
 from backend.database.db import CurrentSession
 from backend.plugin.ai_buddy.schema.mcp_app import (
     AIBuddyMcpAppScope,
+    AIBuddyMcpAppToolParam,
+    ApproveAIBuddyMcpAppToolParam,
     CallAIBuddyMcpAppToolParam,
+    GetAIBuddyMcpAppApprovalDetail,
     GetAIBuddyMcpAppDetail,
     GetAIBuddyMcpAppToolInfoDetail,
 )
@@ -36,9 +39,23 @@ async def read_ai_buddy_mcp_app_resource(
     '/{conversation_id}/mcp-apps/tool-info', summary='校验 MCP 应用工具与操作权限', dependencies=[DependsJwtAuth]
 )
 async def get_ai_buddy_mcp_app_tool_info(
-    request: Request, db: CurrentSession, conversation_id: str, obj: CallAIBuddyMcpAppToolParam
+    request: Request, db: CurrentSession, conversation_id: str, obj: AIBuddyMcpAppToolParam
 ) -> ResponseSchemaModel[GetAIBuddyMcpAppToolInfoDetail]:
     data = await ai_buddy_mcp_app_service.tool_info(
+        db=db, conversation_id=conversation_id, user_id=request.user.id, is_superuser=request.user.is_superuser, obj=obj
+    )
+    return response_base.success(data=data)
+
+
+@router.post(
+    '/{conversation_id}/mcp-apps/approve-tool',
+    summary='申请 MCP 应用写操作审批票据',
+    dependencies=[DependsJwtAuth],
+)
+async def approve_ai_buddy_mcp_app_tool(
+    request: Request, db: CurrentSession, conversation_id: str, obj: ApproveAIBuddyMcpAppToolParam
+) -> ResponseSchemaModel[GetAIBuddyMcpAppApprovalDetail]:
+    data = await ai_buddy_mcp_app_service.approve_tool(
         db=db, conversation_id=conversation_id, user_id=request.user.id, is_superuser=request.user.is_superuser, obj=obj
     )
     return response_base.success(data=data)

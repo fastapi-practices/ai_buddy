@@ -98,19 +98,29 @@ async def assemble_capabilities(
 
     mode = resolve_capability_mode(forwarded_props)
     capabilities: list[AbstractCapability[Any]] = []
+    text = forwarded_props.generation_type == AIBuddyChatGenerationType.text
     thinking = forwarded_props.thinking
     if thinking is not None and AIBuddyModelCapability.thinking in catalog_capabilities:
         thinking_effort = False if thinking == AIBuddyChatThinkingType.off else thinking
         capabilities.append(Thinking(thinking_effort))
     capabilities.append(RaiseContentFilterError())
-    if forwarded_props.generation_type == AIBuddyChatGenerationType.text:
+    if text:
         capabilities.append(Caching(forwarded_props.cache_enabled))
         if forwarded_props.background_subagents_enabled and conversation_id and mode != AIBuddyAgentMode.chat:
             capabilities.append(BuddyDelegationReports(conversation_id=conversation_id))
         capabilities.append(RepairToolArguments())
-    capabilities.extend(
-        _build_runtime_capabilities(text=forwarded_props.generation_type == AIBuddyChatGenerationType.text)
-    )
+        capabilities.extend((
+            ReinjectSystemPrompt(),
+            UseThreadExecutor(_TOOL_EXECUTOR),
+            SetToolMetadata(tools=lambda _ctx, tool_def: is_jev_tool_risk(tool_def.name), ai_buddy_high_risk=True),
+            DetectLoops(),
+        ))
+        if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED:
+            capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name='ai_buddy_work'))
+        if settings.AI_BUDDY_AGENT_INCLUDE_TOOL_RETURN_SCHEMAS:
+            capabilities.append(IncludeToolReturnSchemas())
+    if settings.AI_BUDDY_AGENT_INSTRUMENTATION_ENABLED:
+        capabilities.append(Instrumentation())
 
     context = CapabilityContext(
         db=db,
@@ -141,40 +151,8 @@ async def assemble_capabilities(
         provider_type=adapter.provider_type,
         has_builtin=assembly.has_builtin_tools,
     )
-    return _order_tool_result_filters(capabilities)
 
-
-def _build_runtime_capabilities(*, text: bool) -> list[AbstractCapability[Any]]:
-    """
-    按配置构建 SDK 运行时能力
-
-    :param text: 是否为文本生成
-    :return:
-    """
-    capabilities: list[AbstractCapability[Any]] = []
-    if text:
-        capabilities.extend((
-            ReinjectSystemPrompt(),
-            UseThreadExecutor(_TOOL_EXECUTOR),
-            SetToolMetadata(tools=lambda _ctx, tool_def: is_jev_tool_risk(tool_def.name), ai_buddy_high_risk=True),
-            DetectLoops(),
-        ))
-        if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED:
-            capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name='ai_buddy_work'))
-        if settings.AI_BUDDY_AGENT_INCLUDE_TOOL_RETURN_SCHEMAS:
-            capabilities.append(IncludeToolReturnSchemas())
-    if settings.AI_BUDDY_AGENT_INSTRUMENTATION_ENABLED:
-        capabilities.append(Instrumentation())
-    return capabilities
-
-
-def _order_tool_result_filters(capabilities: list[AbstractCapability[Any]]) -> list[AbstractCapability[Any]]:
-    """
-    结果钩子逆序执行，将外溢放在守卫前以先清洗再落盘
-
-    :param capabilities: 模型能力集合
-    :return:
-    """
+    # 结果钩子逆序执行，将输出限制放在守卫前以先清洗再落盘
     ordered: list[AbstractCapability[Any]] = []
     for capability in capabilities:
         if isinstance(capability, ToolOutputLimits):

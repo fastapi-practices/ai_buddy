@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import time
 
-from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
 from pydantic_ai import CancellationToken
@@ -37,11 +36,10 @@ class ActiveChatRun:
         self.cancellation_token = CancellationToken()
         self.task: asyncio.Task[None] | None = None
         self._activation = asyncio.Event()
-        self._log_chain: asyncio.Task[None] | None = None
         self.media_type = 'text/event-stream'
         self.headers = dict(_SSE_HEADERS)
 
-    def configure_stream(self, *, media_type: str, headers: dict[str, str] | None = None) -> None:
+    async def configure_stream(self, *, media_type: str, headers: dict[str, str] | None = None) -> None:
         """
         记录本轮流的媒体类型和响应头，重连时复用
 
@@ -55,7 +53,7 @@ class ActiveChatRun:
             merged.update(headers)
         self.headers = merged
         if self.conversation_id:
-            self._log_chain = asyncio.create_task(self._write_log_meta(self._log_chain))
+            await self._write_log_meta()
 
     @property
     def is_activated(self) -> bool:
@@ -82,7 +80,7 @@ class ActiveChatRun:
         """在业务事务提交后允许后台生成开始"""
         self._activation.set()
 
-    def publish(self, event: str) -> None:
+    async def publish(self, event: str) -> None:
         """
         将已编码协议事件写入 Redis Stream
 
@@ -90,18 +88,14 @@ class ActiveChatRun:
         :return:
         """
         if self.conversation_id:
-            self._log_chain = asyncio.create_task(self._write_log_event(self._log_chain, event))
+            await self._write_log_event(event)
 
-    async def _write_log_meta(self, previous: asyncio.Task[None] | None) -> None:
+    async def _write_log_meta(self) -> None:
         """
-        在前序日志任务完成后写入流元信息
+        写入流元信息
 
-        :param previous: 前序日志任务
         :return:
         """
-        if previous is not None:
-            with suppress(Exception):
-                await previous
         try:
             await shared_chat_run_store.set_event_log_meta(
                 conversation_id=self.conversation_id or '',
@@ -112,28 +106,17 @@ class ActiveChatRun:
         except Exception as exc:
             log.warning(f'写入聊天事件流元信息失败 conversation_id={self.conversation_id}: {exc}')
 
-    async def _write_log_event(self, previous: asyncio.Task[None] | None, event: str) -> None:
+    async def _write_log_event(self, event: str) -> None:
         """
-        在前序日志任务完成后追加协议事件
+        追加协议事件
 
-        :param previous: 前序日志任务
         :param event: 已编码协议事件
         :return:
         """
-        if previous is not None:
-            with suppress(Exception):
-                await previous
         try:
             await shared_chat_run_store.append_event(conversation_id=self.conversation_id or '', payload=event)
         except Exception as exc:
             log.warning(f'写入聊天事件日志失败 conversation_id={self.conversation_id}: {exc}')
-
-    async def drain_event_log(self) -> None:
-        """等待已排队的事件日志写完"""
-        chain = self._log_chain
-        if chain is not None:
-            with suppress(Exception):
-                await chain
 
     async def cancel_before_activation(self) -> None:
         """取消尚未越过事务提交屏障的任务"""
@@ -329,7 +312,6 @@ async def finish_run(*, conversation_id: str, run: ActiveChatRun) -> None:
     :return:
     """
     try:
-        await run.drain_event_log()
         await shared_chat_run_store.close_event_log(conversation_id=conversation_id, run_id=run.run_id)
         await shared_chat_run_store.release(conversation_id=conversation_id, run_id=run.run_id)
     except Exception as exc:

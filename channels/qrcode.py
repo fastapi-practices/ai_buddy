@@ -4,6 +4,7 @@ import binascii
 import json
 import logging
 import os
+import secrets
 import sys
 import time
 
@@ -21,6 +22,7 @@ from backend.database.redis import redis_client
 from backend.plugin.ai_buddy.enums import AIBuddyChannelQrcodeStatus, AIBuddyChannelType
 
 _SESSION_TTL_SECONDS = 600
+_CREATE_LOCK_TTL_SECONDS = 30
 _WECHAT_ILINK_BASE = 'https://ilinkai.weixin.qq.com'
 _DINGTALK_REG_BASE = 'https://oapi.dingtalk.com'
 _WECOM_QC_GENERATE = 'https://work.weixin.qq.com/ai/qc/generate'
@@ -82,6 +84,12 @@ local updated = cjson.encode(payload)
 redis.call('SET', KEYS[1], updated, 'EX', ttl, 'XX')
 return updated
 """
+_RELEASE_CREATE_LOCK_SCRIPT = """
+if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+end
+return 0
+"""
 
 
 class _FeishuPendingLogFilter(logging.Filter):
@@ -129,6 +137,40 @@ def _qrcode_session_key(session_id: str) -> str:
     :return:
     """
     return f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:channel_qrcode:{session_id}'
+
+
+def _qrcode_create_lock_key(session_id: str) -> str:
+    """
+    扫码确认创建通道的 Redis 锁键
+
+    :param session_id: 扫码会话 ID
+    :return:
+    """
+    return f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:channel_qrcode:create:{session_id}'
+
+
+async def acquire_qrcode_create_lock(*, session_id: str, token: str | None = None) -> str | None:
+    """
+    获取扫码确认创建通道锁
+
+    :param session_id: 扫码会话 ID
+    :param token: 可复用的持有令牌
+    :return:
+    """
+    owner = token or secrets.token_hex(16)
+    acquired = await redis_client.set(_qrcode_create_lock_key(session_id), owner, nx=True, ex=_CREATE_LOCK_TTL_SECONDS)
+    return owner if acquired else None
+
+
+async def release_qrcode_create_lock(*, session_id: str, token: str) -> None:
+    """
+    仅释放当前请求持有的扫码创建锁
+
+    :param session_id: 扫码会话 ID
+    :param token: 持有令牌
+    :return:
+    """
+    await redis_client.eval(_RELEASE_CREATE_LOCK_SCRIPT, 1, _qrcode_create_lock_key(session_id), token)
 
 
 async def save_qrcode_session(session_id: str, payload: dict[str, Any]) -> None:

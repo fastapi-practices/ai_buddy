@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from backend.common.exception import errors
 from backend.core.conf import settings
+from backend.plugin.ai_buddy.dataclasses import SkillUpload
 from backend.plugin.ai_buddy.schema.skill import AIBuddySkillFrontmatter
 from backend.plugin.ai_buddy.utils.archive import validate_archive_size
 from backend.plugin.ai_buddy.utils.workspace import safe_relative_parts
@@ -19,18 +20,6 @@ _SKILL_MARKDOWN_MAX_BYTES = 1 * 1024 * 1024
 _SKILL_VERSION_MAX_CHARS = 32
 _DEFAULT_SKILL_VERSION = '0.1.0'
 _BUILTIN_SKILL_ROOT = Path(__file__).resolve().parents[1] / 'builtin_skills'
-
-
-@dataclass(frozen=True, slots=True)
-class SkillUpload:
-    """解析后的技能目录"""
-
-    name: str
-    description: str
-    version: str
-    content: str
-    body: str
-    files: tuple[tuple[str, bytes], ...] = ()
 
 
 def skill_markdown_body(content: str) -> str:

@@ -1,4 +1,4 @@
-from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
+from backend.plugin.ai_buddy.dataclasses import AgentRunContext
 from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode
 
 _PERMISSION_HINT = {

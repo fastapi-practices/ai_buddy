@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Any, ClassVar, TypedDict
 from urllib.parse import urlsplit
 
@@ -10,12 +9,8 @@ from pydantic_ai.images import ImageGenerationModel
 from pydantic_ai.models import Model
 
 from backend.common.exception import errors
-from backend.plugin.ai_buddy.enums import (
-    AIBuddyModelCapability,
-    AIBuddyModelKind,
-    AIBuddyModelModality,
-    AIBuddyProviderType,
-)
+from backend.plugin.ai_buddy.dataclasses import ProviderModelSnapshot
+from backend.plugin.ai_buddy.enums import AIBuddyProviderType
 from backend.plugin.ai_buddy.schema.chat import AIBuddyForwardedPropsParam
 
 COMMON_MODEL_SETTING_FIELDS: frozenset[str] = frozenset({
@@ -31,21 +26,6 @@ COMMON_MODEL_SETTING_FIELDS: frozenset[str] = frozenset({
     'logit_bias',
     'stop_sequences',
 })
-
-
-@dataclass(frozen=True, slots=True)
-class ProviderModelSnapshot:
-    """供应商返回的模型标识"""
-
-    id: str
-    object: str | None = None
-    created: int | None = None
-    display_name: str | None = None
-    kind: AIBuddyModelKind = AIBuddyModelKind.chat
-    capabilities: tuple[AIBuddyModelCapability, ...] = ()
-    input_modalities: tuple[AIBuddyModelModality, ...] = (AIBuddyModelModality.text,)
-    context_window: int | None = None
-    max_output_tokens: int | None = None
 
 
 class ProviderCapabilities(TypedDict):

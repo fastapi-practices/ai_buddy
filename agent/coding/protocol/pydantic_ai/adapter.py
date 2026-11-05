@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.session import PydanticAICodingSession
-from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool, build_builtin_tools
+from backend.plugin.ai_buddy.agent.coding.tools import build_builtin_tools
 
 if TYPE_CHECKING:
-    from backend.plugin.ai_buddy.agent.coding.protocol.base import CodingHostSession, CodingHostSpec
+    from backend.plugin.ai_buddy.agent.coding.protocol.base import CodingHostSession
+    from backend.plugin.ai_buddy.dataclasses import BoundAgentTool, CodingHostSpec
 
 
 class PydanticAICodingProtocolAdapter:

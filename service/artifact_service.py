@@ -19,7 +19,6 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyArtifactState,
     AIBuddyArtifactStorageBackend,
     AIBuddyObjectKind,
-    AIBuddyObjectLocation,
     AIBuddyWorkspaceBackend,
     AIBuddyWorkspaceFileState,
 )
@@ -46,15 +45,18 @@ class AIBuddyArtifactService:
     """AI 产物服务类"""
 
     @staticmethod
-    async def get_all(*, db: AsyncSession, user_id: int) -> Sequence[AIBuddyArtifact]:
+    async def get_all(
+        *, db: AsyncSession, user_id: int, conversation_id: str | None = None
+    ) -> Sequence[AIBuddyArtifact]:
         """
         获取当前用户所有产物
 
         :param db: 数据库会话
         :param user_id: 用户 ID
+        :param conversation_id: 对话 ID，传入后仅返回该对话产物
         :return:
         """
-        artifacts = await ai_buddy_artifact_dao.get_all(db, user_id)
+        artifacts = await ai_buddy_artifact_dao.get_all(db, user_id, conversation_id)
         for artifact in artifacts:
             artifact.content = (
                 await read_text(db=db, key=artifact.object_key, storage_id=artifact.storage_id)
@@ -64,17 +66,22 @@ class AIBuddyArtifactService:
         return artifacts
 
     @staticmethod
-    async def get(*, db: AsyncSession, pk: int, user_id: int) -> AIBuddyArtifact:
+    async def get(*, db: AsyncSession, pk: int, user_id: int, conversation_id: str | None = None) -> AIBuddyArtifact:
         """
         获取产物详情
 
         :param db: 数据库会话
         :param pk: 产物 ID
         :param user_id: 用户 ID
+        :param conversation_id: 对话 ID，传入后校验产物来源
         :return:
         """
         artifact = await ai_buddy_artifact_dao.get(db, pk)
-        if artifact is None or artifact.user_id != user_id:
+        if (
+            artifact is None
+            or artifact.user_id != user_id
+            or (conversation_id is not None and artifact.conversation_id != conversation_id)
+        ):
             raise errors.NotFoundError(msg='产物不存在')
         artifact.content = (
             await read_text(db=db, key=artifact.object_key, storage_id=artifact.storage_id)
@@ -128,13 +135,21 @@ class AIBuddyArtifactService:
             raise errors.NotFoundError(msg='产物文件不存在')
         return artifact.content.encode(), f'artifact-{artifact.id}.md', 'text/markdown'
 
-    async def create(self, *, db: AsyncSession, user_id: int, obj: CreateAIBuddyArtifactParam) -> AIBuddyArtifact:
+    async def create(
+        self,
+        *,
+        db: AsyncSession,
+        user_id: int,
+        obj: CreateAIBuddyArtifactParam,
+        conversation_id: str | None = None,
+    ) -> AIBuddyArtifact:
         """
         创建产物
 
         :param db: 数据库会话
         :param user_id: 用户 ID
         :param obj: 创建产物参数
+        :param conversation_id: 来源对话 ID
         :return:
         """
         title = obj.title.strip()
@@ -153,6 +168,7 @@ class AIBuddyArtifactService:
             user_id,
             obj.model_copy(update={'title': title, 'storage_backend': AIBuddyArtifactStorageBackend.s3}),
             storage_id=storage.id,
+            conversation_id=conversation_id,
         )
         object_key = build_object_key(user_id=user_id, kind='artifacts', pk=artifact.id)
         await write_text(db=db, key=object_key, content=content, storage_id=storage.id)
@@ -172,7 +188,11 @@ class AIBuddyArtifactService:
 
     @staticmethod
     async def register_reference(
-        *, db: AsyncSession, user_id: int, obj: RegisterAIBuddyArtifactParam
+        *,
+        db: AsyncSession,
+        user_id: int,
+        obj: RegisterAIBuddyArtifactParam,
+        conversation_id: str | None = None,
     ) -> AIBuddyArtifact:
         """
         注册工作区产物引用
@@ -180,6 +200,7 @@ class AIBuddyArtifactService:
         :param db: 数据库会话
         :param user_id: 用户 ID
         :param obj: 工作区产物引用参数
+        :param conversation_id: 来源对话 ID
         :return:
         """
         title = obj.title.strip()
@@ -218,6 +239,7 @@ class AIBuddyArtifactService:
             user_id,
             obj.model_copy(update={'title': title, **metadata}),
             storage_id=storage_id,
+            conversation_id=conversation_id,
         )
         artifact.content = ''
         return artifact
@@ -282,9 +304,18 @@ class AIBuddyArtifactService:
                 size=file.size,
                 sha256=file.sha256,
             ),
+            conversation_id=conversation_id,
         )
 
-    async def update(self, *, db: AsyncSession, pk: int, user_id: int, obj: UpdateAIBuddyArtifactParam) -> int:
+    async def update(
+        self,
+        *,
+        db: AsyncSession,
+        pk: int,
+        user_id: int,
+        obj: UpdateAIBuddyArtifactParam,
+        conversation_id: str | None = None,
+    ) -> int:
         """
         更新产物
 
@@ -292,9 +323,10 @@ class AIBuddyArtifactService:
         :param pk: 产物 ID
         :param user_id: 用户 ID
         :param obj: 更新产物参数
+        :param conversation_id: 对话 ID，传入后校验产物来源
         :return:
         """
-        artifact = await self.get(db=db, pk=pk, user_id=user_id)
+        artifact = await self.get(db=db, pk=pk, user_id=user_id, conversation_id=conversation_id)
         title = obj.title.strip() if obj.title is not None else None
         content = obj.content.strip() if obj.content is not None else None
         for label, value in (('标题', title), ('内容', content)):
@@ -367,7 +399,6 @@ class AIBuddyArtifactService:
             db=db,
             user_id=user_id,
             kind=AIBuddyObjectKind.artifact,
-            location=AIBuddyObjectLocation.s3,
             object_key=object_key,
             storage_id=storage_id,
             size=len(content.encode()) if content is not None else None,

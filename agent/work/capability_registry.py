@@ -1,9 +1,7 @@
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from inspect import isawaitable
-from typing import Any
-
-from pydantic_ai.capabilities import AbstractCapability
+from typing import TYPE_CHECKING, Any
 
 from backend.plugin.ai_buddy.agent.work.capabilities.advisor import build_advisor_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.base import CapabilityBuilder
@@ -32,60 +30,45 @@ from backend.plugin.ai_buddy.agent.work.capabilities.user_input import build_use
 from backend.plugin.ai_buddy.agent.work.capabilities.work_context import build_work_context_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.workspace import build_workspace_capability
 from backend.plugin.ai_buddy.agent.work.capabilities.workspace_tools import build_workspace_tools_capability
-from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
-from backend.plugin.ai_buddy.enums import AIBuddyAgentMode
+from backend.plugin.ai_buddy.dataclasses import (
+    CapabilityAssembly,
+    CapabilityContext,
+    CapabilityRegistration,
+    CapabilityResult,
+)
+from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyCapabilityScope
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, AIBuddyForwardedPropsParam
 
-_ALL_MODES = frozenset(AIBuddyAgentMode)
-_CHAT_AND_WORK_MODES = frozenset({AIBuddyAgentMode.chat, AIBuddyAgentMode.work})
-_WORK_ONLY_MODES = frozenset({AIBuddyAgentMode.work})
-_WORK_AND_CODING_MODES = frozenset({AIBuddyAgentMode.work, AIBuddyAgentMode.coding})
-
-
-@dataclass(frozen=True, slots=True)
-class CapabilityRegistration:
-    """声明一个能力构建器及其适用模式"""
-
-    builder: CapabilityBuilder
-    modes: frozenset[AIBuddyAgentMode]
-
-
-@dataclass(frozen=True, slots=True)
-class CapabilityAssembly:
-    """一次能力装配的最终结果与能力组合标记"""
-
-    capabilities: tuple[AbstractCapability[Any], ...]
-    has_builtin_tools: bool
-    has_function_tool_source: bool
-
+if TYPE_CHECKING:
+    from pydantic_ai.capabilities import AbstractCapability
 
 CAPABILITY_REGISTRY: tuple[CapabilityRegistration, ...] = (
     # Office 附件必须先于通用文件理解处理
-    CapabilityRegistration(builder=build_office_attachments_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_file_understanding_capability, modes=_ALL_MODES),
+    CapabilityRegistration(builder=build_office_attachments_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_file_understanding_capability, scope=AIBuddyCapabilityScope.all),
     # 压缩先更新持久历史，提醒和记忆随后只注入当前请求
-    CapabilityRegistration(builder=build_compaction_capability, modes=_ALL_MODES),
-    CapabilityRegistration(builder=build_guardrail_capabilities, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_work_context_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_project_capability, modes=_ALL_MODES),
-    CapabilityRegistration(builder=build_reminder_capabilities, modes=_WORK_ONLY_MODES),
-    CapabilityRegistration(builder=build_memory_capability, modes=_ALL_MODES),
-    CapabilityRegistration(builder=build_skills_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_workspace_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_workspace_tools_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_sandbox_tools_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_resource_tools_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_user_input_capability, modes=_WORK_ONLY_MODES),
-    CapabilityRegistration(builder=build_mcp_capability, modes=_ALL_MODES),
-    CapabilityRegistration(builder=build_runtime_hooks_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_search_capabilities, modes=_ALL_MODES),
-    CapabilityRegistration(builder=build_advisor_capability, modes=_WORK_ONLY_MODES),
-    CapabilityRegistration(builder=build_builtin_toolset_capability, modes=_CHAT_AND_WORK_MODES),
-    CapabilityRegistration(builder=build_planning_capability, modes=_WORK_AND_CODING_MODES),
-    CapabilityRegistration(builder=build_subagents_capability, modes=_WORK_AND_CODING_MODES),
-    CapabilityRegistration(builder=build_sandbox_capabilities, modes=_WORK_ONLY_MODES),
-    CapabilityRegistration(builder=build_compact_on_request_capability, modes=_WORK_ONLY_MODES),
-    CapabilityRegistration(builder=build_tool_output_limits_capability, modes=_CHAT_AND_WORK_MODES),
+    CapabilityRegistration(builder=build_compaction_capability, scope=AIBuddyCapabilityScope.all),
+    CapabilityRegistration(builder=build_guardrail_capabilities, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_work_context_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_project_capability, scope=AIBuddyCapabilityScope.all),
+    CapabilityRegistration(builder=build_reminder_capabilities, scope=AIBuddyCapabilityScope.work_only),
+    CapabilityRegistration(builder=build_memory_capability, scope=AIBuddyCapabilityScope.all),
+    CapabilityRegistration(builder=build_skills_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_workspace_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_workspace_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_sandbox_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_resource_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_user_input_capability, scope=AIBuddyCapabilityScope.work_only),
+    CapabilityRegistration(builder=build_mcp_capability, scope=AIBuddyCapabilityScope.all),
+    CapabilityRegistration(builder=build_runtime_hooks_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_search_capabilities, scope=AIBuddyCapabilityScope.all),
+    CapabilityRegistration(builder=build_advisor_capability, scope=AIBuddyCapabilityScope.work_only),
+    CapabilityRegistration(builder=build_builtin_toolset_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    CapabilityRegistration(builder=build_planning_capability, scope=AIBuddyCapabilityScope.work_and_coding),
+    CapabilityRegistration(builder=build_subagents_capability, scope=AIBuddyCapabilityScope.work_and_coding),
+    CapabilityRegistration(builder=build_sandbox_capabilities, scope=AIBuddyCapabilityScope.work_only),
+    CapabilityRegistration(builder=build_compact_on_request_capability, scope=AIBuddyCapabilityScope.work_only),
+    CapabilityRegistration(builder=build_tool_output_limits_capability, scope=AIBuddyCapabilityScope.chat_and_work),
 )
 
 # coding 模式沿用原有的能力执行顺序，其他模式直接使用注册表顺序
@@ -122,7 +105,7 @@ def capability_registrations_for(mode: AIBuddyAgentMode) -> tuple[CapabilityRegi
     :param mode: Agent 运行模式
     :return:
     """
-    registrations = tuple(registration for registration in CAPABILITY_REGISTRY if mode in registration.modes)
+    registrations = tuple(registration for registration in CAPABILITY_REGISTRY if mode in registration.scope.modes)
     profile_order = CAPABILITY_PROFILE_ORDER.get(mode)
     if profile_order is None:
         return registrations

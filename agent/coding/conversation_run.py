@@ -40,7 +40,7 @@ _RUN_TIMEOUT_GRACE_SECONDS = 30
 if TYPE_CHECKING:
     from starlette.responses import StreamingResponse
 
-    from backend.plugin.ai_buddy.agent.coding.types import AgentMessage, AgentToolCall
+    from backend.plugin.ai_buddy.dataclasses import AgentMessage, AgentToolCall
     from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
 
 
@@ -72,7 +72,7 @@ async def run_conversation_coding(
     if not claimed:
         discard_run(conversation_id, active_run)
         raise errors.ConflictError(msg='当前对话正在生成，请稍后再试')
-    active_run.configure_stream(media_type='text/event-stream')
+    await active_run.configure_stream(media_type='text/event-stream')
     active_run.start(
         _produce_coding_run(
             user_id=user_id,
@@ -117,9 +117,9 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
     stream = CodingEventStream(
         conversation_id=conversation_id, run_id=run.run_id, message_id=f'msg_{assistant_message_id}'
     )
-    run.publish(stream.encode('start', {}))
+    await run.publish(stream.encode('start', {}))
 
-    async def emit(event: str, data: dict[str, Any]) -> None:  # ruff: ignore[unused-async]
+    async def emit(event: str, data: dict[str, Any]) -> None:
         """
         发布本轮运行的界面事件
 
@@ -131,7 +131,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
             delta = str(data.get('delta') or data.get('text') or '')
             if delta:
                 chunks.append(delta)
-        run.publish(stream.encode(event, data))
+        await run.publish(stream.encode(event, data))
 
     async def persist_message(message: AgentMessage) -> None:
         """
@@ -245,7 +245,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
             text=text,
             status=status,
         )
-        run.publish(stream.encode('done', {'status': status}))
+        await run.publish(stream.encode('done', {'status': status}))
     except asyncio.CancelledError:
         cancel_task.cancel()
         run.cancellation_token.cancel()
@@ -256,7 +256,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
             text=''.join(chunks).strip(),
             status=AIBuddyMessageStatus.interrupted,
         )
-        run.publish(stream.encode('done', {'status': AIBuddyMessageStatus.interrupted}))
+        await run.publish(stream.encode('done', {'status': AIBuddyMessageStatus.interrupted}))
         raise
     except (TimeoutError, RunTimedOut):
         await _write_assistant_message(
@@ -266,7 +266,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
             text=''.join(chunks).strip() or '编码运行超时',
             status=AIBuddyMessageStatus.timeout,
         )
-        run.publish(stream.encode('error', {'message': '编码运行超时', 'code': 'run_timeout'}))
+        await run.publish(stream.encode('error', {'message': '编码运行超时', 'code': 'run_timeout'}))
     except Exception as exc:
         log.exception(f'后台编码任务异常 conversation_id={conversation_id}: {exc}')
         payload = build_run_error_payload(exc)
@@ -287,7 +287,7 @@ async def _produce_coding_run(  # ruff: ignore[complex-structure]
             )
         except Exception as persist_exc:
             log.exception(f'回写编码错误消息失败 conversation_id={conversation_id}: {persist_exc}')
-        run.publish(stream.encode('error', payload))
+        await run.publish(stream.encode('error', payload))
     finally:
         monitor_task.cancel()
         cancel_task.cancel()

@@ -36,11 +36,19 @@ async def get_ai_buddy_onnx_options() -> ResponseSchemaModel[GetAIBuddyOnnxCatal
     return response_base.success(data=data)
 
 
-@router.post('/onnx-download', summary='下载本地 ONNX 向量模型', dependencies=[DependsJwtAuth])
+@router.post(
+    '/onnx-download',
+    summary='下载本地 ONNX 向量模型',
+    dependencies=[Depends(RequestPermission('ai:knowledge:add')), DependsRBAC],
+)
 async def download_ai_buddy_onnx_model(
+    request: Request,
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    data = await ai_buddy_knowledge_base_service.download_onnx_model(model_id=obj.model_id)
+    data = await ai_buddy_knowledge_base_service.download_onnx_model(
+        model_id=obj.model_id,
+        is_superuser=request.user.is_superuser,
+    )
     return response_base.success(data=data)
 
 
@@ -50,11 +58,19 @@ async def get_ai_buddy_onnx_download_status() -> ResponseSchemaModel[GetAIBuddyO
     return response_base.success(data=data)
 
 
-@router.post('/ocr-onnx-download', summary='下载本地 ONNX OCR 模型', dependencies=[DependsJwtAuth])
+@router.post(
+    '/ocr-onnx-download',
+    summary='下载本地 ONNX OCR 模型',
+    dependencies=[Depends(RequestPermission('ai:knowledge:add')), DependsRBAC],
+)
 async def download_ai_buddy_ocr_onnx_model(
+    request: Request,
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    data = await ai_buddy_knowledge_base_service.download_ocr_onnx_model(model_id=obj.model_id)
+    data = await ai_buddy_knowledge_base_service.download_ocr_onnx_model(
+        model_id=obj.model_id,
+        is_superuser=request.user.is_superuser,
+    )
     return response_base.success(data=data)
 
 
@@ -64,11 +80,19 @@ async def get_ai_buddy_ocr_onnx_download_status() -> ResponseSchemaModel[GetAIBu
     return response_base.success(data=data)
 
 
-@router.post('/paddleocr-download', summary='下载本机 PaddleOCR 模型', dependencies=[DependsJwtAuth])
+@router.post(
+    '/paddleocr-download',
+    summary='下载本机 PaddleOCR 模型',
+    dependencies=[Depends(RequestPermission('ai:knowledge:add')), DependsRBAC],
+)
 async def download_ai_buddy_paddleocr_model(
+    request: Request,
     obj: DownloadAIBuddyOnnxParam,
 ) -> ResponseSchemaModel[GetAIBuddyOnnxDownloadStatusDetail]:
-    data = await ai_buddy_knowledge_base_service.download_paddleocr_model(model_id=obj.model_id)
+    data = await ai_buddy_knowledge_base_service.download_paddleocr_model(
+        model_id=obj.model_id,
+        is_superuser=request.user.is_superuser,
+    )
     return response_base.success(data=data)
 
 

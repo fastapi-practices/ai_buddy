@@ -259,7 +259,7 @@ async def _produce_run_events(
                     if run.cancellation_token.cancelled
                     else event
                 )
-                run.publish(encode_ag_ui_event(StateSnapshotEvent(snapshot=deps.state)))
+                await run.publish(encode_ag_ui_event(StateSnapshotEvent(snapshot=deps.state)))
             part = getattr(event, 'part', None)
             content = getattr(part, 'content', None)
             cpu_heavy = (
@@ -271,7 +271,7 @@ async def _produce_run_events(
             if isinstance(event, RunErrorEvent | RunFinishedEvent):
                 terminal_event = encoded_event
             else:
-                run.publish(encoded_event)
+                await run.publish(encoded_event)
     except asyncio.CancelledError:
         run.cancellation_token.cancel()
     except Exception as exc:
@@ -287,7 +287,7 @@ async def _produce_run_events(
             lifecycle.record_error(exc)
             log.exception(f'关闭后台聊天事件流异常 conversation_id={conversation_id}: {exc}')
         # 终止事件在消息和协议状态保存后发布，避免客户端立即刷新读到旧快照
-        run.publish(
+        await run.publish(
             terminal_event or encode_ag_ui_event(RunErrorEvent(message=lifecycle.error_message or '对话事件流意外结束'))
         )
         await finish_run(conversation_id=conversation_id, run=run)
@@ -451,7 +451,7 @@ async def build_streaming_response(
         discard_run(resolved_conversation_id, active_run)
         raise
 
-    active_run.configure_stream(media_type=event_stream_handler.content_type, headers=response_headers)
+    await active_run.configure_stream(media_type=event_stream_handler.content_type, headers=response_headers)
     active_run.start(
         _produce_run_events(
             conversation_id=resolved_conversation_id,

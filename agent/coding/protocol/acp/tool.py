@@ -15,8 +15,7 @@ from backend.plugin.ai_buddy.agent.coding.protocol.acp.tool_adapter import (
     format_permission_required,
     render_event_text,
 )
-from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool
-from backend.plugin.ai_buddy.agent.coding.types import AgentToolSpec
+from backend.plugin.ai_buddy.dataclasses import AgentToolSpec, BoundAgentTool
 
 if TYPE_CHECKING:
     from backend.plugin.ai_buddy.agent.coding.protocol.acp.service import ACPService

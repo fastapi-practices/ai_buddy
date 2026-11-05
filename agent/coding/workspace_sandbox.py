@@ -298,10 +298,18 @@ class WorkspaceSandbox:
         stripped = AIBuddyCommandParam(command=command).command.strip()
         task_id = uuid4().hex
         base = f'{_BACKGROUND_DIR}/{task_id}'
-        inner = quote(f'(\n{stripped}\n)\necho $? > {base}.exit')
+        max_bytes = COMMAND_OUTPUT_MAX_BYTES
+        block_size = 4096
+        full_blocks, trailing_bytes = divmod(max_bytes, block_size)
+        # 先写满上限，再持续排空进程输出，避免上游因管道关闭收到 SIGPIPE
+        writer = (
+            f'dd bs={block_size} count={full_blocks} 2>/dev/null; '
+            f'dd bs=1 count={trailing_bytes} 2>/dev/null; cat >/dev/null'
+        )
+        pipeline = f'( sh -c {quote(stripped)}; echo $? > {base}.exit ) 2>&1 | ( {writer} ) > {base}.log'
         script = (
             f'mkdir -p {_BACKGROUND_DIR}; S=; command -v setsid >/dev/null 2>&1 && S=setsid; '
-            f'$S nohup sh -c {inner} > {base}.log 2>&1 < /dev/null & echo $! > {base}.pid'
+            f'$S nohup sh -c {quote(pipeline)} >/dev/null 2>&1 < /dev/null & echo $! > {base}.pid'
         )
         result = await self._call(self._workspace.run(script, shell=True, env=env, timeout=30))
         if result.exit_code != 0:

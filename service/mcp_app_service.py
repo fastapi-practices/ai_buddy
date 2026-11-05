@@ -1,5 +1,8 @@
 import asyncio
 import base64
+import hashlib
+import json
+import secrets
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -10,18 +13,26 @@ from pydantic_ai.mcp import MCPToolset
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.exception import errors
+from backend.core.conf import settings
+from backend.database.redis import redis_client
 from backend.plugin.ai_buddy.agent.mcp import build_mcp_toolset
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.model.mcp import AIBuddyMcp
 from backend.plugin.ai_buddy.schema.mcp_app import (
     AIBuddyMcpAppScope,
+    AIBuddyMcpAppToolParam,
+    ApproveAIBuddyMcpAppToolParam,
     CallAIBuddyMcpAppToolParam,
+    GetAIBuddyMcpAppApprovalDetail,
     GetAIBuddyMcpAppDetail,
     GetAIBuddyMcpAppToolInfoDetail,
 )
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.service.mcp_service import ai_buddy_mcp_service
 from backend.plugin.ai_buddy.utils.mcp_app import ui_resource_uri
+
+_APPROVAL_TTL_SECONDS = 120
+_APPROVAL_KEY_PREFIX = 'ai_buddy:mcp-app:approval'
 
 
 class AIBuddyMcpAppService:
@@ -109,7 +120,7 @@ class AIBuddyMcpAppService:
         conversation_id: str,
         user_id: int,
         is_superuser: bool,
-        obj: CallAIBuddyMcpAppToolParam,
+        obj: AIBuddyMcpAppToolParam,
     ) -> GetAIBuddyMcpAppToolInfoDetail:
         """
         获取 MCP 应用工具信息
@@ -118,7 +129,7 @@ class AIBuddyMcpAppService:
         :param conversation_id: 对话 ID
         :param user_id: 当前用户 ID
         :param is_superuser: 是否为超级管理员
-        :param obj: MCP 应用工具调用参数
+        :param obj: MCP 应用工具请求参数
         :return:
         """
         async with self.session(
@@ -127,6 +138,43 @@ class AIBuddyMcpAppService:
             target = self._validate_app_tool(tools=tools, scope=obj, name=obj.name)
             return GetAIBuddyMcpAppToolInfoDetail(
                 name=target.name, title=target.title or target.name, read_only=self._read_only_tool(tool=target)
+            )
+
+    async def approve_tool(
+        self,
+        *,
+        db: AsyncSession,
+        conversation_id: str,
+        user_id: int,
+        is_superuser: bool,
+        obj: ApproveAIBuddyMcpAppToolParam,
+    ) -> GetAIBuddyMcpAppApprovalDetail:
+        """
+        为当前用户签发绑定工具与参数的 MCP 应用写操作审批票据
+
+        :param db: 数据库会话
+        :param conversation_id: 对话 ID
+        :param user_id: 当前用户 ID
+        :param is_superuser: 是否为超级管理员
+        :param obj: MCP 应用工具审批参数
+        :return:
+        """
+        async with self.session(
+            db=db, conversation_id=conversation_id, user_id=user_id, is_superuser=is_superuser, scope=obj
+        ) as (_, _, tools):
+            target = self._validate_app_tool(tools=tools, scope=obj, name=obj.name)
+            if self._read_only_tool(tool=target):
+                raise errors.RequestError(msg='只读 MCP 应用工具无需审批')
+            token = secrets.token_urlsafe(32)
+            fingerprint = self._approval_fingerprint(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                scope=obj,
+            )
+            await redis_client.set(self._approval_key(token=token), fingerprint, ex=_APPROVAL_TTL_SECONDS)
+            return GetAIBuddyMcpAppApprovalDetail(
+                approval_token=token,
+                expires_in=_APPROVAL_TTL_SECONDS,
             )
 
     async def call_tool(
@@ -152,9 +200,79 @@ class AIBuddyMcpAppService:
             db=db, conversation_id=conversation_id, user_id=user_id, is_superuser=is_superuser, scope=obj
         ) as (_, session, tools):
             target = self._validate_app_tool(tools=tools, scope=obj, name=obj.name)
-            if not self._read_only_tool(tool=target) and not obj.approved:
-                raise errors.ForbiddenError(msg='需要用户批准此次 MCP 应用工具调用')
+            if not self._read_only_tool(tool=target):
+                await self._consume_approval(
+                    token=obj.approval_token,
+                    conversation_id=conversation_id,
+                    user_id=user_id,
+                    scope=obj,
+                )
             return await session.call_tool_for_app(obj.name, obj.arguments)
+
+    async def _consume_approval(
+        self,
+        *,
+        token: str | None,
+        conversation_id: str,
+        user_id: int,
+        scope: AIBuddyMcpAppToolParam,
+    ) -> None:
+        """
+        原子消费审批票据并校验其绑定的用户、会话、工具与参数
+
+        :param token: 一次性审批票据
+        :param conversation_id: 对话 ID
+        :param user_id: 当前用户 ID
+        :param scope: MCP 应用工具请求参数
+        :return:
+        """
+        if not token:
+            raise errors.ForbiddenError(msg='需要用户批准此次 MCP 应用工具调用')
+        stored = await redis_client.getdel(self._approval_key(token=token))
+        if not stored:
+            raise errors.ForbiddenError(msg='MCP 应用工具审批已失效或已使用')
+        expected = self._approval_fingerprint(conversation_id=conversation_id, user_id=user_id, scope=scope)
+        if not secrets.compare_digest(stored, expected):
+            raise errors.ForbiddenError(msg='MCP 应用工具审批与当前调用不匹配')
+
+    @staticmethod
+    def _approval_fingerprint(*, conversation_id: str, user_id: int, scope: AIBuddyMcpAppToolParam) -> str:
+        """
+        生成审批票据绑定内容的稳定摘要
+
+        :param conversation_id: 对话 ID
+        :param user_id: 当前用户 ID
+        :param scope: MCP 应用工具请求参数
+        :return:
+        """
+        payload = json.dumps(
+            {
+                'version': 1,
+                'user_id': user_id,
+                'conversation_id': conversation_id,
+                'mcp_id': scope.mcp_id,
+                'tool_name': scope.tool_name,
+                'resource_uri': scope.resource_uri,
+                'target_tool': scope.name,
+                'arguments': scope.arguments,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(',', ':'),
+            default=str,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+    @staticmethod
+    def _approval_key(*, token: str) -> str:
+        """
+        使用票据摘要作为 Redis 键，避免在存储键中暴露原始票据
+
+        :param token: 一次性审批票据
+        :return:
+        """
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        return f'{settings.PLUGIN_REDIS_PREFIX}:{_APPROVAL_KEY_PREFIX}:{digest}'
 
     @staticmethod
     def _validate_app_tool(*, tools: list[Tool], scope: AIBuddyMcpAppScope, name: str | None = None) -> Tool:

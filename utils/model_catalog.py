@@ -36,18 +36,6 @@ _DEFAULT_INPUT_MODALITIES: dict[AIBuddyModelKind, list[AIBuddyModelModality]] = 
 }
 
 
-def _normalize_model_name(name: str | None, model_id: str) -> str:
-    """
-    模型名称为空时回退到模型 ID
-
-    :param name: 模型名称
-    :param model_id: 模型 ID
-    :return:
-    """
-    normalized = (name or '').strip()
-    return normalized or model_id.strip()
-
-
 def normalize_model_param(
     obj: CreateAIBuddyModelParam | UpdateAIBuddyModelParam,
 ) -> CreateAIBuddyModelParam | UpdateAIBuddyModelParam:
@@ -57,28 +45,18 @@ def normalize_model_param(
     :param obj: 创建或更新参数
     :return:
     """
+    if obj.input_modalities is None:
+        input_modalities = list(_DEFAULT_INPUT_MODALITIES[obj.kind])
+    else:
+        selected_modalities = set(obj.input_modalities)
+        input_modalities = [item for item in AIBuddyModelModality if item in selected_modalities]
     return obj.model_copy(
         update={
-            'name': _normalize_model_name(obj.name, obj.model_id),
+            'name': (obj.name or '').strip() or obj.model_id.strip(),
             'capabilities': normalize_capabilities(obj.capabilities),
-            'input_modalities': (
-                _normalize_modalities(obj.input_modalities)
-                if obj.input_modalities is not None
-                else list(_DEFAULT_INPUT_MODALITIES[obj.kind])
-            ),
+            'input_modalities': input_modalities,
         }
     )
-
-
-def _normalize_modalities(values: list[AIBuddyModelModality] | list[str]) -> list[AIBuddyModelModality]:
-    """
-    去重并按固定顺序排列模态
-
-    :param values: 待处理值列表
-    :return:
-    """
-    selected = set(values)
-    return [item for item in AIBuddyModelModality if item in selected]
 
 
 def normalize_capabilities(values: list[AIBuddyModelCapability] | list[str] | None) -> list[AIBuddyModelCapability]:

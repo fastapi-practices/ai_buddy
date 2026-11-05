@@ -25,6 +25,7 @@ class AIBuddyArtifact(Base):
         ),
         comment='产物类型',
     )
+    conversation_id: Mapped[str | None] = mapped_column(sa.String(64), default=None, index=True, comment='来源对话 ID')
     object_key: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='对象键')
     storage_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='对象存储 ID')
     storage_backend: Mapped[str] = mapped_column(

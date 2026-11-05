@@ -1,9 +1,8 @@
 from pydantic_ai.models import Model
 
 from backend.common.exception import errors
-from backend.plugin.ai_buddy.dataclasses import CapabilityContext
+from backend.plugin.ai_buddy.dataclasses import AIBuddyInvocationContext, CapabilityContext
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyModelKind, AIBuddyProviderType
-from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.policy.registry import validate_ai_buddy_invocation
 from backend.plugin.ai_buddy.service.model_service import ai_buddy_model_service
 from backend.plugin.ai_buddy.utils.model_catalog import apply_catalog_profile

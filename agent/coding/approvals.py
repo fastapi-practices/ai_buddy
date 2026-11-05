@@ -14,7 +14,7 @@ from backend.plugin.ai_buddy.utils.run_timeout import resolve_run_timeout
 
 if TYPE_CHECKING:
     from backend.plugin.ai_buddy.agent.coding.protocol.base import CancelledCheck, EmitEvent
-    from backend.plugin.ai_buddy.agent.coding.types import AgentToolCall
+    from backend.plugin.ai_buddy.dataclasses import AgentToolCall
 
 _RESOLVE_SCRIPT = """
 local pending = redis.call('get', KEYS[1])

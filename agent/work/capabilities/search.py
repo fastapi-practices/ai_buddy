@@ -15,28 +15,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyWebS
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 
 
-def _build_builtin_search(ctx: CapabilityContext) -> CapabilityResult:
-    """
-    只选择实际可用的搜索路径，禁止隐藏的函数工具后备绕过门禁
-
-    :param ctx: 运行上下文
-    :return:
-    """
-    use_native = (
-        native_builtin_allowed(adapter=ctx.adapter) or not ctx.supports_tools
-    ) and WebSearchTool in ctx.supported_native_tools
-    if not use_native and not function_tools_allowed(
-        adapter=ctx.adapter, supports_tools=ctx.supports_tools, has_builtin_tools=ctx.has_builtin_tools
-    ):
-        raise errors.RequestError(msg='当前模型不支持联网搜索，请更换模型或关闭联网搜索')
-    return CapabilityResult(
-        capability=WebSearch(native=use_native, local=False if use_native else duckduckgo_search_tool()),
-        introduces_builtin_tool=use_native,
-        introduces_function_tool_source=not use_native,
-    )
-
-
-async def build_search_capabilities(ctx: CapabilityContext) -> Sequence[CapabilityResult]:
+async def build_search_capabilities(ctx: CapabilityContext) -> Sequence[CapabilityResult]:  # ruff: ignore[complex-structure]
     """
     构建联网搜索能力
 
@@ -51,7 +30,21 @@ async def build_search_capabilities(ctx: CapabilityContext) -> Sequence[Capabili
             pass
         case AIBuddyWebSearchType.builtin:
             # Google 工作模式保留函数工具，使用内置搜索能力的本地后备实现
-            results.append(_build_builtin_search(ctx))
+            use_native = (
+                native_builtin_allowed(adapter=ctx.adapter) or not ctx.supports_tools
+            ) and WebSearchTool in ctx.supported_native_tools
+            local_search = function_tools_allowed(
+                adapter=ctx.adapter, supports_tools=ctx.supports_tools, has_builtin_tools=ctx.has_builtin_tools
+            )
+            if not use_native and not local_search:
+                raise errors.RequestError(msg='当前模型不支持联网搜索，请更换模型或关闭联网搜索')
+            results.append(
+                CapabilityResult(
+                    capability=WebSearch(native=use_native, local=False if use_native else duckduckgo_search_tool()),
+                    introduces_builtin_tool=use_native,
+                    introduces_function_tool_source=not use_native,
+                )
+            )
         case AIBuddyWebSearchType.exa:
             await load_ai_buddy_config(ctx.db)
             if not settings.AI_BUDDY_EXA_API_KEY:

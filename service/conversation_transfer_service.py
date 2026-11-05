@@ -3,6 +3,7 @@ import itertools
 
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.exception import errors
@@ -52,6 +53,104 @@ async def _validate_inline_media(node: object) -> None:
                 raise errors.RequestError(msg='导入文档中的附件不是有效的 base64') from exc
         for value in node.values():
             await _validate_inline_media(value)
+
+
+async def _validate_import_document(*, db: AsyncSession, user_id: int, doc: AIBuddyConversationTransfer) -> None:
+    """
+    校验导入顺序、消息状态、内联附件以及部署内模型关联
+
+    :param db: 数据库会话
+    :param user_id: 用户 ID
+    :param doc: 会话文档
+    :return:
+    """
+    indexes = [message.message_index for message in doc.messages]
+    if len(indexes) > _TRANSFER_MAX_MESSAGES:
+        raise errors.RequestError(msg='会话消息过多，超出单次导入上限')
+    if any(left >= right for left, right in itertools.pairwise(indexes)):
+        raise errors.RequestError(msg='消息顺序号必须严格递增')
+    if any(message.status == AIBuddyMessageStatus.pending for message in doc.messages):
+        raise errors.RequestError(msg='不能导入尚在生成的消息')
+    for message in doc.messages:
+        await _validate_inline_media(message.model_messages)
+    info = doc.conversation
+    if not await ai_buddy_provider_dao.get_visible(db, info.provider_id, user_id):
+        raise errors.NotFoundError(msg='文档中的供应商不存在或不可用，请先修改 provider_id 和 model_id')
+    if not await ai_buddy_model_dao.get_by_model_and_provider(db, info.model_id, info.provider_id):
+        raise errors.NotFoundError(msg='文档中的模型不存在，请先修改 provider_id 和 model_id')
+
+
+async def _create_imported_conversation(
+    *, db: AsyncSession, user_id: int, info: AIBuddyConversationTransferInfo
+) -> tuple[str, bool]:
+    """
+    创建导入会话，对话 ID 冲突时生成新 ID 并保留原 ID 是否复用
+
+    :param db: 数据库会话
+    :param user_id: 用户 ID
+    :param info: 导入会话元数据
+    :return:
+    """
+    id_kept = True
+    conversation_id = info.conversation_id
+    for attempt in range(4):
+        try:
+            async with db.begin_nested():
+                await ai_buddy_conversation_dao.create(
+                    db,
+                    CreateAIBuddyConversationParam(
+                        conversation_id=conversation_id,
+                        title=info.title,
+                        provider_id=info.provider_id,
+                        model_id=info.model_id,
+                        user_id=user_id,
+                        goal=info.goal,
+                        origin=info.origin,
+                        surface=info.surface,
+                        source=info.source,
+                        agent_mode=info.agent_mode,
+                    ),
+                )
+        except IntegrityError as exc:
+            if attempt == 3:
+                raise errors.ServerError(msg='导入会话 ID 冲突，请稍后重试') from exc
+            id_kept = False
+            conversation_id = uuid4_str()
+        else:
+            return conversation_id, id_kept
+    raise errors.ServerError(msg='导入会话 ID 冲突，请稍后重试')
+
+
+async def _build_import_message_records(
+    *, db: AsyncSession, conversation_id: str, info: AIBuddyConversationTransferInfo, doc: AIBuddyConversationTransfer
+) -> list[dict[str, Any]]:
+    """
+    构建导入消息记录并编码其中的附件
+
+    :param db: 数据库会话
+    :param conversation_id: 新会话 ID
+    :param info: 导入会话元数据
+    :param doc: 会话文档
+    :return:
+    """
+    records: list[dict[str, Any]] = []
+    for message in doc.messages:
+        original = {'created_time': message.created_time.isoformat()} if message.created_time else {}
+        records.append({
+            'conversation_id': conversation_id,
+            'provider_id': info.provider_id,
+            'model_id': info.model_id,
+            'message_index': message.message_index,
+            'role': message.role,
+            'model_messages': await encode_model_message_payloads(
+                message.model_messages, conversation_id=conversation_id, db=db
+            ),
+            'origin': message.origin,
+            'turn_context': {**(message.turn_context or {}), 'imported': original},
+            'status': message.status,
+            'client_message_id': message.client_message_id,
+        })
+    return records
 
 
 class AIBuddyConversationTransferService:
@@ -141,55 +240,10 @@ class AIBuddyConversationTransferService:
         :return:
         """
         info = doc.conversation
-        indexes = [message.message_index for message in doc.messages]
-        if len(indexes) > _TRANSFER_MAX_MESSAGES:
-            raise errors.RequestError(msg='会话消息过多，超出单次导入上限')
-        if any(left >= right for left, right in itertools.pairwise(indexes)):
-            raise errors.RequestError(msg='消息顺序号必须严格递增')
-        if any(message.status == AIBuddyMessageStatus.pending for message in doc.messages):
-            raise errors.RequestError(msg='不能导入尚在生成的消息')
-        for message in doc.messages:
-            await _validate_inline_media(message.model_messages)
-        if not await ai_buddy_provider_dao.get_visible(db, info.provider_id, user_id):
-            raise errors.NotFoundError(msg='文档中的供应商不存在或不可用，请先修改 provider_id 和 model_id')
-        if not await ai_buddy_model_dao.get_by_model_and_provider(db, info.model_id, info.provider_id):
-            raise errors.NotFoundError(msg='文档中的模型不存在，请先修改 provider_id 和 model_id')
-
-        id_kept = await ai_buddy_conversation_dao.get_by_conversation_id(db, info.conversation_id) is None
-        conversation_id = info.conversation_id if id_kept else uuid4_str()
-        await ai_buddy_conversation_dao.create(
-            db,
-            CreateAIBuddyConversationParam(
-                conversation_id=conversation_id,
-                title=info.title,
-                provider_id=info.provider_id,
-                model_id=info.model_id,
-                user_id=user_id,
-                goal=info.goal,
-                origin=info.origin,
-                surface=info.surface,
-                source=info.source,
-                agent_mode=info.agent_mode,
-            ),
-        )
-        if doc.messages:
-            records: list[dict[str, Any]] = []
-            for message in doc.messages:
-                original = {'created_time': message.created_time.isoformat()} if message.created_time else {}
-                records.append({
-                    'conversation_id': conversation_id,
-                    'provider_id': info.provider_id,
-                    'model_id': info.model_id,
-                    'message_index': message.message_index,
-                    'role': message.role,
-                    'model_messages': await encode_model_message_payloads(
-                        message.model_messages, conversation_id=conversation_id, db=db
-                    ),
-                    'origin': message.origin,
-                    'turn_context': {**(message.turn_context or {}), 'imported': original},
-                    'status': message.status,
-                    'client_message_id': message.client_message_id,
-                })
+        await _validate_import_document(db=db, user_id=user_id, doc=doc)
+        conversation_id, id_kept = await _create_imported_conversation(db=db, user_id=user_id, info=info)
+        records = await _build_import_message_records(db=db, conversation_id=conversation_id, info=info, doc=doc)
+        if records:
             await ai_buddy_message_dao.bulk_create(db, records)
         await ai_buddy_conversation_service.refresh_last_message(db=db, conversation_id=conversation_id)
         await ai_buddy_conversation_audit_service.record(

@@ -1,25 +1,16 @@
 import asyncio
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from email.message import Message
 from urllib.parse import unquote, urlparse
 
 import httpx2
 
 from backend.common.exception import errors
+from backend.plugin.ai_buddy.dataclasses import RemoteFile
 from backend.plugin.ai_buddy.security.ssrf import create_public_http_client, validate_public_http_url
 
 _MAX_REDIRECTS = 5
-
-
-@dataclass(frozen=True, slots=True)
-class RemoteFile:
-    """已下载的远程文件"""
-
-    data: bytes
-    content_type: str
-    filename: str
 
 
 def match_content_type(content_type: str, allowed: Sequence[str]) -> bool:

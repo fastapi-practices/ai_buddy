@@ -1,41 +1,13 @@
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from pydantic_ai.messages import ModelMessage, UserContent
-
-from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool
-from backend.plugin.ai_buddy.agent.coding.types import AgentMessage, AgentRunContext, AgentToolCall, AgentUsage
-from backend.plugin.ai_buddy.enums import AIBuddyChatThinkingType, AIBuddyMessageStatus, AIBuddyProviderType
-from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
+from backend.plugin.ai_buddy.dataclasses import AgentMessage, AgentRunContext, AgentToolCall, AgentUsage
+from backend.plugin.ai_buddy.enums import AIBuddyMessageStatus
 
 PersistMessage = Callable[[AgentMessage], Awaitable[None]]
 EmitEvent = Callable[[str, dict[str, Any]], Awaitable[None]]
 CancelledCheck = Callable[[], Awaitable[bool]]
 WaitApproval = Callable[[str, AgentToolCall], Awaitable[bool]]
-
-
-@dataclass(slots=True)
-class CodingHostSpec:
-    """打开编码宿主所需的 Buddy 侧规格"""
-
-    run_context: AgentRunContext
-    buddy_tools: list[BoundAgentTool]
-    provider_type: AIBuddyProviderType
-    model_id: str
-    api_key: str
-    api_host: str
-    close_resources: Callable[[], Awaitable[None]] | None = None
-    input_modalities: list[str] | None = None
-    context_window: int | None = None
-    thinking: AIBuddyChatThinkingType | None = None
-    message_history: list[ModelMessage] = field(default_factory=list)
-    compaction_enabled: bool | None = None
-    compaction_keep_messages: int | None = None
-    compaction_max_messages: int | None = None
-    workspace_id: str | None = None
-    forwarded_props: AIBuddyChatForwardedPropsParam | None = None
-    user_content: list[UserContent] = field(default_factory=list)
 
 
 class CodingHostSession(Protocol):

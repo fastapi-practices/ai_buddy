@@ -1,12 +1,18 @@
+import asyncio
+import hashlib
+import secrets
+
 from collections.abc import Sequence
 from datetime import timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.enums import StatusType
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.core.conf import settings
+from backend.database.redis import redis_client
 from backend.plugin.ai_buddy.crud.crud_object import ai_buddy_object_dao
 from backend.plugin.ai_buddy.crud.crud_object_audit import ai_buddy_object_audit_dao
 from backend.plugin.ai_buddy.crud.crud_object_ref import ai_buddy_object_ref_dao
@@ -16,6 +22,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyObjectKind,
     AIBuddyObjectLocation,
     AIBuddyObjectState,
+    AIBuddyQueryLimit,
 )
 from backend.plugin.ai_buddy.model.object import AIBuddyObject
 from backend.plugin.ai_buddy.model.object_audit import AIBuddyObjectAudit
@@ -30,8 +37,49 @@ from backend.plugin.s3.utils.file_ops import delete_object, get_operator, remove
 from backend.utils.timezone import timezone
 
 _GC_BATCH_SIZE = 200
+_OBJECT_LOCK_TTL_SECONDS = 30
+_OBJECT_LOCK_WAIT_SECONDS = 5
+_OBJECT_LOCK_RETRY_SECONDS = 0.05
 # 没有持有者的临时对象保留更短，其余使用 AI_BUDDY_OBJECT_GC_GRACE_HOURS
 _RETENTION_HOURS = {'tool_output': 6, 'attachment': 24}
+_RELEASE_OBJECT_LOCK_SCRIPT = """
+if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+end
+return 0
+"""
+
+
+async def _acquire_object_lock(*, storage_id: int, object_key: str) -> tuple[str, str]:
+    """
+    获取对象登记锁，减少并发登记同一对象时的唯一约束冲突
+
+    :param storage_id: 对象存储 ID
+    :param object_key: 对象键
+    :return:
+    """
+    identity = f'{storage_id}\0{object_key}'
+    digest = hashlib.sha256(identity.encode()).hexdigest()
+    key = f'{settings.PLUGIN_REDIS_PREFIX}:ai_buddy:object:register:{digest}'
+    token = secrets.token_hex(16)
+    deadline = asyncio.get_running_loop().time() + _OBJECT_LOCK_WAIT_SECONDS
+    while True:
+        if await redis_client.set(key, token, nx=True, ex=_OBJECT_LOCK_TTL_SECONDS):
+            return key, token
+        if asyncio.get_running_loop().time() >= deadline:
+            raise errors.RequestError(msg='对象正在登记，请稍后重试')
+        await asyncio.sleep(_OBJECT_LOCK_RETRY_SECONDS)
+
+
+async def _release_object_lock(*, key: str, token: str) -> None:
+    """
+    释放当前请求持有的对象登记锁
+
+    :param key: 锁键
+    :param token: 持有令牌
+    :return:
+    """
+    await redis_client.eval(_RELEASE_OBJECT_LOCK_SCRIPT, 1, key, token)
 
 
 class AIBuddyObjectService:
@@ -89,64 +137,100 @@ class AIBuddyObjectService:
             db, AIBuddyObjectAudit(object_id=object_id, action=action.value, actor_id=actor_id, detail=detail)
         )
 
+    async def _update_registered_object(
+        self,
+        *,
+        db: AsyncSession,
+        obj: AIBuddyObject,
+        user_id: int,
+        sha256: str | None,
+        size: int | None,
+        mime_type: str | None,
+    ) -> AIBuddyObject:
+        """
+        更新已存在对象并恢复被物理删除标记覆盖的登记
+
+        :param db: 数据库会话
+        :param obj: 已登记对象
+        :param user_id: 所属用户 ID
+        :param sha256: 内容 SHA-256 摘要
+        :param size: 字节数
+        :param mime_type: 媒体类型
+        :return:
+        """
+        if obj.user_id != user_id:
+            raise errors.ForbiddenError(msg='对象不属于当前用户')
+        obj.sha256 = sha256 or obj.sha256
+        obj.size = size if size is not None else obj.size
+        obj.mime_type = mime_type or obj.mime_type
+        if obj.state == AIBuddyObjectState.deleted.value:
+            # 调用方已重新写入存储内容，旧记录恢复为可引用的新对象
+            obj.state = AIBuddyObjectState.active.value
+            obj.ref_count = 0
+            obj.tombstoned_time = None
+            obj.delete_after_time = None
+            obj.physically_deleted_time = None
+            await self.record(db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id)
+        return obj
+
     async def register(
         self,
         *,
         db: AsyncSession,
         user_id: int,
         kind: AIBuddyObjectKind,
-        location: AIBuddyObjectLocation,
         object_key: str,
-        storage_id: int | None = None,
+        storage_id: int,
         sha256: str | None = None,
         size: int | None = None,
         mime_type: str | None = None,
     ) -> AIBuddyObject:
         """
-        登记对象，相同位置和对象键只保留一份记录
+        登记 S3 对象，相同对象存储和对象键只保留一份记录
 
         :param db: 数据库会话
         :param user_id: 所属用户 ID
         :param kind: 对象类型
-        :param location: 对象位置
         :param object_key: 对象键
-        :param storage_id: 对象存储 ID，云端对象必填
+        :param storage_id: 对象存储 ID
         :param sha256: 内容 SHA-256 摘要
         :param size: 字节数
         :param mime_type: 媒体类型
         :return:
         """
-        if location == AIBuddyObjectLocation.s3 and storage_id is None:
-            raise errors.RequestError(msg='云端对象必须记录对象存储')
-        obj = await ai_buddy_object_dao.get_by_key(db, location.value, storage_id, object_key)
-        if obj is not None:
-            if obj.user_id != user_id:
-                raise errors.ForbiddenError(msg='对象不属于当前用户')
-            obj.sha256 = sha256 or obj.sha256
-            obj.size = size if size is not None else obj.size
-            obj.mime_type = mime_type or obj.mime_type
-            if obj.state == AIBuddyObjectState.deleted.value:
-                # 调用方已重新写入存储内容，旧记录恢复为可引用的新对象
-                obj.state = AIBuddyObjectState.active.value
-                obj.ref_count = 0
-                obj.tombstoned_time = None
-                obj.delete_after_time = None
-                obj.physically_deleted_time = None
-                await self.record(db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id)
+        lock_key, lock_token = await _acquire_object_lock(storage_id=storage_id, object_key=object_key)
+        try:
+            obj = await ai_buddy_object_dao.get_by_key(db, AIBuddyObjectLocation.s3.value, storage_id, object_key)
+            if obj is not None:
+                return await self._update_registered_object(
+                    db=db, obj=obj, user_id=user_id, sha256=sha256, size=size, mime_type=mime_type
+                )
+            obj = AIBuddyObject(
+                user_id=user_id,
+                kind=kind.value,
+                location=AIBuddyObjectLocation.s3.value,
+                object_key=object_key,
+                storage_id=storage_id,
+                sha256=sha256,
+                size=size,
+                mime_type=mime_type,
+            )
+            try:
+                async with db.begin_nested():
+                    await ai_buddy_object_dao.create(db, obj)
+                    await self.record(
+                        db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id
+                    )
+            except IntegrityError:
+                obj = await ai_buddy_object_dao.get_by_key(db, AIBuddyObjectLocation.s3.value, storage_id, object_key)
+                if obj is None:
+                    raise errors.ServerError(msg='对象登记冲突，请稍后重试')
+                return await self._update_registered_object(
+                    db=db, obj=obj, user_id=user_id, sha256=sha256, size=size, mime_type=mime_type
+                )
             return obj
-        obj = AIBuddyObject(
-            user_id=user_id,
-            kind=kind.value,
-            location=location.value,
-            object_key=object_key,
-            storage_id=storage_id,
-            sha256=sha256,
-            size=size,
-            mime_type=mime_type,
-        )
-        await ai_buddy_object_dao.create(db, obj)
-        await self.record(db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id)
-        return obj
+        finally:
+            await _release_object_lock(key=lock_key, token=lock_token)
 
     async def register_expiring(
         self,
@@ -177,7 +261,6 @@ class AIBuddyObjectService:
             db=db,
             user_id=user_id,
             kind=kind,
-            location=AIBuddyObjectLocation.s3,
             object_key=object_key,
             storage_id=storage_id,
             sha256=sha256,
@@ -294,7 +377,6 @@ class AIBuddyObjectService:
             db=db,
             user_id=user_id,
             kind=AIBuddyObjectKind.attachment,
-            location=AIBuddyObjectLocation.s3,
             object_key=object_key,
             storage_id=storage_id,
             sha256=object_key.rsplit('/', 1)[-1],
@@ -373,7 +455,7 @@ class AIBuddyObjectService:
         :param obj: 回收参数
         :return:
         """
-        limit = obj.limit or _GC_BATCH_SIZE
+        limit = min(max(1, obj.limit or _GC_BATCH_SIZE), AIBuddyQueryLimit.garbage_collect.value)
         candidates = await ai_buddy_object_dao.get_garbage_candidates(
             db, now=timezone.now(), user_id=user_id, limit=limit
         )

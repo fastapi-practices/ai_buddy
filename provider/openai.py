@@ -8,11 +8,11 @@ from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
 from pydantic_ai.providers.openai import OpenAIProvider
 
+from backend.plugin.ai_buddy.dataclasses import ProviderModelSnapshot
 from backend.plugin.ai_buddy.enums import AIBuddyProviderType
 from backend.plugin.ai_buddy.provider.base import (
     ProviderAdapter,
     ProviderCapabilities,
-    ProviderModelSnapshot,
     normalize_provider_api_host,
 )
 from backend.plugin.ai_buddy.provider.openai_image import OpenAICompatibleImageGenerationModel

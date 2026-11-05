@@ -1,5 +1,6 @@
-from collections.abc import Sequence
-from dataclasses import dataclass
+import asyncio
+
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import httpx
@@ -19,11 +20,11 @@ from backend.plugin.ai_buddy.crud.crud_knowledge import ai_buddy_knowledge_dao, 
 from backend.plugin.ai_buddy.crud.crud_knowledge_base import ai_buddy_knowledge_base_dao
 from backend.plugin.ai_buddy.crud.crud_model import ai_buddy_model_dao
 from backend.plugin.ai_buddy.crud.crud_provider import ai_buddy_provider_dao
+from backend.plugin.ai_buddy.dataclasses import KnowledgeHit, KnowledgeSegment
 from backend.plugin.ai_buddy.enums import (
     AIBuddyModelKind,
     AIBuddyModelModality,
     AIBuddyObjectKind,
-    AIBuddyObjectLocation,
     AIBuddyOcrBackend,
     AIBuddyProviderType,
 )
@@ -59,17 +60,6 @@ from backend.plugin.ai_buddy.utils.text_vector import split_chunks
 from backend.plugin.s3.utils.text_store import read_text, require_storage, write_text
 
 
-@dataclass(frozen=True, slots=True)
-class KnowledgeHit:
-    """知识检索命中"""
-
-    knowledge_id: int
-    title: str
-    source: str | None
-    content: str
-    score: float
-
-
 async def _require_knowledge_base(
     *, db: AsyncSession, knowledge_base_id: int, user_id: int, is_superuser: bool
 ) -> None:
@@ -87,6 +77,28 @@ async def _require_knowledge_base(
     )
     if knowledge_base is None:
         raise errors.NotFoundError(msg='知识库不存在')
+
+
+async def _run_ocr_in_thread(
+    func: Callable[[Sequence[KnowledgeSegment]], list[str]],
+    images: Sequence[KnowledgeSegment],
+    *,
+    timeout: float,
+) -> list[str]:
+    """
+    在请求级总时限内运行同步 OCR 后端
+
+    :param func: OCR 函数
+    :param images: 待识别图片
+    :param timeout: 剩余秒数
+    :return:
+    """
+    if timeout <= 0:
+        raise errors.RequestError(msg='OCR 处理超时')
+    try:
+        return await asyncio.wait_for(run_in_threadpool(func, images), timeout=timeout)
+    except TimeoutError as exc:
+        raise errors.RequestError(msg='OCR 处理超时') from exc
 
 
 class AIBuddyKnowledgeService:
@@ -443,6 +455,8 @@ class AIBuddyKnowledgeService:
         )
         payloads = [(item.filename, await item.read()) for item in files]
         documents = await run_in_threadpool(parse_knowledge_uploads, files=payloads, title=title)
+        loop = asyncio.get_running_loop()
+        ocr_deadline = loop.time() + settings.AI_BUDDY_OCR_TIMEOUT_SECONDS
         for uploaded in documents:
             backend = resolve_ocr_backend()
             images = [item for item in uploaded.segments if item.image]
@@ -451,14 +465,15 @@ class AIBuddyKnowledgeService:
                 if not content:
                     raise errors.RequestError(msg='知识内容不能为空')
             else:
+                remaining = max(0.0, ocr_deadline - loop.time())
                 if backend == AIBuddyOcrBackend.system:
-                    texts = await run_in_threadpool(ocr_images_with_system, images)
+                    texts = await _run_ocr_in_thread(ocr_images_with_system, images, timeout=remaining)
                 elif backend == AIBuddyOcrBackend.paddleocr:
-                    texts = await run_in_threadpool(ocr_images_with_paddleocr, images)
+                    texts = await _run_ocr_in_thread(ocr_images_with_paddleocr, images, timeout=remaining)
                 elif backend == AIBuddyOcrBackend.onnx:
-                    texts = await run_in_threadpool(ocr_images_with_onnx, images)
+                    texts = await _run_ocr_in_thread(ocr_images_with_onnx, images, timeout=remaining)
                 elif backend == AIBuddyOcrBackend.mistral:
-                    texts = await run_in_threadpool(ocr_images_with_mistral, images)
+                    texts = await _run_ocr_in_thread(ocr_images_with_mistral, images, timeout=remaining)
                 elif backend == AIBuddyOcrBackend.vision:
                     default = await ai_buddy_default_model_service.get_enabled_or_none(
                         db=db, kind=AIBuddyModelKind.chat
@@ -493,20 +508,22 @@ class AIBuddyKnowledgeService:
                             instructions='提取图片中的全部文字，只返回文字本身，不要解释、翻译或添加说明',
                             output_type=str,
                         )
-                        texts = [
-                            str(
-                                (
-                                    await agent.run([
-                                        '请提取文字',
-                                        BinaryContent(data=item.image, media_type=item.media_type or 'image/png'),
-                                    ])
-                                ).output
-                                or ''
-                            ).strip()
-                            if item.image
-                            else ''
-                            for item in images
-                        ]
+                        remaining = max(0.0, ocr_deadline - loop.time())
+                        if remaining <= 0:
+                            raise errors.RequestError(msg='OCR 处理超时')
+                        async with asyncio.timeout(remaining):
+                            texts = []
+                            for item in images:
+                                if not item.image:
+                                    texts.append('')
+                                    continue
+                                result = await agent.run([
+                                    '请提取文字',
+                                    BinaryContent(data=item.image, media_type=item.media_type or 'image/png'),
+                                ])
+                                texts.append(str(result.output or '').strip())
+                    except TimeoutError as exc:
+                        raise errors.RequestError(msg='OCR 处理超时') from exc
                     except errors.RequestError:
                         raise
                     except Exception as exc:
@@ -562,7 +579,6 @@ class AIBuddyKnowledgeService:
             db=db,
             user_id=knowledge.user_id,
             kind=AIBuddyObjectKind.knowledge,
-            location=AIBuddyObjectLocation.s3,
             object_key=knowledge.object_key,
             storage_id=knowledge.storage_id,
             size=len(content.encode()) if content is not None else None,

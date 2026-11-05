@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.plugin.ai_buddy.crud.crud_conversation_audit import ai_buddy_conversation_audit_dao
-from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction
+from backend.plugin.ai_buddy.enums import AIBuddyConversationAuditAction, AIBuddyQueryLimit
 from backend.plugin.ai_buddy.model.conversation_audit import AIBuddyConversationAudit
 
 
@@ -56,6 +56,7 @@ class AIBuddyConversationAuditService:
         :param limit: 返回条数
         :return:
         """
+        limit = min(max(1, limit), AIBuddyQueryLimit.audit.value)
         return await ai_buddy_conversation_audit_dao.get_all(
             db, user_id, conversation_id=conversation_id, before=before, limit=limit
         )

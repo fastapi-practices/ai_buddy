@@ -3,8 +3,8 @@ import json
 import re
 
 from backend.common.exception import errors
-from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
 from backend.plugin.ai_buddy.agent.work.run_store import shared_chat_run_store
+from backend.plugin.ai_buddy.dataclasses import AgentRunContext
 from backend.plugin.ai_buddy.schema.command import AIBuddyCommandResult
 
 _KEY_PATTERN = re.compile(r'^[A-Za-z0-9_.:-]{8,128}$')

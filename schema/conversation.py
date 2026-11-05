@@ -10,6 +10,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyConversationSurface,
     AIBuddyConversationView,
     AIBuddyOrigin,
+    AIBuddyQueryLimit,
 )
 from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesSnapshotDetail
 
@@ -45,7 +46,12 @@ class AIBuddyConversationEventsHeaderParam(SchemaBase):
 class AIBuddyConversationDetailQueryParam(SchemaBase):
     """AI 对话详情查询参数"""
 
-    message_limit: int | None = Field(None, description='最近消息数量上限')
+    message_limit: int | None = Field(
+        None,
+        ge=1,
+        le=AIBuddyQueryLimit.conversation_messages.value,
+        description='最近消息数量上限',
+    )
 
 
 class AIBuddyConversationSchemaBase(SchemaBase):

@@ -28,6 +28,7 @@ from pydantic_ai.messages import (
     repair_messages,
 )
 from pydantic_ai.workspaces import WorkspaceError
+from pydantic_ai_harness import RepoContext
 from pydantic_ai_harness.repair_tool_arguments import RepairToolArguments
 from pydantic_core import SchemaValidator, core_schema
 
@@ -41,11 +42,10 @@ from backend.plugin.ai_buddy.agent.coding.protocol.acp.service import ACPService
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.tool import build_acp_runner_tool
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.capabilities import build_coding_capabilities
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.context import compact_coding_history
-from backend.plugin.ai_buddy.agent.coding.types import AgentMessage, AgentToolCall, AgentUsage
 from backend.plugin.ai_buddy.agent.coding.workspace import CodingWorkspace
 from backend.plugin.ai_buddy.agent.work.ag_ui import BuddyAGUIEventStream
 from backend.plugin.ai_buddy.agent.work.model_settings import build_model_settings
-from backend.plugin.ai_buddy.dataclasses import ChatAgentDeps
+from backend.plugin.ai_buddy.dataclasses import AgentMessage, AgentToolCall, AgentUsage, ChatAgentDeps, CodingHostSpec
 from backend.plugin.ai_buddy.enums import (
     AIBuddyMessageRole,
     AIBuddyMessageStatus,
@@ -68,13 +68,11 @@ if TYPE_CHECKING:
 
     from backend.plugin.ai_buddy.agent.coding.protocol.base import (
         CancelledCheck,
-        CodingHostSpec,
         EmitEvent,
         PersistMessage,
         WaitApproval,
     )
-    from backend.plugin.ai_buddy.agent.coding.tools import BoundAgentTool
-    from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
+    from backend.plugin.ai_buddy.dataclasses import AgentRunContext, BoundAgentTool
 
 
 class PydanticAICodingSession:
@@ -225,6 +223,11 @@ class PydanticAICodingSession:
                 bound_tool_names=frozenset(item.spec.name for item in self._tools),
                 wait_approval=wait_approval,
             )
+            workspace = (
+                CodingWorkspace(self.run_context.sandbox, conversation_id=self.run_context.conversation_id)
+                if self.run_context.sandbox is not None
+                else None
+            )
             agent: Agent[ChatAgentDeps, str] = Agent(
                 model,
                 name='buddy_coding',
@@ -260,6 +263,7 @@ class PydanticAICodingSession:
                     RepairToolArguments(),
                     *build_jev_capabilities(allow_ask=False),
                     *resource_capabilities,
+                    *([RepoContext()] if workspace is not None else []),
                 ],
                 retries=settings.AI_BUDDY_AGENT_RETRIES,
                 tool_timeout=settings.AI_BUDDY_AGENT_TOOL_TIMEOUT_SECONDS,
@@ -338,13 +342,7 @@ class PydanticAICodingSession:
                         ),
                         conversation_id=self.run_context.conversation_id,
                         run_id=self.run_context.run_id,
-                        workspace=(
-                            CodingWorkspace(self.run_context.sandbox, conversation_id=self.run_context.conversation_id)
-                            if self.run_context.sandbox is not None
-                            and self._spec.forwarded_props
-                            and self._spec.forwarded_props.smart_search_model
-                            else None
-                        ),
+                        workspace=workspace,
                     )
                 except BaseException:
                     # 用户消息已单独保存，保留工具副作用及中断状态供后续轮次读取

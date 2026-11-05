@@ -33,6 +33,7 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyExecutionBackend,
     AIBuddyMessageStatus,
     AIBuddyOrigin,
+    AIBuddyQueryLimit,
 )
 from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage
@@ -523,6 +524,7 @@ class AIBuddyConversationService:
         if message_limit is None:
             message_rows = await ai_buddy_message_dao.get_all_by_message_index(db, conversation.conversation_id)
         else:
+            message_limit = min(max(1, message_limit), AIBuddyQueryLimit.conversation_messages.value)
             recent_rows = list(
                 await ai_buddy_message_dao.get_history_page(
                     db, conversation.conversation_id, before=None, limit=message_limit + 1

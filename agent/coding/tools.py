@@ -1,5 +1,3 @@
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 from typing import Any
 
 from backend.common.exception import errors
@@ -8,10 +6,9 @@ from backend.plugin.ai_buddy.agent.coding.attachments import import_input_attach
 from backend.plugin.ai_buddy.agent.coding.command_idempotency import run_idempotent_command
 from backend.plugin.ai_buddy.agent.coding.delivery import deliver_sandbox_file
 from backend.plugin.ai_buddy.agent.coding.test_report import run_tests_and_archive
-from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext, AgentToolSpec
+from backend.plugin.ai_buddy.dataclasses import AgentRunContext, AgentToolSpec, BoundAgentTool
 from backend.plugin.ai_buddy.enums import AIBuddyArtifactKind, AIBuddyCommandReason, AIBuddyExecutionBackend
 from backend.plugin.ai_buddy.schema.artifact import CreateAIBuddyArtifactParam, UpdateAIBuddyArtifactParam
-from backend.plugin.ai_buddy.schema.command import AIBuddyBackgroundTaskDetail
 from backend.plugin.ai_buddy.service.artifact_service import ai_buddy_artifact_service
 from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
@@ -20,15 +17,6 @@ from backend.plugin.ai_buddy.utils.skill_parser import skill_file_guidance
 _SNIPPET_CHARS = 240
 _CONTENT_CHARS = 12000
 _TOOL_OUTPUT_CHARS = 30000
-ToolHandler = Callable[[dict[str, Any]], Awaitable[str]]
-
-
-@dataclass(slots=True)
-class BoundAgentTool:
-    """已绑定的 Agent 工具"""
-
-    spec: AgentToolSpec
-    handler: ToolHandler
 
 
 def _truncate(text: str, limit: int = _CONTENT_CHARS) -> str:
@@ -61,18 +49,6 @@ def _string(arguments: dict[str, Any], key: str, *, required: bool = True) -> st
     return str(value)
 
 
-def _format_background_task(task: AIBuddyBackgroundTaskDetail) -> str:
-    """
-    渲染后台命令状态与新增输出
-
-    :param task: 后台命令任务状态
-    :return:
-    """
-    state = '运行中' if task.running else f'已结束，退出码 {task.exit_code if task.exit_code is not None else -1}'
-    error = f'\n错误：{task.error}' if task.error else ''
-    return f'状态：{state}{error}\n下次游标：{task.cursor}\n{task.logs}'.rstrip()
-
-
 async def _bash_background(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
     """
     启动工作区后台命令并返回任务 ID
@@ -94,7 +70,9 @@ async def _bash_task_output(ctx: AgentRunContext, arguments: dict[str, Any]) -> 
     :return:
     """
     task = await ctx.sandbox.get_background_task(task_id=_string(arguments, 'task_id'), cursor=arguments.get('cursor'))
-    return _format_background_task(task)
+    state = '运行中' if task.running else f'已结束，退出码 {task.exit_code if task.exit_code is not None else -1}'
+    error = f'\n错误：{task.error}' if task.error else ''
+    return f'状态：{state}{error}\n下次游标：{task.cursor}\n{task.logs}'.rstrip()
 
 
 async def _bash_task_stop(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
@@ -238,7 +216,7 @@ async def _list_artifacts(ctx: AgentRunContext, _arguments: dict[str, Any]) -> s
     :return:
     """
     async with async_db_session() as db:
-        rows = await ai_buddy_artifact_service.get_all(db=db, user_id=ctx.user_id)
+        rows = await ai_buddy_artifact_service.get_all(db=db, user_id=ctx.user_id, conversation_id=ctx.conversation_id)
     if not rows:
         return '没有已保存产物'
     return '已保存产物：\n' + '\n'.join(f'- #{item.id} {item.title}（{item.kind}）' for item in rows)
@@ -255,7 +233,9 @@ async def _get_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> str:
     artifact_id = int(arguments.get('artifact_id') or 0)
     try:
         async with async_db_session() as db:
-            artifact = await ai_buddy_artifact_service.get(db=db, pk=artifact_id, user_id=ctx.user_id)
+            artifact = await ai_buddy_artifact_service.get(
+                db=db, pk=artifact_id, user_id=ctx.user_id, conversation_id=ctx.conversation_id
+            )
     except errors.NotFoundError:
         return '产物不存在'
     return f'## 产物：{artifact.title}（{artifact.kind}）\n\n{_truncate(artifact.content)}'
@@ -280,12 +260,14 @@ async def _write_artifact(ctx: AgentRunContext, arguments: dict[str, Any]) -> st
                 pk=int(artifact_id),
                 user_id=ctx.user_id,
                 obj=UpdateAIBuddyArtifactParam(title=title or None, kind=kind, content=content),
+                conversation_id=ctx.conversation_id,
             )
             return f'已更新产物 #{int(artifact_id)}'
         created = await ai_buddy_artifact_service.create(
             db=db,
             user_id=ctx.user_id,
             obj=CreateAIBuddyArtifactParam(title=title, kind=kind, content=content),
+            conversation_id=ctx.conversation_id,
         )
         return f'已保存产物 #{created.id} {created.title}'
 

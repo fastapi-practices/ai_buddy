@@ -124,6 +124,7 @@ class GetAIBuddyArtifactListDetail(SchemaBase):
 
     id: int = Field(description='产物 ID')
     user_id: int = Field(description='用户 ID')
+    conversation_id: str | None = Field(None, description='来源对话 ID')
     title: str = Field(description='产物标题')
     kind: AIBuddyArtifactKind = Field(
         description='产物类型：image 图片、video 视频、audio 音频、text 文本、document 文档、other 其他'

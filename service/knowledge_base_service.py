@@ -43,6 +43,17 @@ class AIBuddyKnowledgeBaseService:
     """AI 知识库服务类"""
 
     @staticmethod
+    def _ensure_model_download_permission(*, is_superuser: bool) -> None:
+        """
+        模型下载会写入所有用户共享的本机目录，仅允许超级管理员触发
+
+        :param is_superuser: 是否为超级管理员
+        :return:
+        """
+        if not is_superuser:
+            raise errors.ForbiddenError(msg='只有超级管理员可以下载本机 AI 模型')
+
+    @staticmethod
     async def get_onnx_options() -> GetAIBuddyOnnxCatalogDetail:
         """获取本地向量和 OCR 模型目录"""
         embedding = await run_in_threadpool(list_onnx_embedding_options)
@@ -62,13 +73,15 @@ class AIBuddyKnowledgeBaseService:
         )
 
     @staticmethod
-    async def download_onnx_model(*, model_id: str) -> GetAIBuddyOnnxDownloadStatusDetail:
+    async def download_onnx_model(*, model_id: str, is_superuser: bool) -> GetAIBuddyOnnxDownloadStatusDetail:
         """
         调度本地 ONNX 向量模型下载
 
         :param model_id: 模型 ID
+        :param is_superuser: 是否为超级管理员
         :return:
         """
+        AIBuddyKnowledgeBaseService._ensure_model_download_permission(is_superuser=is_superuser)
         data = await run_in_threadpool(start_onnx_download, model_id)
         return GetAIBuddyOnnxDownloadStatusDetail(**data)
 
@@ -79,13 +92,15 @@ class AIBuddyKnowledgeBaseService:
         return GetAIBuddyOnnxDownloadStatusDetail(**data)
 
     @staticmethod
-    async def download_ocr_onnx_model(*, model_id: str) -> GetAIBuddyOnnxDownloadStatusDetail:
+    async def download_ocr_onnx_model(*, model_id: str, is_superuser: bool) -> GetAIBuddyOnnxDownloadStatusDetail:
         """
         调度本地 ONNX OCR 模型下载
 
         :param model_id: 模型 ID
+        :param is_superuser: 是否为超级管理员
         :return:
         """
+        AIBuddyKnowledgeBaseService._ensure_model_download_permission(is_superuser=is_superuser)
         data = await run_in_threadpool(start_ocr_onnx_download, model_id)
         return GetAIBuddyOnnxDownloadStatusDetail(**data)
 
@@ -96,13 +111,15 @@ class AIBuddyKnowledgeBaseService:
         return GetAIBuddyOnnxDownloadStatusDetail(**data)
 
     @staticmethod
-    async def download_paddleocr_model(*, model_id: str) -> GetAIBuddyOnnxDownloadStatusDetail:
+    async def download_paddleocr_model(*, model_id: str, is_superuser: bool) -> GetAIBuddyOnnxDownloadStatusDetail:
         """
         调度本机 PaddleOCR 模型下载
 
         :param model_id: 模型 ID
+        :param is_superuser: 是否为超级管理员
         :return:
         """
+        AIBuddyKnowledgeBaseService._ensure_model_download_permission(is_superuser=is_superuser)
         data = await run_in_threadpool(start_paddleocr_download, model_id)
         return GetAIBuddyOnnxDownloadStatusDetail(**data)
 

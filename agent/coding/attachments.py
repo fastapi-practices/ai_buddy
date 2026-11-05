@@ -6,7 +6,7 @@ from pydantic_ai.messages import BinaryContent, UserContent
 
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.coding.sandbox import INPUT_ATTACHMENT_MAX_BYTES
-from backend.plugin.ai_buddy.agent.coding.types import AgentRunContext
+from backend.plugin.ai_buddy.dataclasses import AgentRunContext
 
 
 def input_attachment_path(attachment: BinaryContent) -> str:

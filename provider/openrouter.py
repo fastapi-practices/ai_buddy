@@ -8,11 +8,11 @@ from pydantic_ai.models.openrouter import OpenRouterModel, OpenRouterModelSettin
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from backend.common.exception import errors
+from backend.plugin.ai_buddy.dataclasses import ProviderModelSnapshot
 from backend.plugin.ai_buddy.enums import AIBuddyProviderType
 from backend.plugin.ai_buddy.provider.base import (
     ProviderAdapter,
     ProviderCapabilities,
-    ProviderModelSnapshot,
     normalize_provider_api_host,
 )
 from backend.plugin.ai_buddy.utils.model_listing import list_openai_compat_models

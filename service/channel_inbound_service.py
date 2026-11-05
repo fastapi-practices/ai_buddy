@@ -15,10 +15,10 @@ from backend.database.db import async_db_session, uuid4_str
 from backend.plugin.ai_buddy.agent.work.runs import attach_event_stream
 from backend.plugin.ai_buddy.channels.adapters import parse_channel_payload
 from backend.plugin.ai_buddy.channels.stream import filter_channel_stream
-from backend.plugin.ai_buddy.channels.types import InboundMessage
 from backend.plugin.ai_buddy.crud.crud_channel import ai_buddy_channel_dao
 from backend.plugin.ai_buddy.crud.crud_channel_user import ai_buddy_channel_user_dao
 from backend.plugin.ai_buddy.crud.crud_conversation import ai_buddy_conversation_dao
+from backend.plugin.ai_buddy.dataclasses import InboundMessage
 from backend.plugin.ai_buddy.enums import (
     AIBuddyChannelType,
     AIBuddyConversationSurface,

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.plugin.ai_buddy.dataclasses import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.policy.base import AIBuddyResourcePolicy
-from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
 
 _ai_buddy_resource_policies: list[AIBuddyResourcePolicy] = []
 

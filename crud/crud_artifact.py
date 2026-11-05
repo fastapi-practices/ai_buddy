@@ -26,28 +26,39 @@ class CRUDAIBuddyArtifact(CRUDPlus[AIBuddyArtifact]):
         """
         return await self.select_model(db, pk, deleted=0)
 
-    async def get_select(self, user_id: int, kind: AIBuddyArtifactKind | None = None) -> Select:
+    async def get_select(
+        self, user_id: int, kind: AIBuddyArtifactKind | None = None, conversation_id: str | None = None
+    ) -> Select:
         """
         获取当前用户按类型筛选的产物查询表达式
 
         :param user_id: 用户 ID
         :param kind: 产物类型，空则查询所有类型
+        :param conversation_id: 对话 ID，空则查询用户全部产物
         :return:
         """
         filters: dict[str, object] = {'user_id': user_id, 'deleted': 0}
         if kind is not None:
             filters['kind'] = kind
+        if conversation_id is not None:
+            filters['conversation_id'] = conversation_id
         return await self.select_order('id', 'desc', **filters)
 
-    async def get_all(self, db: AsyncSession, user_id: int) -> Sequence[AIBuddyArtifact]:
+    async def get_all(
+        self, db: AsyncSession, user_id: int, conversation_id: str | None = None
+    ) -> Sequence[AIBuddyArtifact]:
         """
         获取当前用户所有产物
 
         :param db: 数据库会话
         :param user_id: 用户 ID
+        :param conversation_id: 对话 ID，空则查询用户全部产物
         :return:
         """
-        return await self.select_models_order(db, 'id', 'desc', user_id=user_id, deleted=0)
+        filters: dict[str, object] = {'user_id': user_id, 'deleted': 0}
+        if conversation_id is not None:
+            filters['conversation_id'] = conversation_id
+        return await self.select_models_order(db, 'id', 'desc', **filters)
 
     async def create(
         self,
@@ -55,6 +66,7 @@ class CRUDAIBuddyArtifact(CRUDPlus[AIBuddyArtifact]):
         user_id: int,
         obj: CreateAIBuddyArtifactParam | RegisterAIBuddyArtifactParam,
         storage_id: int | None = None,
+        conversation_id: str | None = None,
     ) -> AIBuddyArtifact:
         """
         创建产物
@@ -63,10 +75,12 @@ class CRUDAIBuddyArtifact(CRUDPlus[AIBuddyArtifact]):
         :param user_id: 用户 ID
         :param obj: 创建产物参数
         :param storage_id: 对象存储 ID
+        :param conversation_id: 来源对话 ID
         :return:
         """
         ins = self.model(
             user_id=user_id,
+            conversation_id=conversation_id,
             title=obj.title,
             kind=obj.kind,
             storage_id=storage_id,

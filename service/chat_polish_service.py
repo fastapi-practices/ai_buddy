@@ -6,13 +6,13 @@ from backend.common.context import ctx
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.database.db import async_db_session
+from backend.plugin.ai_buddy.dataclasses import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
     AIBuddyChatGenerationType,
     AIBuddyModelKind,
     AIBuddyProviderType,
 )
-from backend.plugin.ai_buddy.policy.context import AIBuddyInvocationContext
 from backend.plugin.ai_buddy.policy.registry import validate_ai_buddy_invocation
 from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatPolishParam, GetAIBuddyChatPolishDetail

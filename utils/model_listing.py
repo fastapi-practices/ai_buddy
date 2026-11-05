@@ -6,8 +6,9 @@ from pydantic import ValidationError
 
 from backend.common.exception import errors
 from backend.common.log import log
+from backend.plugin.ai_buddy.dataclasses import ProviderModelSnapshot
 from backend.plugin.ai_buddy.enums import AIBuddyProviderType
-from backend.plugin.ai_buddy.provider.base import ProviderModelSnapshot, normalize_provider_api_host
+from backend.plugin.ai_buddy.provider.base import normalize_provider_api_host
 
 
 def _parse_provider_model(data: dict[str, Any]) -> ProviderModelSnapshot:

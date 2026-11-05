@@ -13,12 +13,33 @@ class AIBuddyMcpAppScope(SchemaBase):
     resource_uri: str = Field(pattern=r'^ui://', description='工具声明的 UI 资源 URI')
 
 
-class CallAIBuddyMcpAppToolParam(AIBuddyMcpAppScope):
-    """调用 MCP 交互应用工具参数"""
+class AIBuddyMcpAppToolParam(AIBuddyMcpAppScope):
+    """MCP 交互应用工具请求参数"""
 
     name: str = Field(description='应用请求调用的工具名称')
     arguments: dict[str, Any] = Field(default_factory=dict, description='工具调用参数')
-    approved: bool = Field(default=False, description='宿主用户已批准本次写操作')
+
+
+class ApproveAIBuddyMcpAppToolParam(AIBuddyMcpAppToolParam):
+    """申请 MCP 交互应用写操作审批票据"""
+
+
+class CallAIBuddyMcpAppToolParam(AIBuddyMcpAppToolParam):
+    """调用 MCP 交互应用工具参数"""
+
+    approval_token: str | None = Field(
+        None,
+        min_length=20,
+        max_length=256,
+        description='宿主用户确认后签发的一次性审批票据，只读工具不需要',
+    )
+
+
+class GetAIBuddyMcpAppApprovalDetail(SchemaBase):
+    """MCP 应用写操作审批票据"""
+
+    approval_token: str = Field(description='绑定当前用户、会话、工具与参数的一次性票据')
+    expires_in: int = Field(description='票据剩余有效秒数')
 
 
 class GetAIBuddyMcpAppDetail(SchemaBase):

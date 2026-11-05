@@ -66,7 +66,12 @@ async def get_ai_buddy_mcp(
     db: CurrentSession,
     pk: Annotated[int, Path(description='MCP ID')],
 ) -> ResponseSchemaModel[GetAIBuddyMcpDetail]:
-    data = await ai_buddy_mcp_service.get(db=db, pk=pk, user_id=request.user.id)
+    data = await ai_buddy_mcp_service.get(
+        db=db,
+        pk=pk,
+        user_id=request.user.id,
+        is_superuser=request.user.is_superuser,
+    )
     return response_base.success(data=data)
 
 

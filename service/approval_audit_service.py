@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.crud.crud_approval_audit import ai_buddy_approval_audit_dao
-from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus
+from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus, AIBuddyQueryLimit
 from backend.plugin.ai_buddy.model.approval_audit import AIBuddyApprovalAudit
 from backend.plugin.ai_buddy.schema.approval_audit import GetAIBuddyApprovalAuditDetail
 from backend.utils.timezone import timezone
@@ -30,6 +30,7 @@ class AIBuddyApprovalAuditService:
         :param limit: 返回条数
         :return:
         """
+        limit = min(max(1, limit), AIBuddyQueryLimit.audit.value)
         rows = await ai_buddy_approval_audit_dao.get_all(db, user_id, before=before, limit=limit)
         now = timezone.now()
         results: list[GetAIBuddyApprovalAuditDetail] = []

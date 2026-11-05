@@ -11,11 +11,11 @@ from pydantic_ai.models.xai import XaiModel, XaiModelSettings
 from pydantic_ai.providers.xai import XaiProvider
 from xai_sdk import AsyncClient
 
+from backend.plugin.ai_buddy.dataclasses import ProviderModelSnapshot
 from backend.plugin.ai_buddy.enums import AIBuddyProviderType
 from backend.plugin.ai_buddy.provider.base import (
     ProviderAdapter,
     ProviderCapabilities,
-    ProviderModelSnapshot,
     normalize_provider_api_host,
 )
 from backend.plugin.ai_buddy.utils.model_listing import list_openai_compat_models

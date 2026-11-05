@@ -1,12 +1,14 @@
+import contextlib
+
 from collections.abc import Sequence
-from contextlib import suppress
-from dataclasses import dataclass
 from io import BytesIO
+from math import ceil
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
 from backend.common.exception import errors
 from backend.core.conf import settings
+from backend.plugin.ai_buddy.dataclasses import KnowledgeSegment, KnowledgeUpload
 from backend.plugin.ai_buddy.enums import AIBuddyDocumentExtractBackend, AIBuddyKnowledgeFileType
 from backend.plugin.ai_buddy.utils.archive import validate_archive_size
 from backend.plugin.ai_buddy.utils.knowledge_extract import extract_with_backend
@@ -16,6 +18,7 @@ _TEXT_EXTS = frozenset({'md', 'markdown', 'txt', 'text'})
 _OFFICE_EXTS = frozenset({'pdf', 'docx', 'pptx', 'xlsx'})
 _IMAGE_EXTS = frozenset({'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tif', 'tiff'})
 _KNOWLEDGE_EXTS = _TEXT_EXTS | _OFFICE_EXTS | _IMAGE_EXTS
+_PDF_RENDER_SCALE = 2
 _IMAGE_MEDIA_TYPES = {
     'png': 'image/png',
     'jpg': 'image/jpeg',
@@ -26,27 +29,6 @@ _IMAGE_MEDIA_TYPES = {
     'tif': 'image/tiff',
     'tiff': 'image/tiff',
 }
-
-
-@dataclass(frozen=True, slots=True)
-class KnowledgeSegment:
-    """知识解析片段"""
-
-    text: str | None = None
-    image: bytes | None = None
-    media_type: str | None = None
-    placeholder: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class KnowledgeUpload:
-    """解析后的知识文件"""
-
-    title: str
-    content: str
-    source: str
-    file_type: AIBuddyKnowledgeFileType
-    segments: tuple[KnowledgeSegment, ...] = ()
 
 
 def _resolve_document_extract_backend(value: str | None = None) -> AIBuddyDocumentExtractBackend:
@@ -78,6 +60,10 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
     """
     if not files:
         raise errors.RequestError(msg='请上传知识文件、目录或 zip')
+    if len(files) > settings.AI_BUDDY_KNOWLEDGE_MAX_FILES:
+        raise errors.RequestError(msg='知识文件数量超出限制')
+    if sum(len(data) for _, data in files) > settings.AI_BUDDY_KNOWLEDGE_MAX_TOTAL_BYTES:
+        raise errors.RequestError(msg='知识文件总大小超出限制')
     payloads: list[tuple[str, bytes]] = []
     for filename, data in files:
         source = (filename or '').replace('\\', '/').strip()
@@ -123,10 +109,13 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
         documents.append((filename, data))
     if not documents:
         raise errors.RequestError(msg='未找到可解析的知识文件')
+    if len(documents) > settings.AI_BUDDY_KNOWLEDGE_MAX_FILES:
+        raise errors.RequestError(msg='知识文件数量超出限制')
     resolved_title = (title or '').strip() or None
     if resolved_title and len(documents) > 1:
         raise errors.RequestError(msg='批量上传不能指定标题')
     uploads: list[KnowledgeUpload] = []
+    image_count = image_bytes = image_pixels = 0
     for filename, data in documents:
         source = '/'.join(safe_relative_parts(filename, msg='知识路径包含非法路径'))
         if not source:
@@ -156,6 +145,8 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
         else:
             backend = _resolve_document_extract_backend()
             if backend != AIBuddyDocumentExtractBackend.native and ext in _OFFICE_EXTS:
+                if ext == 'pdf':
+                    _validate_pdf_page_count(data)
                 text = extract_with_backend(backend=backend, filename=source, data=data, ext=ext)
                 if text:
                     segments.append(KnowledgeSegment(text=text))
@@ -204,6 +195,12 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
                     raise errors.RequestError(msg='不支持的知识文件类型')
                 if text:
                     segments.append(KnowledgeSegment(text=text))
+        image_count, image_bytes, image_pixels = _accumulate_image_limits(
+            segments,
+            image_count=image_count,
+            image_bytes=image_bytes,
+            image_pixels=image_pixels,
+        )
         content = join_knowledge_text_segments(segments)
         if not content and not any(item.image for item in segments):
             raise errors.RequestError(msg='知识内容不能为空')
@@ -238,9 +235,9 @@ def join_knowledge_text_segments(segments: Sequence[KnowledgeSegment]) -> str:
     return '\n\n'.join(parts).strip()
 
 
-def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignore[complex-structure]
+def _validate_pdf_page_count(data: bytes) -> None:
     """
-    从 PDF 页面提取文档知识片段
+    在解析或调用外部抽取服务前限制 PDF 页数
 
     :param data: PDF 文件字节
     :return:
@@ -250,28 +247,119 @@ def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignor
     except ImportError as exc:
         raise errors.RequestError(msg='解析 PDF 需要安装 pypdf') from exc
     try:
+        page_count = len(PdfReader(BytesIO(data)).pages)
+    except Exception as exc:
+        raise errors.RequestError(msg='PDF 文件无效') from exc
+    if page_count > settings.AI_BUDDY_KNOWLEDGE_MAX_PDF_PAGES:
+        raise errors.RequestError(msg='PDF 页数超出限制')
+
+
+def _accumulate_image_limits(
+    segments: Sequence[KnowledgeSegment],
+    *,
+    image_count: int,
+    image_bytes: int,
+    image_pixels: int,
+) -> tuple[int, int, int]:
+    """
+    累计校验本次上传的图片数量、字节和像素预算
+
+    :param segments: 当前文件的解析片段
+    :param image_count: 已累计图片数量
+    :param image_bytes: 已累计图片字节数
+    :param image_pixels: 已累计图片像素数
+    :return:
+    """
+    images = [segment.image for segment in segments if segment.image]
+    if not images:
+        return image_count, image_bytes, image_pixels
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise errors.RequestError(msg='解析知识图片需要安装 pillow') from exc
+    for data in images:
+        image_count += 1
+        image_bytes += len(data)
+        try:
+            with Image.open(BytesIO(data)) as image:
+                width, height = image.size
+        except Exception as exc:
+            raise errors.RequestError(msg='知识图片格式无效') from exc
+        image_pixels += width * height
+        if (
+            image_count > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGES
+            or image_bytes > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES
+            or image_pixels > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS
+        ):
+            raise errors.RequestError(msg='知识图片资源超出限制')
+    return image_count, image_bytes, image_pixels
+
+
+def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignore[complex-structure]
+    """
+    从 PDF 页面提取文档知识片段
+
+    :param data: PDF 文件字节
+    :return:
+    """
+    _validate_pdf_page_count(data)
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise errors.RequestError(msg='解析 PDF 需要安装 pypdf') from exc
+    try:
         import pypdfium2 as pdfium
     except ImportError:
         pdfium = None
-    reader = PdfReader(BytesIO(data))
-    segments: list[KnowledgeSegment] = []
+    stream = BytesIO(data)
+    reader = None
     document = None
+    segments: list[KnowledgeSegment] = []
+    rendered_pixels = 0
     try:
-        for index, page in enumerate(reader.pages):
-            text = (page.extract_text() or '').strip()
+        try:
+            reader = PdfReader(stream)
+            pages = reader.pages
+        except Exception as exc:
+            raise errors.RequestError(msg='PDF 文件无效') from exc
+        for index, page in enumerate(pages):
+            try:
+                text = (page.extract_text() or '').strip()
+            except Exception as exc:
+                raise errors.RequestError(msg='PDF 页面解析失败') from exc
             if text:
                 segments.append(KnowledgeSegment(text=text))
                 continue
             image: bytes | None = None
             if pdfium is not None:
-                with suppress(Exception):
+                try:
                     if document is None:
                         document = pdfium.PdfDocument(data)
                     if 0 <= index < len(document):
-                        bitmap = document[index].render(scale=2)
-                        buffer = BytesIO()
-                        bitmap.to_pil().save(buffer, format='PNG')
-                        image = buffer.getvalue()
+                        media_box = page.mediabox
+                        width = ceil(float(media_box.width) * _PDF_RENDER_SCALE)
+                        height = ceil(float(media_box.height) * _PDF_RENDER_SCALE)
+                        if rendered_pixels + width * height > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS:
+                            raise errors.RequestError(msg='PDF 渲染像素超出限制')
+                        bitmap = document[index].render(scale=_PDF_RENDER_SCALE)
+                        rendered = None
+                        try:
+                            rendered = bitmap.to_pil()
+                            width, height = rendered.size
+                            rendered_pixels += width * height
+                            if rendered_pixels > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS:
+                                raise errors.RequestError(msg='PDF 渲染像素超出限制')
+                            buffer = BytesIO()
+                            rendered.save(buffer, format='PNG')
+                            image = buffer.getvalue()
+                        finally:
+                            if rendered is not None:
+                                rendered.close()
+                            bitmap.close()
+                except errors.RequestError:
+                    raise
+                except Exception:
+                    pass
             if not image:
                 image = next(
                     (
@@ -283,7 +371,17 @@ def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignor
                 )
             if image is not None:
                 segments.append(KnowledgeSegment(image=image, media_type='image/png'))
+    except errors.RequestError:
+        raise
+    except Exception as exc:
+        raise errors.RequestError(msg='PDF 文件无效') from exc
     finally:
         if document is not None:
-            document.close()
+            with contextlib.suppress(Exception):
+                document.close()
+        if reader is not None:
+            with contextlib.suppress(Exception):
+                reader.close()
+        with contextlib.suppress(Exception):
+            stream.close()
     return segments
