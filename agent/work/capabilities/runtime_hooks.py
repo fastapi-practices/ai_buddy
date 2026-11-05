@@ -13,7 +13,7 @@ from backend.plugin.ai_buddy.security.tool_policy import (
     RESOURCE_WRITE_TOOLS,
     SANDBOX_CONFIRM_TOOLS,
     is_mcp_tool,
-    resolve_tool_policy,
+    resolve_tool_policy_with_dependencies,
 )
 from backend.plugin.ai_buddy.service.approval_audit_service import ai_buddy_approval_audit_service
 
@@ -25,7 +25,7 @@ def resolve_work_tool_policy(
     mcp_approve_writes: bool,
 ) -> AIBuddyToolPolicy:
     """
-    按工具来源和本轮覆盖解析工作工具策略
+    按工具来源和本轮覆盖解析工作工具策略，并继承依赖限制
 
     :param tool_def: 工具定义
     :param policies: 本轮工具策略
@@ -38,7 +38,7 @@ def resolve_work_tool_policy(
         or (mcp_approve_writes and is_mcp_tool(tool_def))
     )
     default = AIBuddyToolPolicy.ask if needs_confirm else AIBuddyToolPolicy.allow
-    return resolve_tool_policy(tool_name=tool_def.name, policies=policies, default=default)
+    return resolve_tool_policy_with_dependencies(tool_name=tool_def.name, policies=policies, default=default)
 
 
 def build_tool_policy_hooks(
@@ -123,9 +123,36 @@ def build_tool_policy_hooks(
     return hooks
 
 
+def prepare_work_tools(
+    *,
+    tool_defs: list[ToolDefinition],
+    policies: dict[str, str],
+    mcp_approve_writes: bool,
+) -> list[ToolDefinition]:
+    """
+    隐藏显式拒绝的工具，并延迟暴露 MCP 工具
+
+    :param tool_defs: 本轮工具定义
+    :param policies: 工具名到策略的映射
+    :param mcp_approve_writes: MCP 写入是否需要确认
+    :return:
+    """
+    prepared: list[ToolDefinition] = []
+    for tool_def in tool_defs:
+        policy = resolve_work_tool_policy(
+            tool_def=tool_def,
+            policies=policies,
+            mcp_approve_writes=mcp_approve_writes,
+        )
+        if policy == AIBuddyToolPolicy.deny:
+            continue
+        prepared.append(replace(tool_def, defer_loading=True) if is_mcp_tool(tool_def) else tool_def)
+    return prepared
+
+
 async def build_runtime_hooks_capability(ctx: CapabilityContext) -> list[CapabilityResult]:  # ruff: ignore[unused-async]
     """
-    构建观测、MCP 延迟加载与显式工具策略审批
+    构建观测、工具过滤与显式工具策略审批
 
     :param ctx: 能力构建上下文
     :return:
@@ -133,23 +160,28 @@ async def build_runtime_hooks_capability(ctx: CapabilityContext) -> list[Capabil
     if ctx.forwarded_props.generation_type != AIBuddyChatGenerationType.text:
         return []
 
+    policies = ctx.forwarded_props.tool_policies or {}
     hooks = build_tool_policy_hooks(
-        policies=ctx.forwarded_props.tool_policies or {},
+        policies=policies,
         mcp_approve_writes=ctx.forwarded_props.mcp_approve_writes,
     )
 
-    def defer_mcp_tools(
+    def prepare_tools(
         run_ctx: RunContext[ChatAgentDeps],
         tool_defs: list[ToolDefinition],
     ) -> list[ToolDefinition]:
         """
-        按策略标记需要审批的 MCP 工具
+        按本轮策略过滤工具，并延迟加载 MCP 工具
 
         :param run_ctx: 运行上下文
         :param tool_defs: 工具定义列表
         :return:
         """
         del run_ctx
-        return [replace(tool_def, defer_loading=True) if is_mcp_tool(tool_def) else tool_def for tool_def in tool_defs]
+        return prepare_work_tools(
+            tool_defs=tool_defs,
+            policies=policies,
+            mcp_approve_writes=ctx.forwarded_props.mcp_approve_writes,
+        )
 
-    return [CapabilityResult(capability=hooks), CapabilityResult(capability=PrepareTools(defer_mcp_tools))]
+    return [CapabilityResult(capability=hooks), CapabilityResult(capability=PrepareTools(prepare_tools))]

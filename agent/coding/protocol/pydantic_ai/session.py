@@ -54,7 +54,7 @@ from backend.plugin.ai_buddy.enums import (
 )
 from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.security.jev import build_jev_capabilities
-from backend.plugin.ai_buddy.security.tool_policy import resolve_tool_policy
+from backend.plugin.ai_buddy.security.tool_policy import resolve_tool_policy_with_dependencies
 from backend.plugin.ai_buddy.security.tool_schema import build_tool_args_validator
 from backend.plugin.ai_buddy.utils.citation import text_part_citations
 from backend.plugin.ai_buddy.utils.http_client import build_retry_http_client
@@ -417,17 +417,11 @@ def _bound_tool(
     default_ask = (
         item.spec.mutating and item.spec.name != 'acp_runner' and permission_mode == AIBuddyPermissionMode.ask
     ) or (item.spec.is_mcp and mcp_approve_writes)
-    policy = resolve_tool_policy(
+    policy = resolve_tool_policy_with_dependencies(
         tool_name=item.spec.name,
         policies=tool_policies,
         default=AIBuddyToolPolicy.ask if default_ask else AIBuddyToolPolicy.allow,
     )
-    if item.spec.name == 'run_tests':
-        policies = [policy] + [
-            resolve_tool_policy(tool_name=name, policies=tool_policies) for name in ('bash', 'write_artifact')
-        ]
-        priority = {AIBuddyToolPolicy.allow: 0, AIBuddyToolPolicy.ask: 1, AIBuddyToolPolicy.deny: 2}
-        policy = max(policies, key=priority.__getitem__)
 
     async def call(ctx: RunContext[ChatAgentDeps], **kwargs: Any) -> str:
         """

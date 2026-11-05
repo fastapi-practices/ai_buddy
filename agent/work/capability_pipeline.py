@@ -1,6 +1,4 @@
-from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
-from inspect import isawaitable
 from typing import Any
 
 from pydantic_ai.capabilities import (
@@ -27,33 +25,10 @@ from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
 from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
-from backend.plugin.ai_buddy.agent.work.capabilities.advisor import build_advisor_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.base import CapabilityBuilder
-from backend.plugin.ai_buddy.agent.work.capabilities.builtin_toolset import build_builtin_toolset_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.compaction import (
-    build_compact_on_request_capability,
-    build_compaction_capability,
+from backend.plugin.ai_buddy.agent.work.capability_registry import (
+    build_profile_capabilities,
+    resolve_capability_mode,
 )
-from backend.plugin.ai_buddy.agent.work.capabilities.files import build_file_understanding_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.guardrails import build_guardrail_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.mcp import build_mcp_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.memory import build_memory_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.office_attachments import build_office_attachments_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.planning import build_planning_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.project import build_project_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.reminders import build_reminder_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.resource_tools import build_resource_tools_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import build_runtime_hooks_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox import build_sandbox_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import build_sandbox_tools_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.search import build_search_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.skills import build_skills_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.subagents import build_subagents_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.tool_output_limits import build_tool_output_limits_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.user_input import build_user_input_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.work_context import build_work_context_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.workspace import build_workspace_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.workspace_tools import build_workspace_tools_capability
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
@@ -64,41 +39,12 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyProviderType,
 )
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter
-from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, AIBuddyForwardedPropsParam
+from backend.plugin.ai_buddy.schema.chat import AIBuddyForwardedPropsParam
 from backend.plugin.ai_buddy.security.jev import is_jev_tool_risk
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 
 _TOOL_EXECUTOR = ThreadPoolExecutor(
     max_workers=settings.AI_BUDDY_AGENT_THREAD_EXECUTOR_MAX_WORKERS, thread_name_prefix='ai_buddy_tool'
-)
-
-_CAPABILITY_BUILDERS: tuple[CapabilityBuilder, ...] = (
-    # 先于文件理解，让 Office 附件直接转为文本而不是交给辅助模型描述
-    build_office_attachments_capability,
-    build_file_understanding_capability,
-    # 压缩先更新持久历史，提醒和记忆随后仅注入当前请求
-    build_compaction_capability,
-    build_guardrail_capabilities,
-    build_work_context_capability,
-    build_project_capability,
-    build_reminder_capabilities,
-    build_memory_capability,
-    build_skills_capability,
-    build_workspace_capability,
-    build_workspace_tools_capability,
-    build_sandbox_tools_capability,
-    build_resource_tools_capability,
-    build_user_input_capability,
-    build_mcp_capability,
-    build_runtime_hooks_capability,
-    build_search_capabilities,
-    build_advisor_capability,
-    build_builtin_toolset_capability,
-    build_planning_capability,
-    build_subagents_capability,
-    build_sandbox_capabilities,
-    build_compact_on_request_capability,
-    build_tool_output_limits_capability,
 )
 
 
@@ -150,6 +96,7 @@ async def assemble_capabilities(
         assistant_id=assistant_id,
     )
 
+    mode = resolve_capability_mode(forwarded_props)
     capabilities: list[AbstractCapability[Any]] = []
     thinking = forwarded_props.thinking
     if thinking is not None and AIBuddyModelCapability.thinking in catalog_capabilities:
@@ -158,69 +105,41 @@ async def assemble_capabilities(
     capabilities.append(RaiseContentFilterError())
     if forwarded_props.generation_type == AIBuddyChatGenerationType.text:
         capabilities.append(Caching(forwarded_props.cache_enabled))
-        if (
-            forwarded_props.background_subagents_enabled
-            and conversation_id
-            and forwarded_props.agent_mode != AIBuddyAgentMode.chat
-        ):
+        if forwarded_props.background_subagents_enabled and conversation_id and mode != AIBuddyAgentMode.chat:
             capabilities.append(BuddyDelegationReports(conversation_id=conversation_id))
         capabilities.append(RepairToolArguments())
     capabilities.extend(
         _build_runtime_capabilities(text=forwarded_props.generation_type == AIBuddyChatGenerationType.text)
     )
 
-    has_builtin = False
-    has_fn_source = False
-    chat = (
-        isinstance(forwarded_props, AIBuddyChatForwardedPropsParam)
-        and forwarded_props.agent_mode == AIBuddyAgentMode.chat
+    context = CapabilityContext(
+        db=db,
+        adapter=adapter,
+        forwarded_props=forwarded_props,
+        user_id=user_id,
+        is_superuser=is_superuser,
+        supports_tools=supports_tools,
+        supported_native_tools=supported_native_tools,
+        supports_image_output=supports_image_output,
+        has_builtin_tools=False,
+        model=model,
+        conversation_id=conversation_id,
+        conversation_goal=conversation_goal,
+        project_name=project_name,
+        assistant_name=assistant_name,
+        assistant_prompt=assistant_prompt,
+        context_window=context_window,
+        catalog_capabilities=catalog_capabilities,
+        origin=origin,
     )
-    for builder in _CAPABILITY_BUILDERS:
-        if chat and builder in (
-            build_reminder_capabilities,
-            build_user_input_capability,
-            build_advisor_capability,
-            build_planning_capability,
-            build_subagents_capability,
-            build_sandbox_capabilities,
-            build_compact_on_request_capability,
-        ):
-            continue
-        ctx = CapabilityContext(
-            db=db,
-            adapter=adapter,
-            forwarded_props=forwarded_props,
-            user_id=user_id,
-            is_superuser=is_superuser,
-            supports_tools=supports_tools,
-            supported_native_tools=supported_native_tools,
-            supports_image_output=supports_image_output,
-            has_builtin_tools=has_builtin,
-            model=model,
-            conversation_id=conversation_id,
-            conversation_goal=conversation_goal,
-            project_name=project_name,
-            assistant_name=assistant_name,
-            assistant_prompt=assistant_prompt,
-            context_window=context_window,
-            catalog_capabilities=catalog_capabilities,
-            origin=origin,
-        )
-        outcomes = builder(ctx)
-        if isawaitable(outcomes):
-            outcomes = await outcomes
-        normalized: Sequence[Any] = outcomes if isinstance(outcomes, Sequence) else (outcomes,)
-        for result in normalized:
-            if result.capability is not None:
-                capabilities.append(result.capability)
-            has_builtin = has_builtin or result.introduces_builtin_tool
-            has_fn_source = has_fn_source or result.introduces_function_tool_source
+    assembly = await build_profile_capabilities(mode=mode, context=context)
+    capabilities.extend(assembly.capabilities)
 
     validate_capability_mix(
-        has_fn_source=has_fn_source,
+        has_fn_source=assembly.has_function_tool_source,
         supports_tools=supports_tools,
         provider_type=adapter.provider_type,
-        has_builtin=has_builtin,
+        has_builtin=assembly.has_builtin_tools,
     )
     return _order_tool_result_filters(capabilities)
 

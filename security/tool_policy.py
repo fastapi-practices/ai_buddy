@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from pydantic_ai.tools import ToolDefinition
 
 from backend.plugin.ai_buddy.enums import AIBuddyToolPolicy
@@ -17,6 +19,18 @@ RESOURCE_WRITE_TOOLS = frozenset({
 
 # 在沙箱中执行命令和交付文件的工具，默认需要用户确认
 SANDBOX_CONFIRM_TOOLS = frozenset({'bash', 'deliver_file'})
+
+# 组合工具会间接触发依赖工具，依赖项的限制必须向上继承
+TOOL_POLICY_DEPENDENCIES: dict[str, tuple[str, ...]] = {
+    'run_tests': ('bash', 'write_artifact'),
+    'smart_search': ('bash', 'read'),
+}
+
+_POLICY_PRIORITY = {
+    AIBuddyToolPolicy.allow: 0,
+    AIBuddyToolPolicy.ask: 1,
+    AIBuddyToolPolicy.deny: 2,
+}
 
 
 def resolve_tool_policy(
@@ -50,6 +64,34 @@ def resolve_tool_policy(
         except ValueError:
             continue
     return default
+
+
+def resolve_tool_policy_with_dependencies(
+    *,
+    tool_name: str,
+    policies: dict[str, str] | None,
+    default: AIBuddyToolPolicy = AIBuddyToolPolicy.allow,
+    dependency_defaults: Mapping[str, AIBuddyToolPolicy] | None = None,
+) -> AIBuddyToolPolicy:
+    """
+    解析工具及其依赖项中最严格的策略
+
+    :param tool_name: 工具全名或短名
+    :param policies: 工具名到策略的映射
+    :param default: 工具未列出时的默认策略
+    :param dependency_defaults: 依赖工具未列出时的默认策略
+    :return:
+    """
+    policy = resolve_tool_policy(tool_name=tool_name, policies=policies, default=default)
+    dependency_defaults = dependency_defaults or {}
+    for dependency in TOOL_POLICY_DEPENDENCIES.get(tool_name, ()):
+        dependency_policy = resolve_tool_policy(
+            tool_name=dependency,
+            policies=policies,
+            default=dependency_defaults.get(dependency, AIBuddyToolPolicy.allow),
+        )
+        policy = max(policy, dependency_policy, key=_POLICY_PRIORITY.__getitem__)
+    return policy
 
 
 def is_mcp_tool(tool_def: ToolDefinition) -> bool:

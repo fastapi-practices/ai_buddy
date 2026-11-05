@@ -1,14 +1,15 @@
-pydantic-ai-slim[openai,google,anthropic,xai,openrouter,mcp,retries,tavily,duckduckgo,ag-ui,exa,web-fetch,typesafe]==2.63.0
+pydantic-ai-slim[openai,google,anthropic,xai,openrouter,mcp,retries,tavily,duckduckgo,ag-ui,exa,web-fetch,typesafe]==2.66.0
 # ag-ui extra 不限制协议版本上限，需显式固定到移除 THINKING_* 事件的 1.0
 ag-ui-protocol==1.0.0
 # Harness 已合仓到 pydantic-ai，仍独立发布并保留 pydantic_ai_harness 导入路径
-pydantic-ai-harness[codemode]==0.63.0
+pydantic-ai-harness[codemode,repair-tool-arguments]==0.66.0
 agent-client-protocol==0.12.1
-jsonpatch==1.38
+jsonpatch==1.42
 jsonschema==4.26.0
 # xai-sdk 1.21 仍声明 packaging<26，protobuf 上限已放宽到 <8
 packaging>=25.0,<26
-protobuf>=6.33.6,<8
+# 固定稳定版，避免 --prerelease=allow 安装 7.37.0rc1
+protobuf==7.36.2
 qdrant-client==1.20.0
 opensandbox==1.2.0
 lark-oapi==1.7.5
@@ -20,7 +21,7 @@ pillow==13.0.0
 python-docx==1.2.0
 python-pptx==1.0.2
 openpyxl==3.1.5
-office-oxide==0.1.15
+office-oxide==0.1.16
 # fastembed 0.9.1 要求 huggingface-hub<2
 huggingface-hub==1.33.0
 fastembed==0.9.1

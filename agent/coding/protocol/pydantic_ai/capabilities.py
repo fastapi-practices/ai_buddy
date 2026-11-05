@@ -1,9 +1,8 @@
-from collections.abc import Sequence
-from inspect import isawaitable
+from dataclasses import replace
 from typing import Any
 
 from pydantic_ai import ModelRetry, RunContext
-from pydantic_ai.capabilities import AbstractCapability
+from pydantic_ai.capabilities import AbstractCapability, PrepareTools
 from pydantic_ai.capabilities.hooks import Hooks
 from pydantic_ai.messages import ToolCallPart
 from pydantic_ai.models import Model
@@ -16,19 +15,12 @@ from backend.plugin.ai_buddy.agent.coding.protocol.base import CodingHostSpec, W
 from backend.plugin.ai_buddy.agent.coding.types import AgentToolCall
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
 from backend.plugin.ai_buddy.agent.models import auxiliary_model_name, bind_auxiliary_model
-from backend.plugin.ai_buddy.agent.work.capabilities.compaction import build_compaction_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.files import build_file_understanding_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.mcp import build_mcp_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.memory import build_memory_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.planning import build_planning_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.project import build_project_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.search import build_search_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.subagents import build_subagents_capability
+from backend.plugin.ai_buddy.agent.work.capability_registry import build_profile_capabilities
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, ChatAgentDeps
-from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode, AIBuddyToolPolicy
+from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyPermissionMode, AIBuddyToolPolicy
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter
 from backend.plugin.ai_buddy.schema.chat import AIBuddyForwardedPropsParam
-from backend.plugin.ai_buddy.security.tool_policy import resolve_tool_policy
+from backend.plugin.ai_buddy.security.tool_policy import is_mcp_tool, resolve_tool_policy_with_dependencies
 
 
 async def build_coding_capabilities(
@@ -75,33 +67,68 @@ async def build_coding_capabilities(
             conversation_goal=spec.run_context.goal,
             context_window=spec.context_window,
         )
-        for builder in (
-            build_file_understanding_capability,
-            build_compaction_capability,
-            build_mcp_capability,
-            build_memory_capability,
-            build_project_capability,
-            build_planning_capability,
-            build_search_capabilities,
-            build_subagents_capability,
-        ):
-            results = builder(ctx)
-            if isawaitable(results):
-                results = await results
-            normalized = results if isinstance(results, Sequence) else (results,)
-            capabilities.extend(result.capability for result in normalized if result.capability is not None)
+        assembly = await build_profile_capabilities(mode=AIBuddyAgentMode.coding, context=ctx)
+        capabilities.extend(assembly.capabilities)
         if props.smart_search_model:
             if spec.run_context.sandbox is None:
                 raise errors.RequestError(msg='代码语义搜索需要已连接的工作区')
             search_model = await bind_auxiliary_model(ctx, auxiliary_model_name(ctx, props.smart_search_model))
             capabilities.append(SmartSearch(search_model, concurrency=2, cache_index=False))
 
-    capabilities.append(
+    def prepare_tools(
+        run_ctx: RunContext[ChatAgentDeps],
+        tool_defs: list[ToolDefinition],
+    ) -> list[ToolDefinition]:
+        """
+        按本轮策略过滤编码工具，并延迟加载 MCP 工具
+
+        :param run_ctx: 运行上下文
+        :param tool_defs: 工具定义列表
+        :return:
+        """
+        del run_ctx
+        return prepare_coding_tools(
+            tool_defs=tool_defs,
+            policies=props.tool_policies or {},
+            mcp_approve_writes=props.mcp_approve_writes,
+        )
+
+    capabilities.extend((
+        PrepareTools(prepare_tools),
         _build_resource_policy_hooks(
             spec=spec, props=props, bound_tool_names=bound_tool_names, wait_approval=wait_approval
-        )
-    )
+        ),
+    ))
     return capabilities
+
+
+def prepare_coding_tools(
+    *,
+    tool_defs: list[ToolDefinition],
+    policies: dict[str, str],
+    mcp_approve_writes: bool,
+) -> list[ToolDefinition]:
+    """
+    隐藏显式拒绝的编码工具，并延迟暴露 MCP 工具
+
+    :param tool_defs: 本轮工具定义
+    :param policies: 工具名到策略的映射
+    :param mcp_approve_writes: MCP 写入是否需要确认
+    :return:
+    """
+    prepared: list[ToolDefinition] = []
+    for tool_def in tool_defs:
+        is_mcp = is_mcp_tool(tool_def)
+        default = AIBuddyToolPolicy.ask if is_mcp and mcp_approve_writes else AIBuddyToolPolicy.allow
+        policy = resolve_tool_policy_with_dependencies(
+            tool_name=tool_def.name,
+            policies=policies,
+            default=default,
+        )
+        if policy == AIBuddyToolPolicy.deny:
+            continue
+        prepared.append(replace(tool_def, defer_loading=True) if is_mcp else tool_def)
+    return prepared
 
 
 def _build_resource_policy_hooks(
@@ -150,24 +177,17 @@ def _build_resource_policy_hooks(
             or (is_mcp and props.mcp_approve_writes)
             else AIBuddyToolPolicy.allow
         )
-        policy = resolve_tool_policy(tool_name=call.tool_name, policies=props.tool_policies, default=default)
-        if call.tool_name == 'smart_search':
-            policies = [policy] + [
-                resolve_tool_policy(
-                    tool_name=name,
-                    policies=props.tool_policies,
-                    default=(
-                        AIBuddyToolPolicy.ask
-                        if name == 'bash' and spec.run_context.permission_mode == AIBuddyPermissionMode.ask
-                        else AIBuddyToolPolicy.allow
-                    ),
-                )
-                for name in ('bash', 'read')
-            ]
-            priority = {AIBuddyToolPolicy.allow: 0, AIBuddyToolPolicy.ask: 1, AIBuddyToolPolicy.deny: 2}
-            policy = max(policies, key=priority.__getitem__)
-            if isinstance(args, dict):
-                args = {**args, 'candidates': min(int(args.get('candidates', 16)), 32)}
+        dependency_defaults = (
+            {'bash': AIBuddyToolPolicy.ask} if spec.run_context.permission_mode == AIBuddyPermissionMode.ask else None
+        )
+        policy = resolve_tool_policy_with_dependencies(
+            tool_name=call.tool_name,
+            policies=props.tool_policies,
+            default=default,
+            dependency_defaults=dependency_defaults,
+        )
+        if call.tool_name == 'smart_search' and isinstance(args, dict):
+            args = {**args, 'candidates': min(int(args.get('candidates', 16)), 32)}
         if policy == AIBuddyToolPolicy.deny:
             raise ModelRetry(f'工具已被拒绝: {call.tool_name}')
         if policy == AIBuddyToolPolicy.ask:
