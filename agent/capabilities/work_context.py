@@ -1,7 +1,7 @@
 from pydantic_ai import InstructionPart
 from pydantic_ai.capabilities import Capability
 
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import sandbox_tools_enabled
+from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import sandbox_tools_enabled
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyChatGenerationType
 

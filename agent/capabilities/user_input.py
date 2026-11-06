@@ -5,7 +5,7 @@ from pydantic_ai import CapabilityEvent, RunContext
 from pydantic_ai.capabilities import Toolset
 from pydantic_ai.toolsets import FunctionToolset
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.agent.work.input_requests import wait_for_input
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType

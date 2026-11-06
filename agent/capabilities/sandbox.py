@@ -4,8 +4,8 @@ from pydantic_ai import RunContext
 from pydantic_ai.tools import ToolDefinition
 from pydantic_ai_harness import CodeMode
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
-from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import resolve_work_tool_policy
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.runtime_hooks import resolve_work_tool_policy
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyToolPolicy
 from backend.plugin.ai_buddy.security.jev import is_jev_tool_risk, jev_enabled

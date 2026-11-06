@@ -4,8 +4,8 @@ from typing import Any
 
 from pydantic_ai.toolsets import FunctionToolset
 
-from backend.plugin.ai_buddy.agent.work.capabilities.builtin_toolset import get_current_time
-from backend.plugin.ai_buddy.agent.work.capabilities.workspace_tools import (
+from backend.plugin.ai_buddy.agent.capabilities.builtin_toolset import get_current_time
+from backend.plugin.ai_buddy.agent.capabilities.workspace_tools import (
     get_artifact,
     get_knowledge,
     list_artifacts,

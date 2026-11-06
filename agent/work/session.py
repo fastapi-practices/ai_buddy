@@ -7,7 +7,7 @@ from pydantic_ai import Agent, AgentRunResult
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.database.db import async_db_session
-from backend.plugin.ai_buddy.agent.work.capability_pipeline import assemble_capabilities
+from backend.plugin.ai_buddy.agent.capabilities.capability_pipeline import assemble_capabilities
 from backend.plugin.ai_buddy.agent.work.generation.image_direct import (
     DirectImageGenerationModel,
     build_direct_image_generation_settings,

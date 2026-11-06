@@ -3,33 +3,33 @@ from dataclasses import replace
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
-from backend.plugin.ai_buddy.agent.work.capabilities.advisor import build_advisor_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.base import CapabilityBuilder
-from backend.plugin.ai_buddy.agent.work.capabilities.builtin_toolset import build_builtin_toolset_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.compaction import (
+from backend.plugin.ai_buddy.agent.capabilities.advisor import build_advisor_capability
+from backend.plugin.ai_buddy.agent.capabilities.base import CapabilityBuilder
+from backend.plugin.ai_buddy.agent.capabilities.builtin_toolset import build_builtin_toolset_capability
+from backend.plugin.ai_buddy.agent.capabilities.compaction import (
     build_compact_on_request_capability,
     build_compaction_capability,
 )
-from backend.plugin.ai_buddy.agent.work.capabilities.files import build_file_understanding_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.guardrails import build_guardrail_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.mcp import build_mcp_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.memory import build_memory_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.office_attachments import build_office_attachments_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.planning import build_planning_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.project import build_project_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.reminders import build_reminder_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.resource_tools import build_resource_tools_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import build_runtime_hooks_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox import build_sandbox_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import build_sandbox_tools_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.search import build_search_capabilities
-from backend.plugin.ai_buddy.agent.work.capabilities.skills import build_skills_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.subagents import build_subagents_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.tool_output_limits import build_tool_output_limits_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.user_input import build_user_input_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.work_context import build_work_context_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.workspace import build_workspace_capability
-from backend.plugin.ai_buddy.agent.work.capabilities.workspace_tools import build_workspace_tools_capability
+from backend.plugin.ai_buddy.agent.capabilities.files import build_file_understanding_capability
+from backend.plugin.ai_buddy.agent.capabilities.guardrails import build_guardrail_capabilities
+from backend.plugin.ai_buddy.agent.capabilities.mcp import build_mcp_capability
+from backend.plugin.ai_buddy.agent.capabilities.memory import build_memory_capability
+from backend.plugin.ai_buddy.agent.capabilities.office_attachments import build_office_attachments_capability
+from backend.plugin.ai_buddy.agent.capabilities.planning import build_planning_capability
+from backend.plugin.ai_buddy.agent.capabilities.project import build_project_capability
+from backend.plugin.ai_buddy.agent.capabilities.reminders import build_reminder_capabilities
+from backend.plugin.ai_buddy.agent.capabilities.resource_tools import build_resource_tools_capability
+from backend.plugin.ai_buddy.agent.capabilities.runtime_hooks import build_runtime_hooks_capability
+from backend.plugin.ai_buddy.agent.capabilities.sandbox import build_sandbox_capabilities
+from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import build_sandbox_tools_capability
+from backend.plugin.ai_buddy.agent.capabilities.search import build_search_capabilities
+from backend.plugin.ai_buddy.agent.capabilities.skills import build_skills_capability
+from backend.plugin.ai_buddy.agent.capabilities.subagents import build_subagents_capability
+from backend.plugin.ai_buddy.agent.capabilities.tool_output_limits import build_tool_output_limits_capability
+from backend.plugin.ai_buddy.agent.capabilities.user_input import build_user_input_capability
+from backend.plugin.ai_buddy.agent.capabilities.work_context import build_work_context_capability
+from backend.plugin.ai_buddy.agent.capabilities.workspace import build_workspace_capability
+from backend.plugin.ai_buddy.agent.capabilities.workspace_tools import build_workspace_tools_capability
 from backend.plugin.ai_buddy.dataclasses import (
     CapabilityAssembly,
     CapabilityContext,

@@ -1,6 +1,6 @@
 from pydantic_ai_harness.tool_output_limits import Band, Spill, ToolOutputLimits
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.utils.media_store import get_overflow_store

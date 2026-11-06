@@ -1,6 +1,6 @@
 from pydantic_ai_harness.planning import Planning
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.utils.plan_store import get_plan_store

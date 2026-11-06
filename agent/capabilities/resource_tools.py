@@ -10,7 +10,7 @@ from backend.common.enums import StatusType
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.database.db import async_db_session
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.cron.schedule import next_run_time
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyAssistantCategory, AIBuddyChatGenerationType, AIBuddyOrigin

@@ -11,10 +11,10 @@ from pydantic_ai_harness.smart_search import SmartSearch
 
 from backend.common.exception import errors
 from backend.database.db import async_db_session
+from backend.plugin.ai_buddy.agent.capabilities.capability_registry import build_profile_capabilities
 from backend.plugin.ai_buddy.agent.coding.protocol.base import WaitApproval
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
 from backend.plugin.ai_buddy.agent.models import auxiliary_model_name, bind_auxiliary_model
-from backend.plugin.ai_buddy.agent.work.capability_registry import build_profile_capabilities
 from backend.plugin.ai_buddy.dataclasses import AgentToolCall, CapabilityContext, ChatAgentDeps, CodingHostSpec
 from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyPermissionMode, AIBuddyToolPolicy
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter

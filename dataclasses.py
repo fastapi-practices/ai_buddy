@@ -29,8 +29,8 @@ if TYPE_CHECKING:
     from pydantic_ai.native_tools import AbstractNativeTool
     from sqlalchemy.ext.asyncio import AsyncSession
 
+    from backend.plugin.ai_buddy.agent.capabilities.base import CapabilityBuilder
     from backend.plugin.ai_buddy.agent.coding.sandbox import CodingSandbox
-    from backend.plugin.ai_buddy.agent.work.capabilities.base import CapabilityBuilder
     from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
     from backend.plugin.ai_buddy.model.message import AIBuddyMessage
     from backend.plugin.ai_buddy.provider.base import ProviderAdapter

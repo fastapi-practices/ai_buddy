@@ -1,7 +1,7 @@
 from pydantic_ai.capabilities import Capability
 from pydantic_ai_harness import Memory
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.agent.work.memory_store import database_memory_store
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType

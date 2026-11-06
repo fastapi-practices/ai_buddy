@@ -3,8 +3,8 @@ from pydantic_ai.capabilities import Caching
 from pydantic_ai_harness.repair_tool_arguments import RepairToolArguments
 from pydantic_ai_harness.subagents import SubAgent, SubAgents
 
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
-from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import build_tool_policy_hooks
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.runtime_hooks import build_tool_policy_hooks
 from backend.plugin.ai_buddy.agent.work.model_settings import build_model_settings
 from backend.plugin.ai_buddy.agent.work.subagent_tools import build_subagent_toolset
 from backend.plugin.ai_buddy.crud.crud_subagent import ai_buddy_subagent_dao

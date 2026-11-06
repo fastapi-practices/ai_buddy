@@ -4,7 +4,7 @@ from pydantic_ai.toolsets import FunctionToolset
 
 from backend.common.exception import errors
 from backend.database.db import async_db_session
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyArtifactKind, AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.schema.artifact import CreateAIBuddyArtifactParam, UpdateAIBuddyArtifactParam

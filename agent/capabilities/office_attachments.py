@@ -9,7 +9,7 @@ from pydantic_ai.messages import BinaryContent, ModelMessage, ModelRequest, User
 from pydantic_ai.models import ModelRequestContext
 
 from backend.common.log import log
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import sandbox_tools_enabled
+from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import sandbox_tools_enabled
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.utils.office_text import input_attachments, is_office_media_type, office_to_markdown

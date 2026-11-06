@@ -3,8 +3,8 @@ from pydantic_ai_harness.advisor import Advisor
 from pydantic_ai_harness.trajectory_judge import TrajectoryJudge
 
 from backend.common.exception import errors
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed, native_builtin_allowed
 from backend.plugin.ai_buddy.agent.models import auxiliary_model_name, bind_auxiliary_model
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed, native_builtin_allowed
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 

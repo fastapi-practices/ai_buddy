@@ -5,8 +5,8 @@ from pydantic_ai.capabilities import Capability
 
 from backend.common.exception import errors
 from backend.database.db import async_db_session
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed
-from backend.plugin.ai_buddy.agent.work.capabilities.sandbox_tools import sandbox_tools_enabled
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
+from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import sandbox_tools_enabled
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.model import AIBuddySkill

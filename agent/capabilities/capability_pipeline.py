@@ -23,12 +23,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.common.exception import errors
 from backend.core.conf import settings
-from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
-from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
-from backend.plugin.ai_buddy.agent.work.capability_registry import (
+from backend.plugin.ai_buddy.agent.capabilities.capability_registry import (
     build_profile_capabilities,
     resolve_capability_mode,
 )
+from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
+from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,

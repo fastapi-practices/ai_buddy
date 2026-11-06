@@ -9,7 +9,7 @@ from pydantic_ai.toolsets import FunctionToolset
 
 from backend.common.exception import errors
 from backend.core.conf import settings
-from backend.plugin.ai_buddy.agent.work.capabilities.base import function_tools_allowed, native_builtin_allowed
+from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed, native_builtin_allowed
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyWebSearchType
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
