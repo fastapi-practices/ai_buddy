@@ -73,15 +73,6 @@ class OpenAICompatibleImageGenerationModel(OpenAIImageGenerationModel):
         """
         if any(not item.b64_json and item.url for item in cast('list[Image]', response.data or [])):
             raise _UrlOnlyImageResponse(prompt, response)
-        return self._drop_empty_usage_details(super()._map_response(prompt, response))
-
-    @staticmethod
-    def _drop_empty_usage_details(result: ImageGenerationResult) -> ImageGenerationResult:
-        """
-        移除网关返回 null 的用量明细，SDK 会把它们原样写入 details，导致后续整数校验失败
-
-        :param result: 生图结果
-        :return:
-        """
+        result = super()._map_response(prompt, response)
         result.usage.details = {k: v for k, v in result.usage.details.items() if isinstance(v, int)}
         return result

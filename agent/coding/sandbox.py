@@ -49,7 +49,9 @@ INPUT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024
 LIVE_SANDBOXES: dict[str, CodingSandbox] = {}
 
 
-def _git_command(operation: Literal['status', 'diff'], *, scope: Literal['all', 'staged', 'unstaged'] = 'all') -> str:
+def build_git_command(
+    operation: Literal['status', 'diff'], *, scope: Literal['all', 'staged', 'unstaged'] = 'all'
+) -> str:
     """
     构建限定当前目录仓库的只读 Git 命令
 
@@ -580,7 +582,11 @@ class OpenSandboxWorkspace:
         rows: list[dict[str, object]] = []
         for item in entries:
             is_dir = (item.entry_type or '').lower() in {'dir', 'directory'}
-            rows.append({'path': _relative(item.path), 'is_dir': is_dir, 'size': None if is_dir else item.size})
+            rows.append({
+                'path': sandbox_relative_path(item.path),
+                'is_dir': is_dir,
+                'size': None if is_dir else item.size,
+            })
         return rows
 
     async def _file_info(self, target: str) -> Any:
@@ -654,7 +660,7 @@ class OpenSandboxWorkspace:
         if parent.startswith(WORKSPACE_ROOT):
             await self._client.files.create_directories([WriteEntry(path=parent, mode=755)])
         await self._client.files.write_file(target, content, mode=644)
-        return f'已写入 {_relative(target)}'
+        return f'已写入 {sandbox_relative_path(target)}'
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
         """
@@ -717,7 +723,7 @@ class OpenSandboxWorkspace:
         await self._client.files.replace_contents([
             ContentReplaceEntry(path=target, old_content=old_text, new_content=new_text)
         ])
-        return f'已编辑 {_relative(target)}'
+        return f'已编辑 {sandbox_relative_path(target)}'
 
     async def run_bash(self, *, command: str) -> str:
         """
@@ -732,7 +738,7 @@ class OpenSandboxWorkspace:
 
     async def git_status(self) -> str:
         """读取 OpenSandbox 工作区 Git 状态"""
-        return await self.run_bash(command=_git_command('status'))
+        return await self.run_bash(command=build_git_command('status'))
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
         """
@@ -845,7 +851,7 @@ class OpenSandboxWorkspace:
         :param scope: 差异范围
         :return:
         """
-        return await self.run_bash(command=_git_command('diff', scope=scope))
+        return await self.run_bash(command=build_git_command('diff', scope=scope))
 
     async def run_background(self, *, command: str, env: dict[str, str] | None = None) -> str:
         """
@@ -933,7 +939,7 @@ class OpenSandboxWorkspace:
         raise errors.RequestError(msg=f'沙箱端口映射超时: {last_error}')
 
 
-def _relative(path: str) -> str:
+def sandbox_relative_path(path: str) -> str:
     """
     将沙箱工作区绝对路径转换为相对路径
 

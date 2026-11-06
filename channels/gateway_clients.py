@@ -12,7 +12,6 @@ import websockets
 from octop_gateway.channels.dingtalk import DingTalkChannel
 from octop_gateway.channels.feishu import FeishuChannel
 from octop_gateway.channels.weixin import WeixinChannel, WeixinConfig
-from octop_gateway.channels.weixin.api import _CHANNEL_VERSION
 from octop_gateway.channels.weixin.types import WeixinAPIError, WeixinMessage
 
 from backend.common.log import log
@@ -21,6 +20,7 @@ _REQUEST_TIMEOUT = (5.0, 10.0)
 _THREAD_STOP_TIMEOUT = 30.0
 _SOCKET_CLOSE_TIMEOUT = 5.0
 _WEIXIN_NOTIFICATION_TIMEOUT = 10.0
+_WEIXIN_PROTOCOL_VERSION = '2.2.0'
 
 
 @dataclass
@@ -43,7 +43,7 @@ class AIBuddyWeixinChannel(WeixinChannel):
         async with asyncio.timeout(_WEIXIN_NOTIFICATION_TIMEOUT):
             for account in self._config.accounts:
                 api = await self._api(account)
-                await api._post_json(endpoint, {'base_info': {'channel_version': _CHANNEL_VERSION}})
+                await api._post_json(endpoint, {'base_info': {'channel_version': _WEIXIN_PROTOCOL_VERSION}})
 
     async def start(self) -> None:
         """启动微信网关并同步上线通知"""

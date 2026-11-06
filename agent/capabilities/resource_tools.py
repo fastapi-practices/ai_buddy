@@ -111,9 +111,16 @@ async def list_resources(ctx: RunContext[ChatAgentDeps], kind: ResourceKind) -> 
             rows = await ai_buddy_knowledge_base_service.get_all(db=db, user_id=user_id)
     if not rows:
         return f'没有可用的{kind}'
-    lines = [
-        _describe_cron(row) if isinstance(row, AIBuddyCron) else _describe_resource(row) for row in rows[:_LIST_LIMIT]
-    ]
+    lines: list[str] = []
+    for row in rows[:_LIST_LIMIT]:
+        if isinstance(row, AIBuddyCron):
+            lines.append(_describe_cron(row))
+            continue
+        owner = '（内置）' if row.user_id == SYSTEM_OWNER_USER_ID else ''
+        description = ' '.join((row.description or '').split())
+        if len(description) > _DESCRIPTION_PREVIEW_CHARS:
+            description = f'{description[:_DESCRIPTION_PREVIEW_CHARS]}…'
+        lines.append(f'- #{row.id} {row.name}{owner}' + (f'：{description}' if description else ''))
     suffix = f'\n仅显示前 {_LIST_LIMIT} 个' if len(rows) > _LIST_LIMIT else ''
     header = f'定时任务（时区 {settings.DATETIME_TIMEZONE}）：' if kind == 'cron' else f'{kind}：'
     return header + '\n' + '\n'.join(lines) + suffix
@@ -465,17 +472,3 @@ def _describe_cron(cron: AIBuddyCron) -> str:
         upcoming = next_run_time(cron.trigger, last_run_time=cron.last_run_time, created_time=cron.created_time)
         state = f'下次执行 {_format_when(upcoming)}' if upcoming else '已执行完毕'
     return f'- #{cron.id} {cron.name} | {cron.trigger} | {state}'
-
-
-def _describe_resource(row: ResourceRow) -> str:
-    """
-    生成资源的一行摘要，内置资源会标明
-
-    :param row: 资源记录
-    :return:
-    """
-    owner = '（内置）' if row.user_id == SYSTEM_OWNER_USER_ID else ''
-    description = ' '.join((row.description or '').split())
-    if len(description) > _DESCRIPTION_PREVIEW_CHARS:
-        description = f'{description[:_DESCRIPTION_PREVIEW_CHARS]}…'
-    return f'- #{row.id} {row.name}{owner}' + (f'：{description}' if description else '')

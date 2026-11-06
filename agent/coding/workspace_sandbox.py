@@ -24,9 +24,9 @@ from backend.plugin.ai_buddy.agent.coding.sandbox import (
     INPUT_ATTACHMENT_MAX_BYTES,
     LIVE_SANDBOXES,
     WORKSPACE_ROOT,
-    _git_command,
-    _relative,
+    build_git_command,
     resolve_sandbox_path,
+    sandbox_relative_path,
 )
 from backend.plugin.ai_buddy.enums import (
     AIBuddyCommandReason,
@@ -88,7 +88,11 @@ class WorkspaceSandbox:
         """
         entries = await self._call(self._workspace.list_dir(resolve_sandbox_path(path)))
         return [
-            {'path': _relative(item.path), 'is_dir': item.is_dir, 'size': None if item.is_dir else item.size}
+            {
+                'path': sandbox_relative_path(item.path),
+                'is_dir': item.is_dir,
+                'size': None if item.is_dir else item.size,
+            }
             for item in entries
         ]
 
@@ -140,7 +144,7 @@ class WorkspaceSandbox:
             raise errors.RequestError(msg='写入内容超过文件大小上限')
         target = resolve_sandbox_path(path)
         await self._call(self._workspace.write_text(target, content))
-        return f'已写入 {_relative(target)}'
+        return f'已写入 {sandbox_relative_path(target)}'
 
     async def write_input_file(self, *, path: str, content: bytes) -> str:
         """
@@ -205,7 +209,7 @@ class WorkspaceSandbox:
         if len(updated.encode('utf-8')) > settings.AI_BUDDY_AGENT_MAX_FILE_BYTES:
             raise errors.RequestError(msg='编辑后内容超过文件大小上限')
         await self._call(self._workspace.write_text(target, updated))
-        return f'已编辑 {_relative(target)}'
+        return f'已编辑 {sandbox_relative_path(target)}'
 
     async def run_bash(self, *, command: str) -> str:
         """
@@ -220,7 +224,7 @@ class WorkspaceSandbox:
 
     async def git_status(self) -> str:
         """读取工作区 Git 状态"""
-        return await self.run_bash(command=_git_command('status'))
+        return await self.run_bash(command=build_git_command('status'))
 
     async def git_diff(self, *, scope: str = 'all') -> str:
         """
@@ -229,7 +233,7 @@ class WorkspaceSandbox:
         :param scope: 差异范围
         :return:
         """
-        return await self.run_bash(command=_git_command('diff', scope=scope))
+        return await self.run_bash(command=build_git_command('diff', scope=scope))
 
     async def run_tests(self, *, command: str, timeout: float | None = None) -> AIBuddyCommandResult:
         """

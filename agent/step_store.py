@@ -89,7 +89,8 @@ def _tool_effect(row: AIBuddyStepToolEffect) -> ToolEffectRecord:
 class AIBuddyStepStore:
     """基于 SQLAlchemy 的步骤持久化存储，同时兼容 MySQL 与 PostgreSQL"""
 
-    async def register_run(self, record: RunRecord) -> None:
+    @staticmethod
+    async def register_run(record: RunRecord) -> None:
         """
         登记运行，已存在的运行 ID 视为重复注册
 
@@ -111,7 +112,8 @@ class AIBuddyStepStore:
         except IntegrityError as exc:
             raise ValueError(f'run_id {record.run_id!r} is already in the store') from exc
 
-    async def get_run(self, *, run_id: str) -> RunRecord | None:
+    @staticmethod
+    async def get_run(*, run_id: str) -> RunRecord | None:
         """
         获取运行记录
 
@@ -122,9 +124,8 @@ class AIBuddyStepStore:
             row = await ai_buddy_step_run_dao.get_by_run_id(db, run_id)
         return _run_record(row) if row else None
 
-    async def list_runs(
-        self, *, parent_run_id: str | None = None, conversation_id: str | None = None
-    ) -> list[RunRecord]:
+    @staticmethod
+    async def list_runs(*, parent_run_id: str | None = None, conversation_id: str | None = None) -> list[RunRecord]:
         """
         按开始时间升序列出运行记录
 
@@ -138,7 +139,8 @@ class AIBuddyStepStore:
             )
         return [_run_record(row) for row in rows]
 
-    async def append_event(self, event: StepEvent) -> None:
+    @staticmethod
+    async def append_event(event: StepEvent) -> None:
         """
         追加事件，相同边界幂等键的重试会被忽略
 
@@ -170,7 +172,8 @@ class AIBuddyStepStore:
             if event.idempotency_key is None:
                 raise
 
-    async def list_events(self, *, run_id: str) -> list[StepEvent]:
+    @staticmethod
+    async def list_events(*, run_id: str) -> list[StepEvent]:
         """
         按写入顺序列出运行事件
 
@@ -181,7 +184,8 @@ class AIBuddyStepStore:
             rows = await ai_buddy_step_event_dao.get_all(db, run_id)
         return [_step_event(row) for row in rows]
 
-    async def save_snapshot(self, snapshot: ContinuableSnapshot) -> None:
+    @staticmethod
+    async def save_snapshot(snapshot: ContinuableSnapshot) -> None:
         """
         保存快照，消息内容按摘要去重，二进制附件外置到对象存储
 
@@ -228,7 +232,8 @@ class AIBuddyStepStore:
             if snapshot.idempotency_key is None:
                 raise
 
-    async def latest_snapshot(self, *, run_id: str, include_interrupted: bool = False) -> ContinuableSnapshot | None:
+    @staticmethod
+    async def latest_snapshot(*, run_id: str, include_interrupted: bool = False) -> ContinuableSnapshot | None:
         """
         获取最新快照，默认只返回已结算的快照
 
@@ -258,7 +263,8 @@ class AIBuddyStepStore:
             idempotency_key=row.idempotency_key,
         )
 
-    async def record_tool_effect(self, record: ToolEffectRecord) -> None:
+    @staticmethod
+    async def record_tool_effect(record: ToolEffectRecord) -> None:
         """
         写入或更新工具调用的副作用台账
 
@@ -289,7 +295,8 @@ class AIBuddyStepStore:
             row.idempotency_key = record.idempotency_key
             row.effect_summary = record.effect_summary
 
-    async def get_tool_effect(self, *, run_id: str, tool_call_id: str) -> ToolEffectRecord | None:
+    @staticmethod
+    async def get_tool_effect(*, run_id: str, tool_call_id: str) -> ToolEffectRecord | None:
         """
         获取工具调用的副作用台账
 
@@ -301,7 +308,8 @@ class AIBuddyStepStore:
             row = await ai_buddy_step_tool_effect_dao.get_by_call_id(db, run_id, tool_call_id)
         return _tool_effect(row) if row else None
 
-    async def list_unresolved_tool_effects(self, *, run_id: str) -> list[ToolEffectRecord]:
+    @staticmethod
+    async def list_unresolved_tool_effects(*, run_id: str) -> list[ToolEffectRecord]:
         """
         列出崩溃后状态未知的工具调用
 
