@@ -30,8 +30,8 @@ class CodingWorkspace:
         self.ref = WorkspaceRef(provider='buddy', id=conversation_id)
 
     async def working_dir(self) -> str:
-        """返回两种执行后端共用的工作区路径"""
-        return '/workspace'
+        """返回当前执行后端的工作区路径"""
+        return self.sandbox.cwd
 
     async def run(
         self,
@@ -53,13 +53,13 @@ class CodingWorkspace:
         if shell != isinstance(command, str):
             raise TypeError('Shell 模式与命令参数类型不匹配')
         if env:
-            raise WorkspaceError('搜索工作区不接受额外环境变量')
+            raise WorkspaceError('工作区不接受额外环境变量')
         script = command if isinstance(command, str) else shlex.join(command)
         result = await self.sandbox.run_command(command=script, timeout=timeout)
         if result.truncated:
-            raise WorkspaceOutputLimitError('搜索输出超过工作区限制，请缩小目录范围', limit=COMMAND_OUTPUT_MAX_BYTES)
+            raise WorkspaceOutputLimitError('工作区输出超过限制，请缩小命令输出', limit=COMMAND_OUTPUT_MAX_BYTES)
         if result.reason == 'deadline':
-            raise WorkspaceTimeoutError('工作区搜索执行超时', stdout=result.stdout, stderr=result.stderr)
+            raise WorkspaceTimeoutError('工作区命令执行超时', stdout=result.stdout, stderr=result.stderr)
         if not result.output_complete or result.exit_code is None:
-            raise WorkspaceError(result.stderr or '工作区搜索未完整执行')
+            raise WorkspaceError(result.stderr or '工作区命令未完整执行')
         return CommandResult(exit_code=result.exit_code, stdout=result.stdout, stderr=result.stderr)

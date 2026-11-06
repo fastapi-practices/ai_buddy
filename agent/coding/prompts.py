@@ -1,5 +1,5 @@
 from backend.plugin.ai_buddy.dataclasses import AgentRunContext
-from backend.plugin.ai_buddy.enums import AIBuddyPermissionMode
+from backend.plugin.ai_buddy.enums import AIBuddyExecutionBackend, AIBuddyPermissionMode
 
 _PERMISSION_HINT = {
     AIBuddyPermissionMode.ask: '写文件、编辑、执行命令、写入或交付产物需要用户批准',
@@ -33,10 +33,12 @@ def build_agent_system_prompt(ctx: AgentRunContext) -> str:
             f'本轮本地 Agent：{ctx.acp_runner_name}；本地工作目录：{ctx.acp_cwd}',
         ]
         lines.append('委托时传达任务范围和验证要求；外部 Agent 不自动继承 Buddy 的知识、技能或 MCP 配置')
-    elif getattr(ctx.sandbox, 'execution_backend', None) == 'local':
+    elif ctx.sandbox is not None and ctx.sandbox.execution_backend == AIBuddyExecutionBackend.local:
         lines[0] = '你是 Agent，在用户桌面本机的操作系统沙箱中完成任务，文件写入限定在所选工作目录'
+        lines[1] = '只用提供的工具。核心工具是 read、write、edit、bash、ls'
         lines.append(f'本轮执行后端：local；桌面工作目录：{ctx.sandbox.cwd}')
-    elif getattr(ctx.sandbox, 'execution_backend', None) == 'sandbox':
+    elif ctx.sandbox is not None and ctx.sandbox.execution_backend == AIBuddyExecutionBackend.sandbox:
+        lines[1] = '只用提供的工具。核心工具是 read_file、write_file、edit_file、list_files、grep、shell'
         lines.append(
             '本轮执行后端：sandbox；沙箱磁盘随时可能被回收，需要留给用户的最终文件请放入 outbound/ 目录'
             '并调用 deliver_file 交付，依赖、日志和中间文件不要交付'

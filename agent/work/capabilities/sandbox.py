@@ -9,24 +9,17 @@ from backend.plugin.ai_buddy.agent.work.capabilities.runtime_hooks import resolv
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyToolPolicy
 from backend.plugin.ai_buddy.security.jev import is_jev_tool_risk, jev_enabled
-from backend.plugin.ai_buddy.security.tool_policy import is_mcp_tool, resolve_tool_policy
+from backend.plugin.ai_buddy.security.tool_policy import is_mcp_tool
 
 _CODE_MODE_TOOLS: tuple[str, ...] = (
     'search_knowledge',
     'get_knowledge',
+    'read_skill_file',
     'list_artifacts',
     'get_artifact',
     'write_artifact',
     'get_current_time',
     'search_conversation_history',
-)
-
-# 仅允许无写入副作用的查询提前执行，写工具仍由代码执行顺序控制
-_SPECULATIVE_TOOLS: tuple[str, ...] = (
-    'search_knowledge',
-    'get_knowledge',
-    'list_artifacts',
-    'get_artifact',
 )
 
 
@@ -65,16 +58,12 @@ def build_sandbox_capabilities(ctx: CapabilityContext) -> Sequence[CapabilityRes
             return False
         return not (has_jev and (is_jev_tool_risk(tool_def.name) or is_mcp_tool(tool_def)))
 
-    # eager 会在 run_code 外层审批前执行，需人工确认时保留完整调用边界
-    stream_execution = (
-        not has_jev and resolve_tool_policy(tool_name='run_code', policies=policies) == AIBuddyToolPolicy.allow
-    )
     return (
         CapabilityResult(
             capability=CodeMode(
                 tools=sandbox_tool,
-                eager=stream_execution,
-                speculate=list(_SPECULATIVE_TOOLS) if stream_execution else None,
+                eager=False,
+                speculate='declared',
             ),
             introduces_function_tool_source=True,
         ),

@@ -19,7 +19,11 @@ from backend.plugin.ai_buddy.dataclasses import AgentToolCall, CapabilityContext
 from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyPermissionMode, AIBuddyToolPolicy
 from backend.plugin.ai_buddy.provider.base import ProviderAdapter
 from backend.plugin.ai_buddy.schema.chat import AIBuddyForwardedPropsParam
-from backend.plugin.ai_buddy.security.tool_policy import is_mcp_tool, resolve_tool_policy_with_dependencies
+from backend.plugin.ai_buddy.security.tool_policy import (
+    SANDBOX_CONFIRM_TOOLS,
+    is_mcp_tool,
+    resolve_tool_policy_with_dependencies,
+)
 
 
 async def build_coding_capabilities(
@@ -168,8 +172,12 @@ def _build_resource_policy_hooks(
         del ctx
         if call.tool_name in bound_tool_names:
             return args
-        is_mcp = (tool_def.metadata or {}).get('ai_buddy_source') == 'mcp'
-        mutating = is_mcp or call.tool_name in {'write_memory', 'delete_memory', 'edit_memory'}
+        is_mcp = is_mcp_tool(tool_def)
+        mutating = (
+            is_mcp
+            or call.tool_name in SANDBOX_CONFIRM_TOOLS
+            or call.tool_name in {'write_memory', 'delete_memory', 'edit_memory'}
+        )
         default = (
             AIBuddyToolPolicy.ask
             if (mutating and spec.run_context.permission_mode == AIBuddyPermissionMode.ask)

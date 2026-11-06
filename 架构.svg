@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1180" viewBox="0 0 1720 1180" role="img" aria-labelledby="architecture-title architecture-description" lang="zh-CN">
 <title id="architecture-title">AI Buddy 系统架构</title>
-<desc id="architecture-description">桌面、Web、IM 与定时任务经后端业务层进入对话、工作或编码运行时。对话与工作可在同一会话切换，编码使用独立会话。主模型和 Agent 编排在后端运行，文件与命令由桌面桥或 OpenSandbox 执行，ACP 连接桌面的外部 Agent。关系库、Redis、S3 和 Qdrant 分别承担业务持久化、运行协调、对象存储和知识向量索引</desc>
+<desc id="architecture-description">桌面、Web、IM 与定时任务经后端进入对话、工作或编码运行时。编码仅在服务端沙箱启用 Pydantic AI Coder，桌面 local 使用 Buddy Bridge，ACP 连接外部 Agent。Coder 文件工具经 CodingWorkspace 的 Shell fallback 执行，Workspace 可接 OpenSandbox、Docker、E2B、Modal、Daytona、Sprites、Smol 或 BoxLite。关系库、Redis、S3 和 Qdrant 分别承担业务持久化、运行协调、对象存储和知识向量索引</desc>
 <defs>
   <g id="i-monitor"><rect x="2" y="4" width="20" height="13" rx="2" fill="#3b82f6"/><rect x="4" y="6" width="16" height="9" rx="1" fill="#dbeafe"/><path d="M1 18 h22 l-2 3 H3 z" fill="#3b82f6"/></g>
   <g id="i-gear"><circle cx="12" cy="12" r="5" fill="#f97316"/><circle cx="12" cy="12" r="2.2" fill="#fff7ed"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(0 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(45 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(90 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(135 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(180 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(225 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(270 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(315 12 12)"/></g>
@@ -50,8 +50,8 @@
 <text x="1496" y="806" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#78716c"><tspan x="1496" dy="0">用户 / 角色 / 部门</tspan><tspan x="1496" dy="18">菜单 / 插件</tspan><tspan x="1496" dy="18">系统配置</tspan></text>
 <rect x="1484" y="958" width="200" height="204" rx="14" fill="#ffffff"/>
 <use href="#i-lock" transform="translate(1496,976) scale(1.083)"/>
-<text x="1528" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="700" fill="#c2410c" text-anchor="start">插件策略</text>
-<text x="1496" y="1028" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="400" fill="#78716c"><tspan x="1496" dy="0">分组可见 · 调用校验</tspan><tspan x="1496" dy="18">三种模式共用校验</tspan></text>
+<text x="1528" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="700" fill="#c2410c" text-anchor="start">执行边界</text>
+<text x="1496" y="1028" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="400" fill="#78716c"><tspan x="1496" dy="0">审批按工具 · 不分析命令</tspan><tspan x="1496" dy="18">默认禁网 · full 放宽</tspan><tspan x="1496" dy="18">Shell 无命令白名单</tspan><tspan x="1496" dy="18">命令可跨 run 存活</tspan><tspan x="1496" dy="18">磁盘不跨服务商迁移</tspan></text>
 <rect x="22" y="18" width="172" height="168" rx="18" fill="#2563eb"/>
 <text x="40" y="56" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="22" font-weight="800" fill="#ffffff" text-anchor="start">用户层</text>
 <text x="40" y="82" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="500" fill="#e0e7ff" text-anchor="start">多入口</text>
@@ -193,7 +193,7 @@
 <rect x="530" y="598" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-cube" transform="translate(542,610) scale(1.0)"/>
 <text x="572" y="624" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">工作 work</text>
-<text x="572" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">规划 · 子代理 · CodeMode · 产物</text>
+<text x="572" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">规划 · 子代理 · Office/PDF · 产物</text>
 <rect x="236" y="670" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-brain" transform="translate(248,682) scale(1.0)"/>
 <text x="278" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">AG-UI / SSE</text>
@@ -202,34 +202,34 @@
 <use href="#i-cloud" transform="translate(542,682) scale(1.0)"/>
 <text x="572" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">记忆与压缩</text>
 <text x="572" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">记忆 · 分级压缩 · S3 外溢</text>
-<rect x="236" y="742" width="572" height="42" rx="12" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
-<use href="#i-clock" transform="translate(248,751) scale(1.0)"/>
-<text x="278" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">历史与运行协调</text>
-<text x="278" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">关系库原始历史 · Redis 租约与可续传事件</text>
+<rect x="236" y="742" width="572" height="42" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+<use href="#i-cube" transform="translate(248,751) scale(1.0)"/>
+<text x="278" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#9a3412" text-anchor="start">CodeMode / Monty</text>
+<text x="278" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#9a3412" text-anchor="start">仅编排 allow 工具 · 非 OS 沙箱 · run_code 无人工审批</text>
 <rect x="838" y="536" width="602" height="258" rx="14" fill="#ffffff" stroke="#ddd6fe" stroke-width="1"/>
 <rect x="838" y="536" width="6" height="258" rx="3" fill="#0ea5e9"/>
 <text x="858" y="562" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="15" font-weight="800" fill="#0e7490" text-anchor="start">编码  coding</text>
-<text x="858" y="582" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">后端 Pydantic AI 宿主；coding 使用独立会话；外部 Agent 经桌面 ACP 连接</text>
+<text x="858" y="582" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">仅服务端沙箱装配 Coder；桌面 local 使用 Buddy Bridge；ACP 连接外部 Agent</text>
 <rect x="854" y="598" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-gear" transform="translate(866,610) scale(1.0)"/>
-<text x="896" y="624" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">编码宿主</text>
-<text x="896" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">固定 Pydantic AI · 可选 ACP</text>
+<text x="896" y="624" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Pydantic AI Coder</text>
+<text x="896" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">repo_context=True · sub_agents=False</text>
 <rect x="1148" y="598" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-box" transform="translate(1160,610) scale(1.0)"/>
-<text x="1190" y="624" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">执行后端</text>
-<text x="1190" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">桌面 OS 沙箱 / OpenSandbox</text>
+<text x="1190" y="624" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">执行路径</text>
+<text x="1190" y="642" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">sandbox=Coder · local=Bridge · ACP=外部</text>
 <rect x="854" y="670" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-file" transform="translate(866,682) scale(1.0)"/>
-<text x="896" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">工作区工具</text>
-<text x="896" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">read / write / edit / bash / ls</text>
+<text x="896" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Coder 六工具</text>
+<text x="896" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">read write edit list grep shell</text>
 <rect x="1148" y="670" width="278" height="64" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-check" transform="translate(1160,682) scale(1.0)"/>
-<text x="1190" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">权限模式</text>
-<text x="1190" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">ask / auto / full</text>
+<text x="1190" y="696" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Workspace 链路</text>
+<text x="1190" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Coder → _ShellFilesystem → run()</text>
 <rect x="854" y="742" width="572" height="42" rx="12" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
 <use href="#i-key" transform="translate(866,751) scale(1.0)"/>
-<text x="896" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">共享资源校验</text>
-<text x="896" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">知识 / 技能 / 产物 / MCP 由后端校验</text>
+<text x="896" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Workspace 服务商</text>
+<text x="896" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">OpenSandbox · Docker · E2B · Modal · Daytona · Sprites · Smol · BoxLite</text>
 <g transform="translate(830,825)">
   <polygon points="-138,-7 -122,-7 -130,7" fill="#3b82f6"/>
   <text x="-114" y="5" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="start">读写会话、对象存储、沙箱、定时与模型供应商</text>
@@ -244,26 +244,26 @@
 <text x="317" y="978" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">本机 local</text>
 <text x="317" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">桌面桥 · Seatbelt / bwrap</text>
 <use href="#i-folder" transform="translate(501,934) scale(1.167)"/>
-<text x="515" y="978" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">OpenSandbox</text>
-<text x="515" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">独立卷 · dns+nft</text>
+<text x="515" y="978" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">Workspace 沙箱</text>
+<text x="515" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">Coder · 独立卷 · 默认禁网</text>
 <use href="#i-net" transform="translate(699,934) scale(1.167)"/>
 <text x="713" y="978" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">ACP</text>
 <text x="713" y="996" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">外部 Agent · 本机环境</text>
-<text x="515" y="1038" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">工作位置首轮绑定；远程受限模式与 full 互切时保留卷并重建实例</text>
+<text x="515" y="1038" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">工作位置首轮绑定；服务商切换或权限收紧时重建，磁盘不跨服务商迁移</text>
 <rect x="220" y="1054" width="190" height="90" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-link" transform="translate(232,1066) scale(1.0)"/>
 <text x="262" y="1084" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">沙箱恢复</text>
 <text x="232" y="1110" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">数据库 + 远端 metadata</text>
 <text x="232" y="1126" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">跨进程恢复 · 卷独立保存</text>
 <rect x="422" y="1054" width="190" height="90" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
-<use href="#i-gear" transform="translate(434,1066) scale(1.0)"/>
-<text x="464" y="1084" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">沙箱部署</text>
-<text x="434" y="1110" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">SDK → server proxy</text>
-<text x="434" y="1126" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">服务状态卷 + /workspace</text>
+<use href="#i-link" transform="translate(434,1066) scale(1.0)"/>
+<text x="464" y="1084" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Workspace 适配</text>
+<text x="434" y="1110" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">CodingWorkspace 统一 run()</text>
+<text x="434" y="1126" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">超时 · 截断 · 退出码</text>
 <rect x="624" y="1054" width="186" height="90" rx="12" fill="#ffffff" stroke="#eef2f7" stroke-width="1"/>
 <use href="#i-cube" transform="translate(636,1066) scale(1.0)"/>
 <text x="666" y="1084" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">ACP 边界</text>
-<text x="636" y="1110" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">独立登录环境与账单</text>
+<text x="636" y="1110" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">独立登录与运行环境</text>
 <text x="636" y="1126" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">宿主传任务，不继承凭据</text>
 <rect x="836" y="844" width="618" height="318" rx="16" fill="#eef6ff" stroke="#bfdbfe" stroke-width="1.2"/>
 <text x="854" y="872" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="14" font-weight="700" fill="#2563eb" text-anchor="start">平台依赖</text>

@@ -18,6 +18,25 @@ _SNIPPET_CHARS = 240
 _CONTENT_CHARS = 12000
 _TOOL_OUTPUT_CHARS = 30000
 
+# 服务端 Coder 已提供同等能力，Buddy 工具不得重复暴露
+CODER_OWNED_TOOLS = frozenset({
+    'read',
+    'write',
+    'edit',
+    'bash',
+    'bash_background',
+    'bash_task_output',
+    'bash_task_stop',
+    'ls',
+})
+
+# 桌面桥当前不支持后台任务控制
+DESKTOP_UNSUPPORTED_TOOLS = frozenset({
+    'bash_background',
+    'bash_task_output',
+    'bash_task_stop',
+})
+
 
 def _truncate(text: str, limit: int = _CONTENT_CHARS) -> str:
     """
@@ -191,6 +210,7 @@ def _skill_file_tool(ctx: AgentRunContext) -> BoundAgentTool:
     return BoundAgentTool(
         spec=AgentToolSpec(
             name='read_skill_file',
+            read_only=True,
             description='读取技能包内相对路径的 UTF-8 文本，按字符分页；脚本只读不执行',
             parameters={
                 'type': 'object',
@@ -435,6 +455,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='read',
+                read_only=True,
                 description='读取工作区文件，可指定起始行和行数',
                 parameters={
                     'type': 'object',
@@ -517,6 +538,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='bash_task_output',
+                read_only=True,
                 description='查询后台命令的运行状态、退出码和自上次游标以来的新输出',
                 parameters={
                     'type': 'object',
@@ -545,6 +567,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='ls',
+                read_only=True,
                 description='列出工作区目录',
                 parameters={
                     'type': 'object',
@@ -556,6 +579,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='git_status',
+                read_only=True,
                 description='只读检查工作区 Git 分支与文件状态，桌面端支持已授权绑定的 worktree',
                 parameters={'type': 'object', 'properties': {}, 'additionalProperties': False},
             ),
@@ -564,6 +588,7 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='git_diff',
+                read_only=True,
                 description='只读查询工作区 Git 差异，默认分别输出已暂存和未暂存部分',
                 parameters={
                     'type': 'object',
@@ -579,96 +604,6 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
                 },
             ),
             handler=git_diff,
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='search_knowledge',
-                description='按语义检索企业知识库，返回最相关切片',
-                parameters={
-                    'type': 'object',
-                    'properties': {'query': {'type': 'string', 'description': '检索文本'}},
-                    'required': ['query'],
-                },
-            ),
-            handler=lambda arguments: _search_knowledge(ctx, arguments),
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='get_knowledge',
-                description='读取一条知识的完整内容',
-                parameters={
-                    'type': 'object',
-                    'properties': {'knowledge_id': {'type': 'integer', 'description': '知识 ID'}},
-                    'required': ['knowledge_id'],
-                },
-            ),
-            handler=lambda arguments: _get_knowledge(ctx, arguments),
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='list_skills',
-                description='列出企业技能名称和描述，需要细节时再 get_skill',
-                parameters={'type': 'object', 'properties': {}},
-            ),
-            handler=lambda arguments: _list_skills(ctx, arguments),
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='get_skill',
-                description='读取一条技能的完整说明',
-                parameters={
-                    'type': 'object',
-                    'properties': {'skill_id': {'type': 'integer', 'description': '技能 ID'}},
-                    'required': ['skill_id'],
-                },
-            ),
-            handler=lambda arguments: _get_skill(ctx, arguments),
-        ),
-        _skill_file_tool(ctx),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='list_artifacts',
-                description='列出当前用户已保存的工作产物',
-                parameters={'type': 'object', 'properties': {}},
-            ),
-            handler=lambda arguments: _list_artifacts(ctx, arguments),
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='get_artifact',
-                description='读取一条产物的完整内容',
-                parameters={
-                    'type': 'object',
-                    'properties': {'artifact_id': {'type': 'integer', 'description': '产物 ID'}},
-                    'required': ['artifact_id'],
-                },
-            ),
-            handler=lambda arguments: _get_artifact(ctx, arguments),
-        ),
-        BoundAgentTool(
-            spec=AgentToolSpec(
-                name='write_artifact',
-                description='把完成的文档、代码或报告保存为产物；传入 artifact_id 则更新',
-                parameters={
-                    'type': 'object',
-                    'properties': {
-                        'title': {'type': 'string', 'description': '产物标题'},
-                        'kind': {
-                            'type': 'string',
-                            'enum': AIBuddyArtifactKind.get_member_values(),
-                            'default': AIBuddyArtifactKind.text.value,
-                            'description': (
-                                '产物类型：image 图片、video 视频、audio 音频、text 文本、document 文档、other 其他'
-                            ),
-                        },
-                        'content': {'type': 'string', 'description': '产物内容'},
-                        'artifact_id': {'type': 'integer', 'description': '已有产物 ID，更新时传入'},
-                    },
-                    'required': ['title', 'content'],
-                },
-                mutating=True,
-            ),
-            handler=lambda arguments: _write_artifact(ctx, arguments),
         ),
         BoundAgentTool(
             spec=AgentToolSpec(
@@ -715,6 +650,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='search_knowledge',
+                read_only=True,
                 description='按语义检索企业知识库，返回最相关切片',
                 parameters={
                     'type': 'object',
@@ -727,6 +663,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='get_knowledge',
+                read_only=True,
                 description='读取一条知识的完整内容',
                 parameters={
                     'type': 'object',
@@ -739,6 +676,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='list_skills',
+                read_only=True,
                 description='列出企业技能名称和描述，需要细节时再 get_skill',
                 parameters={'type': 'object', 'properties': {}},
             ),
@@ -747,6 +685,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='get_skill',
+                read_only=True,
                 description='读取一条技能的完整说明',
                 parameters={
                     'type': 'object',
@@ -760,6 +699,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='list_artifacts',
+                read_only=True,
                 description='列出当前用户已保存的工作产物',
                 parameters={'type': 'object', 'properties': {}},
             ),
@@ -768,6 +708,7 @@ def build_buddy_resource_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         BoundAgentTool(
             spec=AgentToolSpec(
                 name='get_artifact',
+                read_only=True,
                 description='读取一条产物的完整内容',
                 parameters={
                     'type': 'object',

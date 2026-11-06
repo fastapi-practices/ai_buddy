@@ -17,8 +17,19 @@ RESOURCE_WRITE_TOOLS = frozenset({
     'update_skill',
 })
 
-# 在沙箱中执行命令和交付文件的工具，默认需要用户确认
-SANDBOX_CONFIRM_TOOLS = frozenset({'bash', 'deliver_file'})
+# 默认需要用户确认的写入、命令和交付工具
+SANDBOX_CONFIRM_TOOLS = frozenset({
+    'bash',
+    'bash_background',
+    'bash_task_stop',
+    'write',
+    'edit',
+    'write_file',
+    'edit_file',
+    'shell',
+    'write_artifact',
+    'deliver_file',
+})
 
 # 组合工具会间接触发依赖工具，依赖项的限制必须向上继承
 TOOL_POLICY_DEPENDENCIES: dict[str, tuple[str, ...]] = {

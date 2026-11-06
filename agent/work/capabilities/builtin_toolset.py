@@ -24,7 +24,9 @@ def build_builtin_toolset_capability(ctx: CapabilityContext) -> CapabilityResult
         has_builtin_tools=ctx.has_builtin_tools,
     ):
         return CapabilityResult(capability=None)
+    toolset: FunctionToolset[ChatAgentDeps] = FunctionToolset()
+    toolset.tool(get_current_time, metadata={'read_only': True})
     return CapabilityResult(
-        capability=Toolset(FunctionToolset[ChatAgentDeps]([get_current_time])),
+        capability=Toolset(toolset),
         introduces_function_tool_source=True,
     )

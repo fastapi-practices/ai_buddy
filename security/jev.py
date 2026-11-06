@@ -11,22 +11,21 @@ from pydantic_ai_harness.guardrails import GuardrailResult, InputGuardrail, Tool
 
 from backend.common.log import log
 from backend.core.conf import settings
-from backend.plugin.ai_buddy.security.tool_policy import RESOURCE_WRITE_TOOLS, is_mcp_tool
+from backend.plugin.ai_buddy.security.tool_policy import RESOURCE_WRITE_TOOLS, SANDBOX_CONFIRM_TOOLS, is_mcp_tool
 
-_JEV_TOOL_RISK = RESOURCE_WRITE_TOOLS | frozenset({
-    'write',
-    'edit',
-    'bash',
-    'bash_background',
-    'run_tests',
-    'write_artifact',
-    'deliver_file',
-    'write_memory',
-    'run_code',
-    'web_fetch',
-    'acp_runner',
-    'delegate_task',
-})
+_JEV_TOOL_RISK = (
+    RESOURCE_WRITE_TOOLS
+    | SANDBOX_CONFIRM_TOOLS
+    | frozenset({
+        'run_tests',
+        'write_artifact',
+        'write_memory',
+        'run_code',
+        'web_fetch',
+        'acp_runner',
+        'delegate_task',
+    })
+)
 
 
 class JevInputVerdict(BaseModel):

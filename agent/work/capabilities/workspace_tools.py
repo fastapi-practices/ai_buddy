@@ -37,12 +37,12 @@ def build_workspace_tools_capability(ctx: CapabilityContext) -> CapabilityResult
         return CapabilityResult(capability=None)
 
     toolset: FunctionToolset[ChatAgentDeps] = FunctionToolset[ChatAgentDeps]()
-    toolset.tool(search_knowledge)
-    toolset.tool(get_knowledge)
-    toolset.tool(read_skill_file)
-    toolset.tool(list_artifacts)
-    toolset.tool(get_artifact)
-    toolset.tool(search_conversation_history)
+    toolset.tool(search_knowledge, metadata={'read_only': True})
+    toolset.tool(get_knowledge, metadata={'read_only': True})
+    toolset.tool(read_skill_file, metadata={'read_only': True})
+    toolset.tool(list_artifacts, metadata={'read_only': True})
+    toolset.tool(get_artifact, metadata={'read_only': True})
+    toolset.tool(search_conversation_history, metadata={'read_only': True})
     if ctx.forwarded_props.agent_mode != AIBuddyAgentMode.chat:
         toolset.tool(write_artifact)
     return CapabilityResult(

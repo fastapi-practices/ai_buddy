@@ -31,7 +31,7 @@ ADD --chmod=644 --checksum=sha256:e3a994d82e644b03a792a930f574002658412f62407f5f
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git bash ca-certificates libatomic1 libstdc++6 fonts-wqy-microhei \
+    && apt-get install -y --no-install-recommends git bash ca-certificates libatomic1 libstdc++6 fonts-wqy-microhei ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node /usr/local/ /usr/local/

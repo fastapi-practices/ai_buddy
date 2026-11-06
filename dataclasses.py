@@ -173,6 +173,7 @@ class AgentToolSpec:
     description: str
     parameters: dict[str, Any]
     mutating: bool = False
+    read_only: bool = False
     is_mcp: bool = False
 
 

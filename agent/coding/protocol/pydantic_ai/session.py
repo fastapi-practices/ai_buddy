@@ -28,7 +28,7 @@ from pydantic_ai.messages import (
     repair_messages,
 )
 from pydantic_ai.workspaces import WorkspaceError
-from pydantic_ai_harness import RepoContext
+from pydantic_ai_harness import Coder, RepoContext
 from pydantic_ai_harness.repair_tool_arguments import RepairToolArguments
 from pydantic_core import SchemaValidator, core_schema
 
@@ -47,6 +47,7 @@ from backend.plugin.ai_buddy.agent.work.ag_ui import BuddyAGUIEventStream
 from backend.plugin.ai_buddy.agent.work.model_settings import build_model_settings
 from backend.plugin.ai_buddy.dataclasses import AgentMessage, AgentToolCall, AgentUsage, ChatAgentDeps, CodingHostSpec
 from backend.plugin.ai_buddy.enums import (
+    AIBuddyExecutionBackend,
     AIBuddyMessageRole,
     AIBuddyMessageStatus,
     AIBuddyPermissionMode,
@@ -228,6 +229,12 @@ class PydanticAICodingSession:
                 if self.run_context.sandbox is not None
                 else None
             )
+            uses_coder = (
+                workspace is not None
+                and self.run_context.sandbox is not None
+                and self.run_context.sandbox.execution_backend == AIBuddyExecutionBackend.sandbox
+                and not self.run_context.acp_runner_enabled
+            )
             agent: Agent[ChatAgentDeps, str] = Agent(
                 model,
                 name='buddy_coding',
@@ -260,10 +267,11 @@ class PydanticAICodingSession:
                         if self._spec.thinking is None
                         else [Thinking(False if self._spec.thinking == 'off' else self._spec.thinking)]
                     ),
-                    RepairToolArguments(),
+                    *([] if uses_coder else [RepairToolArguments()]),
                     *build_jev_capabilities(allow_ask=False),
                     *resource_capabilities,
-                    *([RepoContext()] if workspace is not None else []),
+                    *([Coder(repo_context=True, sub_agents=False, caching=False)] if uses_coder else []),
+                    *([RepoContext()] if workspace is not None and not uses_coder else []),
                 ],
                 retries=settings.AI_BUDDY_AGENT_RETRIES,
                 tool_timeout=settings.AI_BUDDY_AGENT_TOOL_TIMEOUT_SECONDS,
@@ -455,6 +463,10 @@ def _bound_tool(
     )
     # from_schema 默认跳过根类型检查，非对象 JSON 也应进入参数重试而不是触发 TypeError
     tool.function_schema.validator = SchemaValidator(core_schema.dict_schema(strict=True))
+    metadata: dict[str, Any] = {}
+    if item.spec.read_only:
+        metadata['read_only'] = True
     if item.spec.is_mcp:
-        tool.metadata = {'ai_buddy_source': 'mcp'}
+        metadata['ai_buddy_source'] = 'mcp'
+    tool.metadata = metadata or None
     return tool
