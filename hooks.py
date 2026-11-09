@@ -11,6 +11,7 @@ from backend.common.redaction import redaction
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.database.redis import redis_client
+from backend.plugin.ai_buddy.agent.durability.recovery import recovery_loop
 from backend.plugin.ai_buddy.agent.work.runs import shutdown_runs as shutdown_chat_runs
 from backend.plugin.ai_buddy.cron.tasks import tick_due_crons
 from backend.plugin.ai_buddy.schema.object import AIBuddyObjectGarbageCollectParam
@@ -20,6 +21,8 @@ from backend.plugin.ai_buddy.service.gateway_channel_service import ai_buddy_gat
 from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
+from backend.plugin.ai_buddy.utils.blocking_io import run_blocking_io, shutdown_blocking_io_tasks
+from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 from backend.plugin.ai_buddy.utils.knowledge_reindex import register_reindex_runner
 from backend.plugin.ai_buddy.utils.skill_parser import load_builtin_skill_payloads
 
@@ -61,7 +64,8 @@ async def _builtin_skill_sync_loop() -> None:
     while True:
         try:
             synced = 0
-            for payloads in load_builtin_skill_payloads():
+            payload_groups = await run_blocking_io(load_builtin_skill_payloads)
+            for payloads in payload_groups:
                 async with async_db_session.begin() as db:
                     if await ai_buddy_skill_service.sync_builtin(db=db, payloads=payloads):
                         synced += 1
@@ -145,9 +149,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if settings.AI_BUDDY_OBJECT_GC_INTERVAL_SECONDS > 0
         else None
     )
+
+    # 动态配置可在运行期切换容灾开关，恢复任务常驻并按最新配置决定是否执行
+    try:
+        async with async_db_session() as db:
+            await load_ai_buddy_config(db)
+    except Exception as exc:
+        log.warning(f'加载 AI Buddy 动态配置失败: {exc}')
+    durability_task = asyncio.create_task(recovery_loop(), name='ai-buddy-durability-recovery')
+
     background = [
         task
-        for task in (reconcile_task, cron_task, builtin_skill_task, follow_up_task, gateway_task, object_gc_task)
+        for task in (
+            reconcile_task,
+            cron_task,
+            builtin_skill_task,
+            follow_up_task,
+            gateway_task,
+            object_gc_task,
+            durability_task,
+        )
         if task
     ]
     try:
@@ -156,4 +177,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         for task in background:
             task.cancel()
         await asyncio.gather(*background, return_exceptions=True)
-        await shutdown_chat_runs()
+        try:
+            await shutdown_chat_runs()
+        finally:
+            await shutdown_blocking_io_tasks()

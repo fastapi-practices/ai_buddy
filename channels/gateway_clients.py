@@ -13,6 +13,7 @@ from octop_gateway.channels.dingtalk import DingTalkChannel
 from octop_gateway.channels.feishu import FeishuChannel
 from octop_gateway.channels.weixin import WeixinChannel, WeixinConfig
 from octop_gateway.channels.weixin.types import WeixinAPIError, WeixinMessage
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.log import log
 
@@ -127,7 +128,7 @@ async def _run_dingtalk_stream(*, client: Any) -> None:
     children: set[asyncio.Task[Any]] = set()
     while True:
         try:
-            connection_task = asyncio.create_task(asyncio.to_thread(client.open_connection))
+            connection_task = asyncio.create_task(run_in_threadpool(client.open_connection))
             try:
                 connection = await asyncio.shield(connection_task)
             except asyncio.CancelledError:
@@ -304,7 +305,7 @@ class AIBuddyFeishuChannel(FeishuChannel):
         self._request_ws_thread_shutdown()
         thread = self._ws_thread
         if thread is not None:
-            await asyncio.to_thread(thread.join, _THREAD_STOP_TIMEOUT)
+            await run_in_threadpool(thread.join, _THREAD_STOP_TIMEOUT)
             if thread.is_alive():
                 if force:
                     raise RuntimeError('飞书连接线程尚未退出，禁止释放账号租约并重新连接')

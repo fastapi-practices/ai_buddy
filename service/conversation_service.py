@@ -1,10 +1,9 @@
-import asyncio
-
 from collections.abc import Sequence
 from datetime import timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import StreamingResponse
 
 from backend.common.exception import errors
@@ -302,6 +301,10 @@ class AIBuddyConversationService:
             try:
                 if await has_active_run(conversation_id):
                     continue
+                if await AIBuddyConversationService._has_recovery_snapshot(
+                    conversation_id=conversation_id, message_ids=message_ids
+                ):
+                    continue
                 async with async_db_session.begin() as db:
                     for message_id in message_ids:
                         reconciled += await ai_buddy_message_dao.update_pending(
@@ -312,6 +315,29 @@ class AIBuddyConversationService:
             except Exception as exc:
                 log.warning(f'收敛残留聊天消息失败 conversation_id={conversation_id}: {exc}')
         return reconciled
+
+    @staticmethod
+    async def _has_recovery_snapshot(*, conversation_id: str, message_ids: Sequence[int]) -> bool:
+        """
+        判断对话是否存在可续跑的步骤快照
+
+        :param conversation_id: 对话 ID
+        :param message_ids: 未完成的助手消息 ID
+        :return:
+        """
+        from backend.plugin.ai_buddy.agent.durability.config import durability_enabled, durability_recovery_enabled
+        from backend.plugin.ai_buddy.agent.durability.recovery import load_recovery_context
+
+        if not durability_enabled() or not durability_recovery_enabled():
+            return False
+        for message_id in message_ids:
+            context = await load_recovery_context(
+                conversation_id=conversation_id,
+                assistant_message_id=message_id,
+            )
+            if context is not None:
+                return True
+        return False
 
     async def stop_generation(
         self,
@@ -557,7 +583,7 @@ class AIBuddyConversationService:
             if end == start and row.id in errors
         ]
 
-        messages_snapshot = await asyncio.to_thread(
+        messages_snapshot = await run_in_threadpool(
             serialize_messages_to_snapshot,
             model_messages,
             conversation_id=conversation.conversation_id,

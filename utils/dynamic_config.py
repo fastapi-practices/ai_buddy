@@ -12,8 +12,8 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyOcrBackend,
 )
 from backend.plugin.ai_buddy.utils.knowledge_reindex import schedule_reindex
-from backend.plugin.core import check_plugin_installed
-from backend.utils.dynamic_config import load_config
+from backend.plugin.core import check_plugin_installed_async
+from backend.utils.dynamic_config import load_config, str_to_bool
 from backend.utils.serializers import select_list_serialize
 
 _AI_CONFIG_KEYS: tuple[str, ...] = (
@@ -169,6 +169,10 @@ _AI_CONFIG_MAPPING: dict[str, Callable[[str], object]] = {
     'AI_BUDDY_RAG_TOP_K': _positive_int,
     'AI_BUDDY_JEV_MODEL': _jev_model,
     'AI_BUDDY_JEV_INPUT_THRESHOLD': _unit_interval,
+    'AI_BUDDY_AGENT_DURABILITY_ENABLED': str_to_bool,
+    'AI_BUDDY_AGENT_DURABILITY_RECOVERY_ENABLED': str_to_bool,
+    'AI_BUDDY_AGENT_DURABILITY_RECOVERY_INTERVAL_SECONDS': _positive_int,
+    'AI_BUDDY_AGENT_DURABILITY_STALE_SECONDS': _positive_int,
 }
 
 
@@ -180,7 +184,7 @@ async def load_ai_buddy_config(db: AsyncSession, *, reindex_on_change: bool = Tr
     :param reindex_on_change: 是否检测全局向量配置变更并调度重建
     :return:
     """
-    if not check_plugin_installed('config'):
+    if not await check_plugin_installed_async('config'):
         return
     await load_config(db, 'ai', _AI_CONFIG_MAPPING, 'AI_BUDDY_CONFIG_STATUS')
     if not reindex_on_change:
@@ -205,7 +209,7 @@ async def get_ai_buddy_config_snapshot(db: AsyncSession) -> tuple[StatusType, di
     :return:
     """
     values = {key: getattr(settings, key, '') for key in _AI_CONFIG_KEYS}
-    if not check_plugin_installed('config'):
+    if not await check_plugin_installed_async('config'):
         return StatusType.enable, values
     try:
         from backend.plugin.config.enums import ConfigType

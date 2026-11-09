@@ -28,6 +28,7 @@ from backend.plugin.ai_buddy.agent.capabilities.capability_registry import (
     resolve_capability_mode,
 )
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
+from backend.plugin.ai_buddy.agent.durability.config import DURABILITY_AGENT_NAME, durability_enabled
 from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext
 from backend.plugin.ai_buddy.enums import (
@@ -115,8 +116,8 @@ async def assemble_capabilities(
             SetToolMetadata(tools=lambda _ctx, tool_def: is_jev_tool_risk(tool_def.name), ai_buddy_high_risk=True),
             DetectLoops(),
         ))
-        if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED:
-            capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name='ai_buddy_work'))
+        if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED or durability_enabled(forwarded_props):
+            capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name=DURABILITY_AGENT_NAME))
         if settings.AI_BUDDY_AGENT_INCLUDE_TOOL_RETURN_SCHEMAS:
             capabilities.append(IncludeToolReturnSchemas())
     if settings.AI_BUDDY_AGENT_INSTRUMENTATION_ENABLED:
@@ -145,7 +146,7 @@ async def assemble_capabilities(
     assembly = await build_profile_capabilities(mode=mode, context=context)
     capabilities.extend(assembly.capabilities)
 
-    validate_capability_mix(
+    _validate_capability_mix(
         has_fn_source=assembly.has_function_tool_source,
         supports_tools=supports_tools,
         provider_type=adapter.provider_type,
@@ -165,7 +166,7 @@ async def assemble_capabilities(
     return ordered
 
 
-def validate_capability_mix(
+def _validate_capability_mix(
     *,
     has_fn_source: bool,
     supports_tools: bool,

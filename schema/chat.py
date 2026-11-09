@@ -57,6 +57,7 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
     smart_search_model: str | None = Field(None, description='当前供应商下的代码语义搜索模型，仅内置编码模式生效')
     cache_enabled: bool = Field(default=True, description='是否启用 SDK 管理的提示词缓存')
     background_subagents_enabled: bool = Field(default=False, description='是否允许子代理在本轮后台执行')
+    durability_enabled: bool | None = Field(default=None, description='是否启用容灾执行，空值沿用服务端默认')
     run_timeout: float | None = Field(None, allow_inf_nan=False, description='整轮执行时限，包含工具与审批等待，单位秒')
     compaction_enabled: bool | None = Field(None, description='是否启用对话压缩，空值沿用服务端默认（当前为开启）')
     compaction_strategy: Literal['summary', 'relevance'] = Field(

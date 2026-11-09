@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
+from backend.common.context import ctx
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.database.db import async_db_session, uuid4_str
@@ -142,6 +143,7 @@ class AIBuddyChatService:
                     agent_session, agent = await open_chat_session(
                         db=db,
                         forwarded_props=forwarded_props,
+                        is_superuser=ctx.is_superuser,
                         user_id=user_id,
                         conversation_id=conversation_id,
                         assistant_id=assistant_id,
@@ -265,15 +267,15 @@ class AIBuddyChatService:
                     require_messages=True,
                 )
                 message_history = filter_history_model_messages(state.model_messages)
-                persistence = CompletionPersistenceContext(
-                    conversation_id=conversation_id,
-                    user_id=user_id,
-                    forwarded_props=forwarded_props,
-                    title=state.conversation.title if state.conversation else prompt,
-                    assistant_message_id=assistant_message_id,
-                )
                 if not coding:
                     assert agent_session is not None
+                    persistence = CompletionPersistenceContext(
+                        conversation_id=conversation_id,
+                        user_id=user_id,
+                        forwarded_props=forwarded_props,
+                        title=state.conversation.title if state.conversation else prompt,
+                        assistant_message_id=assistant_message_id,
+                    )
                     response = await agent_session.stream(
                         user_id=user_id,
                         agent=agent,

@@ -16,6 +16,7 @@ from pydantic_ai import (
     ToolApproved,
     capture_run_messages,
 )
+from starlette.concurrency import run_in_threadpool
 from starlette.responses import StreamingResponse
 
 from backend.common.exception import errors
@@ -267,7 +268,7 @@ async def _produce_run_events(
                 or isinstance(content, BinaryImage)
                 or (isinstance(content, bytes | bytearray | memoryview) and len(content) >= 8 * 1024)
             )
-            encoded_event = await asyncio.to_thread(encode_event, event) if cpu_heavy else encode_event(event)
+            encoded_event = await run_in_threadpool(encode_event, event) if cpu_heavy else encode_event(event)
             if isinstance(event, RunErrorEvent | RunFinishedEvent):
                 terminal_event = encoded_event
             else:

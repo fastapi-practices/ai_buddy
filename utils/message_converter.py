@@ -1,9 +1,8 @@
-import asyncio
-
 from collections.abc import Sequence
 from typing import Any, Literal
 
 from pydantic_ai import ModelMessage, ModelMessagesTypeAdapter, ModelRequest, ModelResponse, TextPart, UserPromptPart
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.dataclasses import ChatConversationState
@@ -167,7 +166,7 @@ async def expand_message_rows(
     if not raw_messages:
         return [], row_message_ranges
     restored = await decode_model_message_payloads(raw_messages)
-    validated = await asyncio.to_thread(ModelMessagesTypeAdapter.validate_python, restored)
+    validated = await run_in_threadpool(ModelMessagesTypeAdapter.validate_python, restored)
     return list(validated), row_message_ranges
 
 

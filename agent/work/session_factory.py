@@ -2,7 +2,6 @@ import anyio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.common.context import ctx
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.work.generation.handlers import get_generation_handler
 from backend.plugin.ai_buddy.agent.work.session import AgentSession
@@ -28,6 +27,7 @@ async def open_chat_session(
     *,
     db: AsyncSession,
     forwarded_props: AIBuddyForwardedPropsParam,
+    is_superuser: bool,
     user_id: int | None = None,
     conversation_id: str | None = None,
     assistant_id: int | None = None,
@@ -38,6 +38,7 @@ async def open_chat_session(
 
     :param db: 数据库会话
     :param forwarded_props: 聊天扩展参数
+    :param is_superuser: 是否为超级管理员
     :param user_id: 用户 ID
     :param conversation_id: 对话 ID
     :param assistant_id: 新建对话时的助手 ID
@@ -77,7 +78,7 @@ async def open_chat_session(
             model_pk=model.id,
             model_id=model.model_id,
             user_id=user_id,
-            is_superuser=ctx.is_superuser,
+            is_superuser=is_superuser,
             mcp_ids=tuple(
                 forwarded_props.mcp_ids or () if isinstance(forwarded_props, AIBuddyChatForwardedPropsParam) else ()
             ),

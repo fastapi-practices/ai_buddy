@@ -8,6 +8,7 @@ from typing import Any
 from pydantic_ai_harness.tool_output_limits import OverflowStore
 from pydantic_core import to_jsonable_python
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.log import log
 from backend.database.db import async_db_session
@@ -172,7 +173,7 @@ async def _store_binaries(
         return node
     data = node.get('data')
     if node.get('kind') == 'binary' and isinstance(data, str):
-        body, object_key = await asyncio.to_thread(_decode_binary_payload, data, user_id)
+        body, object_key = await run_in_threadpool(_decode_binary_payload, data, user_id)
         await put_bytes(storage, object_key, body)
         written.append({'object_key': object_key, 'size': len(body), 'mime_type': node.get('media_type')})
         stored = {key: value for key, value in node.items() if key != 'data'}
@@ -214,7 +215,7 @@ async def _restore_binaries(node: object, *, storage: S3Storage) -> object:
             raise FileNotFoundError(object_key)
         raw = await get_bytes(source, object_key)
         restored = {key: value for key, value in node.items() if key not in {'object_key', 'storage_id'}}
-        restored['data'] = (await asyncio.to_thread(base64.b64encode, raw)).decode()
+        restored['data'] = (await run_in_threadpool(base64.b64encode, raw)).decode()
         return restored
     return {key: await _restore_binaries(value, storage=storage) for key, value in node.items()}
 
@@ -377,7 +378,7 @@ async def dump_model_message_payloads(messages: object) -> list[Any]:
     :param messages: 模型消息对象
     :return:
     """
-    payload = await asyncio.to_thread(to_jsonable_python, messages, by_alias=True)
+    payload = await run_in_threadpool(to_jsonable_python, messages, by_alias=True)
     if not isinstance(payload, list):
         raise TypeError('模型消息序列化结果必须是列表')
     return payload

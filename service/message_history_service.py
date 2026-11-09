@@ -1,10 +1,10 @@
-import asyncio
 import json
 
 from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
@@ -243,7 +243,7 @@ class AIBuddyMessageHistoryService:
             for row, (start, end) in zip(rows, ranges, strict=False)
             if start == end and row.id in error_map
         ]
-        return await asyncio.to_thread(
+        return await run_in_threadpool(
             serialize_messages_to_snapshot,
             messages,
             conversation_id=conversation_id,

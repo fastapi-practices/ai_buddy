@@ -9,6 +9,7 @@ from pydantic_ai import AgentRunResult, ModelRequest, ModelResponse, UserPromptP
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
+from backend.common.context import ctx
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.database.db import async_db_session
@@ -109,6 +110,7 @@ class AIBuddyMessageService:
                 session, agent = await open_chat_session(
                     db=db,
                     forwarded_props=forwarded_props,
+                    is_superuser=ctx.is_superuser,
                     user_id=user_id,
                     conversation_id=conversation_id,
                 )

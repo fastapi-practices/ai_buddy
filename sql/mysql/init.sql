@@ -116,4 +116,8 @@ values
 ('PaddleOCR URL', 'AI', 'AI_BUDDY_PADDLEOCR_API_URL', '', false, '自建 PaddleOCR 服务地址，空则使用本机 paddleocr，需先下载模型', now(), null),
 ('切片长度', 'AI', 'AI_BUDDY_RAG_CHUNK_CHARS', '500', false, '控制知识切片的字符长度', now(), null),
 ('切片重叠', 'AI', 'AI_BUDDY_RAG_CHUNK_OVERLAP', '80', false, '控制相邻知识切片的重叠字符数', now(), null),
-('检索条数', 'AI', 'AI_BUDDY_RAG_TOP_K', '6', false, '控制知识语义检索返回的条数', now(), null);
+('检索条数', 'AI', 'AI_BUDDY_RAG_TOP_K', '6', false, '控制知识语义检索返回的条数', now(), null),
+('容灾执行', 'AI', 'AI_BUDDY_AGENT_DURABILITY_ENABLED', 'false', false, '开启后整轮对话生成写入 DBOS 持久化工作流，进程崩溃后自动恢复', now(), null),
+('容灾巡检', 'AI', 'AI_BUDDY_AGENT_DURABILITY_RECOVERY_ENABLED', 'true', false, '开启后周期巡检并恢复卡在等待状态的容灾工作流', now(), null),
+('容灾巡检间隔', 'AI', 'AI_BUDDY_AGENT_DURABILITY_RECOVERY_INTERVAL_SECONDS', '60', false, '控制容灾巡检后台任务的扫描间隔秒数', now(), null),
+('容灾静默阈值', 'AI', 'AI_BUDDY_AGENT_DURABILITY_STALE_SECONDS', '60', false, '控制助手消息静默多久判定为中断并触发恢复', now(), null);

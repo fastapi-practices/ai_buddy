@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 
 from dataclasses import replace
@@ -7,6 +6,7 @@ from pydantic_ai import RunContext
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.messages import BinaryContent, ModelMessage, ModelRequest, UserContent, UserPromptPart
 from pydantic_ai.models import ModelRequestContext
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.log import log
 from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import sandbox_tools_enabled
@@ -93,7 +93,7 @@ class OfficeAttachments(AbstractCapability[ChatAgentDeps]):
         digest = hashlib.sha256(item.data).hexdigest()
         if digest not in self._cache:
             try:
-                self._cache[digest] = await asyncio.to_thread(office_to_markdown, item.data, item.media_type)
+                self._cache[digest] = await run_in_threadpool(office_to_markdown, item.data, item.media_type)
             except Exception as exc:
                 log.warning(f'Office 附件解析失败 type={item.media_type}: {type(exc).__name__}')
                 self._cache[digest] = None

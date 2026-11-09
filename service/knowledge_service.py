@@ -9,7 +9,6 @@ from fastapi import UploadFile
 from pydantic_ai import Agent
 from pydantic_ai.messages import BinaryContent
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.concurrency import run_in_threadpool
 
 from backend.common.exception import errors
 from backend.common.log import log
@@ -34,6 +33,7 @@ from backend.plugin.ai_buddy.provider.registry import get_provider_adapter
 from backend.plugin.ai_buddy.schema.knowledge import CreateAIBuddyKnowledgeParam
 from backend.plugin.ai_buddy.service.default_model_service import ai_buddy_default_model_service
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
+from backend.plugin.ai_buddy.utils.blocking_io import run_blocking_compute, run_blocking_io
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 from backend.plugin.ai_buddy.utils.http_client import build_retry_http_client
 from backend.plugin.ai_buddy.utils.knowledge_ocr import (
@@ -96,7 +96,7 @@ async def _run_ocr_in_thread(
     if timeout <= 0:
         raise errors.RequestError(msg='OCR 处理超时')
     try:
-        return await asyncio.wait_for(run_in_threadpool(func, images), timeout=timeout)
+        return await asyncio.wait_for(run_blocking_io(func, images), timeout=timeout)
     except TimeoutError as exc:
         raise errors.RequestError(msg='OCR 处理超时') from exc
 
@@ -123,12 +123,14 @@ class AIBuddyKnowledgeService:
         """
         selected_model = (model_id or '').strip() or None
         if provider_id is None and selected_model:
-            return None, require_onnx_model_downloaded(selected_model)
+            return None, await run_blocking_io(require_onnx_model_downloaded, selected_model)
         if (provider_id is None) != (selected_model is None):
             raise errors.RequestError(msg='向量化供应商和模型需要同时指定')
         if provider_id is None:
             if settings.AI_BUDDY_EMBEDDING_BACKEND == 'onnx':
-                return None, require_onnx_model_downloaded(settings.AI_BUDDY_ONNX_EMBEDDING_MODEL)
+                return None, await run_blocking_io(
+                    require_onnx_model_downloaded, settings.AI_BUDDY_ONNX_EMBEDDING_MODEL
+                )
             default = await ai_buddy_default_model_service.get_enabled_or_none(
                 db=db,
                 kind=AIBuddyModelKind.embedding,
@@ -169,7 +171,7 @@ class AIBuddyKnowledgeService:
         if not texts:
             return []
         if provider_id is None:
-            return await run_in_threadpool(embed_onnx_texts, model_id or '', texts)
+            return await run_blocking_compute(embed_onnx_texts, model_id or '', texts)
         if not model_id:
             raise errors.RequestError(msg='请先配置默认向量模型')
         provider = await ai_buddy_provider_dao.get(db, provider_id)
@@ -240,7 +242,7 @@ class AIBuddyKnowledgeService:
         :return:
         """
         payload = f'{knowledge.title}\n\n{knowledge.content}'.strip()
-        chunks = await run_in_threadpool(
+        chunks = await run_blocking_compute(
             split_chunks,
             payload,
             chunk_chars=settings.AI_BUDDY_RAG_CHUNK_CHARS,
@@ -454,7 +456,7 @@ class AIBuddyKnowledgeService:
             model_id=model_id if model_id is not None else knowledge_base.model_id,
         )
         payloads = [(item.filename, await item.read()) for item in files]
-        documents = await run_in_threadpool(parse_knowledge_uploads, files=payloads, title=title)
+        documents = await run_blocking_io(parse_knowledge_uploads, files=payloads, title=title)
         loop = asyncio.get_running_loop()
         ocr_deadline = loop.time() + settings.AI_BUDDY_OCR_TIMEOUT_SECONDS
         for uploaded in documents:

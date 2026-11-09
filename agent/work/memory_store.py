@@ -1,5 +1,3 @@
-import asyncio
-
 from pydantic_ai_harness.memory import (
     MemoryConflictError,
     MemoryFile,
@@ -11,6 +9,7 @@ from pydantic_ai_harness.memory import (
 from pydantic_ai_harness.memory._store import lexical_search, validate_store_path, validate_store_prefix
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.log import log
 from backend.database.db import async_db_session
@@ -152,7 +151,7 @@ class DatabaseMemoryStore:
                     db, operation.id, version=mutation.version, existed=mutation.existed
                 )
         try:
-            embedding = await asyncio.to_thread(hash_embed, content)
+            embedding = await run_in_threadpool(hash_embed, content)
             await upsert_memory_vector(path=path, content=content, embedding=embedding)
         except Exception as exc:
             log.warning(f'记忆向量写入失败: {type(exc).__name__}')
@@ -239,7 +238,7 @@ class DatabaseMemoryStore:
         async with async_db_session.begin() as db:
             rows = await ai_buddy_memory_file_dao.get_contents(db, prefix, max_files + 1)
         files = [(str(path), content[:max_file_chars]) for path, content in rows]
-        result = await asyncio.to_thread(
+        result = await run_in_threadpool(
             lexical_search,
             files,
             query,
