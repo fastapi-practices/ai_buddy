@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, UniversalText, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddyStepToolEffect(Base):
@@ -21,7 +21,9 @@ class AIBuddyStepToolEffect(Base):
     tool_call_id: Mapped[str] = mapped_column(sa.String(256), comment='工具调用 ID')
     tool_name: Mapped[str] = mapped_column(sa.String(256), comment='工具名称')
     status: Mapped[str] = mapped_column(sa.String(32), comment='副作用状态')
-    started_time: Mapped[datetime] = mapped_column(TimeZone, comment='调用开始时间')
-    ended_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='调用结束时间')
+    started_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), comment='调用开始时间')
+    ended_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), default=None, comment='调用结束时间'
+    )
     idempotency_key: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='幂等键')
-    effect_summary: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='副作用摘要')
+    effect_summary: Mapped[str | None] = mapped_column(sa.Text, default=None, comment='副作用摘要')

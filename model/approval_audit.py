@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, id_key
+from backend.common.model import Base, id_key
 from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus
 
 
@@ -21,6 +21,8 @@ class AIBuddyApprovalAudit(Base):
     tool_call_id: Mapped[str] = mapped_column(sa.String(256), comment='工具调用 ID')
     tool_name: Mapped[str] = mapped_column(sa.String(256), comment='工具名称')
     arguments_sha256: Mapped[str] = mapped_column(sa.String(64), comment='原始参数摘要')
-    expires_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='审批过期时间')
+    expires_time: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), comment='审批过期时间')
     status: Mapped[str] = mapped_column(sa.String(32), default=AIBuddyApprovalStatus.pending.value, comment='审批状态')
-    resolved_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='审批结束时间')
+    resolved_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), default=None, comment='审批结束时间'
+    )

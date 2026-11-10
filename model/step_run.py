@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddyStepRun(Base):
@@ -15,7 +15,7 @@ class AIBuddyStepRun(Base):
 
     id: Mapped[id_key] = mapped_column(init=False)
     run_id: Mapped[str] = mapped_column(sa.String(64), comment='运行 ID')
-    started_time: Mapped[datetime] = mapped_column(TimeZone, index=True, comment='运行开始时间')
+    started_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), index=True, comment='运行开始时间')
     conversation_id: Mapped[str | None] = mapped_column(sa.String(64), index=True, default=None, comment='对话 ID')
     parent_run_id: Mapped[str | None] = mapped_column(sa.String(64), index=True, default=None, comment='父运行 ID')
     agent_name: Mapped[str | None] = mapped_column(sa.String(128), default=None, comment='Agent 名称')

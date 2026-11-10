@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.enums import StatusType
-from backend.common.model import Base, UniversalText, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddyModel(Base):
@@ -29,4 +29,4 @@ class AIBuddyModel(Base):
     context_window: Mapped[int | None] = mapped_column(default=None, comment='上下文窗口 token 数')
     max_output_tokens: Mapped[int | None] = mapped_column(default=None, comment='最大输出 token 数')
     sort: Mapped[int] = mapped_column(default=0, comment='排序')
-    remark: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='备注')
+    remark: Mapped[str | None] = mapped_column(sa.Text, default=None, comment='备注')

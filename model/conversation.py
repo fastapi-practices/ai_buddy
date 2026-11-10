@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, id_key
+from backend.common.model import Base, id_key
 from backend.plugin.ai_buddy.enums import AIBuddyConversationSource, AIBuddyConversationSurface, AIBuddyOrigin
 
 
@@ -42,9 +42,11 @@ class AIBuddyConversation(Base):
     )
     channel_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, index=True, comment='通道 ID')
     last_message_preview: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='最后一条消息预览')
-    last_message_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='最后一条消息时间')
-    pinned_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='置顶时间')
-    archived_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='归档时间')
+    last_message_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), default=None, comment='最后一条消息时间'
+    )
+    pinned_time: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), default=None, comment='置顶时间')
+    archived_time: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), default=None, comment='归档时间')
     source: Mapped[str] = mapped_column(
         sa.String(16),
         default=AIBuddyConversationSource.cloud,

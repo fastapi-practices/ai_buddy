@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, TimeZone, id_key
+from backend.common.model import Base, id_key
 from backend.plugin.ai_buddy.enums import AIBuddyObjectState
 
 
@@ -30,8 +30,12 @@ class AIBuddyObject(Base):
     state: Mapped[str] = mapped_column(
         sa.String(16), index=True, default=AIBuddyObjectState.active.value, comment='生命周期状态'
     )
-    tombstoned_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='墓碑时间')
-    delete_after_time: Mapped[datetime | None] = mapped_column(
-        TimeZone, index=True, default=None, comment='宽限期结束后才可物理删除'
+    tombstoned_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), default=None, comment='墓碑时间'
     )
-    physically_deleted_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='物理删除时间')
+    delete_after_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), index=True, default=None, comment='宽限期结束后才可物理删除'
+    )
+    physically_deleted_time: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True), default=None, comment='物理删除时间'
+    )

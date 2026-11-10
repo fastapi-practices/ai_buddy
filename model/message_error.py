@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, UniversalText, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddyMessageError(Base):
@@ -19,5 +19,5 @@ class AIBuddyMessageError(Base):
     id: Mapped[id_key] = mapped_column(init=False)
     message_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='消息 ID')
     conversation_id: Mapped[str] = mapped_column(sa.String(64), index=True, comment='对话 ID')
-    message: Mapped[str] = mapped_column(UniversalText, comment='错误信息')
+    message: Mapped[str] = mapped_column(sa.Text, comment='错误信息')
     detail: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='错误详情')

@@ -87,7 +87,7 @@ def _tool_effect(row: AIBuddyStepToolEffect) -> ToolEffectRecord:
 
 
 class AIBuddyStepStore:
-    """基于 SQLAlchemy 的步骤持久化存储，同时兼容 MySQL 与 PostgreSQL"""
+    """基于 SQLAlchemy 的步骤持久化存储"""
 
     @staticmethod
     async def register_run(record: RunRecord) -> None:

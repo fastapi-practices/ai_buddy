@@ -7,7 +7,7 @@ agent-client-protocol==0.12.1
 jsonpatch==1.42
 jsonschema==4.26.0
 # xai-sdk 1.21 仍声明 packaging<26，protobuf 上限已放宽到 <8
-packaging>=25.0,<26
+packaging>=25.0
 # 固定稳定版，避免 --prerelease=allow 安装 7.37.0rc1
 protobuf==7.36.2
 qdrant-client==1.20.0

@@ -2,7 +2,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, UniversalText, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddySubagent(Base):
@@ -18,5 +18,5 @@ class AIBuddySubagent(Base):
     user_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='用户 ID')
     name: Mapped[str] = mapped_column(sa.String(64), comment='子代理名称')
     description: Mapped[str] = mapped_column(sa.String(512), comment='子代理描述')
-    prompt: Mapped[str] = mapped_column(UniversalText, comment='角色提示词')
+    prompt: Mapped[str] = mapped_column(sa.Text, comment='角色提示词')
     sort: Mapped[int] = mapped_column(default=0, comment='排序')

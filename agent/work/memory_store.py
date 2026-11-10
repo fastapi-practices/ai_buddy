@@ -21,7 +21,7 @@ from backend.plugin.ai_buddy.utils.text_vector import hash_embed
 
 
 class DatabaseMemoryStore:
-    """基于 SQLAlchemy 的记忆存储，兼容 MySQL 与 PostgreSQL"""
+    """基于 SQLAlchemy 的记忆存储"""
 
     @staticmethod
     async def _get_operation(

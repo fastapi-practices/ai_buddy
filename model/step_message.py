@@ -2,7 +2,7 @@ import sqlalchemy as sa
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import Base, UniversalText, id_key
+from backend.common.model import Base, id_key
 
 
 class AIBuddyStepMessage(Base):
@@ -13,4 +13,4 @@ class AIBuddyStepMessage(Base):
 
     id: Mapped[id_key] = mapped_column(init=False)
     sha256: Mapped[str] = mapped_column(sa.String(64), comment='消息 JSON 的 SHA-256 摘要')
-    content: Mapped[str] = mapped_column(UniversalText, comment='消息 JSON')
+    content: Mapped[str] = mapped_column(sa.Text, comment='消息 JSON')
