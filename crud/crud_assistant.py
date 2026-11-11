@@ -85,7 +85,7 @@ class CRUDAIBuddyAssistant(CRUDPlus[AIBuddyAssistant]):
         if user_id is not None:
             filters['user_id__in'] = visible_owner_ids(user_id)
         if name is not None:
-            filters['name__like'] = f'%{name}%'
+            filters['name__ilike'] = f'%{name}%'
         if category is not None:
             filters['category'] = category
         sort_columns, sort_orders = _assistant_sort_spec(sort_type)

@@ -65,7 +65,7 @@ class CRUDAIBuddyMcp(CRUDPlus[AIBuddyMcp]):
         if user_id is not None:
             filters['user_id__in'] = visible_owner_ids(user_id)
         if name is not None:
-            filters.update(name__like=f'%{name}%')
+            filters.update(name__ilike=f'%{name}%')
         if type is not None:
             filters.update(type=type)
         return await self.select_order('id', 'desc', **filters)

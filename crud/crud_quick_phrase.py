@@ -49,7 +49,7 @@ class CRUDAIBuddyQuickPhrase(CRUDPlus[AIBuddyQuickPhrase]):
         if user_id is not None:
             filters['user_id__in'] = visible_owner_ids(user_id)
         if content is not None:
-            filters['content__like'] = f'%{content}%'
+            filters['content__ilike'] = f'%{content}%'
         return await self.select_order(['sort', 'id'], ['desc', 'desc'], **filters)
 
     async def get_all(self, db: AsyncSession, user_id: int) -> Sequence[AIBuddyQuickPhrase]:

@@ -127,7 +127,7 @@ class CRUDAIBuddyConversation(CRUDPlus[AIBuddyConversation]):
         if assistant_id is not None:
             filters['assistant_id'] = assistant_id
         if q:
-            filters['title__like'] = f'%{q}%'
+            filters['title__ilike'] = f'%{q}%'
         stmt = await self.select(**filters)
         if view is not None or agent_mode is not None:
             stmt = stmt.where(self.model.surface == AIBuddyConversationSurface.chat)

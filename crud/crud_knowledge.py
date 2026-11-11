@@ -54,7 +54,7 @@ class CRUDAIBuddyKnowledge(CRUDPlus[AIBuddyKnowledge]):
         """
         filters = {'deleted': 0}
         if title is not None:
-            filters['title__like'] = f'%{title}%'
+            filters['title__ilike'] = f'%{title}%'
         if knowledge_base_id is not None:
             filters['knowledge_base_id'] = knowledge_base_id
         return await self.select_order('id', 'desc', **filters)

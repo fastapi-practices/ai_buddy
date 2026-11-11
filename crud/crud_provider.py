@@ -70,7 +70,7 @@ class CRUDAIBuddyProvider(CRUDPlus[AIBuddyProvider]):
         """
         filters: dict[str, object] = {'deleted': 0, 'user_id': SYSTEM_OWNER_USER_ID}
         if name is not None:
-            filters['name__like'] = f'%{name}%'
+            filters['name__ilike'] = f'%{name}%'
         if type is not None:
             filters['type'] = type
         if status is not None:

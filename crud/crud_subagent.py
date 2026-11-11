@@ -60,7 +60,7 @@ class CRUDAIBuddySubagent(CRUDPlus[AIBuddySubagent]):
         if user_id is not None:
             filters['user_id__in'] = visible_owner_ids(user_id)
         if name is not None:
-            filters['name__like'] = f'%{name}%'
+            filters['name__ilike'] = f'%{name}%'
         return await self.select_order(['sort', 'id'], ['asc', 'desc'], **filters)
 
     async def get_all(self, db: AsyncSession, user_id: int) -> Sequence[AIBuddySubagent]:

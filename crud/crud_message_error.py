@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -54,15 +55,26 @@ class CRUDAIBuddyMessageError(CRUDPlus[AIBuddyMessageError]):
         """
         按消息 ID 写入或更新错误
 
+        使用 PostgreSQL 内置的 INSERT ... ON CONFLICT DO UPDATE，
+        单条语句完成写入与更新，避免先查询再写入的竞态
+
         :param db: 数据库会话
         :param obj: 错误字段
         :return:
         """
-        existed = await self.get_by_message_id(db, obj['message_id'])
-        if existed is None:
-            return await self.create(db, obj)
-        await self.update_model_by_column(db, obj, id=existed.id, deleted=0)
-        return existed
+        now = timezone.now()
+        payload = {**obj, 'created_time': now}
+        insert_stmt = insert(self.model).values(**payload)
+        update_values = {
+            key: insert_stmt.excluded[key] for key in payload if key not in ('message_id', 'deleted', 'created_time')
+        }
+        update_values['updated_time'] = now
+        stmt = insert_stmt.on_conflict_do_update(
+            index_elements=['message_id', 'deleted'],
+            set_=update_values,
+        ).returning(self.model)
+        result = await db.execute(stmt)
+        return result.scalars().one()
 
     async def delete_by_message_ids(self, db: AsyncSession, message_ids: Sequence[int]) -> int:
         """

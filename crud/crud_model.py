@@ -1,7 +1,8 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, String, cast
+from sqlalchemy import Select, cast
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -88,7 +89,7 @@ class CRUDAIBuddyModel(CRUDPlus[AIBuddyModel]):
         if provider_id is not None:
             filters['provider_id'] = provider_id
         if model_id is not None:
-            filters['model_id__like'] = f'%{model_id}%'
+            filters['model_id__ilike'] = f'%{model_id}%'
         if status is not None:
             filters['status'] = status
         if kind is not None:
@@ -99,7 +100,8 @@ class CRUDAIBuddyModel(CRUDPlus[AIBuddyModel]):
             AIBuddyProvider.deleted == 0,
         )
         if capability is not None:
-            stmt = stmt.where(cast(self.model.capabilities, String).like(f'%"{capability}"%'))
+            # PostgreSQL 内置 JSONB 包含运算，直接按数组元素匹配能力项
+            stmt = stmt.where(cast(self.model.capabilities, JSONB).contains([capability]))
         return stmt
 
     async def get_all(

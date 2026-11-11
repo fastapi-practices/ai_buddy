@@ -7,6 +7,9 @@
 > [!WARNING]
 > 自 0.1.1 版本起不再支持 MySQL 数据库，仅支持 PostgreSQL
 
+> [!NOTE]
+> 自 0.2.0 版本起要求 fba `>=2.0.0,<3.0.0`，并直接使用 PostgreSQL 内置能力完成写入与检索
+
 ## 插件类型
 
 - 应用级插件
@@ -233,6 +236,16 @@ AI_BUDDY_JEV_INPUT_THRESHOLD: float = 0.75
 5. 工作模式通过服务端沙箱生成和编辑 Excel、PPT、Word、PDF，需要部署 OpenSandbox 并构建沙箱镜像；升级后必须重新构建镜像，旧镜像缺少文档处理依赖
 6. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
 7. 运行机制与执行环境准备见 [架构文档](架构.md)
+
+## 数据库特性
+
+仅支持 PostgreSQL，插件直接使用其内置能力：
+
+| 场景 | PostgreSQL 内置能力 |
+|---|---|
+| 消息错误写入 | `INSERT ... ON CONFLICT (message_id, deleted) DO UPDATE`，单条语句完成写入与更新 |
+| 模型能力过滤 | JSON 列按 `::jsonb` 转换后使用 `@>` 包含运算，精确匹配数组元素 |
+| 名称、标题与内容检索 | `ILIKE` 大小写不敏感模糊匹配 |
 
 ## 卸载说明
 
