@@ -3,7 +3,6 @@ import hashlib
 
 from typing import Any
 
-from acp import audio_block, image_block, resource_block, text_block
 from acp.schema import (
     AudioContentBlock,
     BlobResourceContents,
@@ -18,6 +17,49 @@ from backend.plugin.ai_buddy.agent.coding.attachments import input_attachment_pa
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.models import ACPError
 
 type AcpPromptBlock = TextContentBlock | ImageContentBlock | AudioContentBlock | EmbeddedResourceContentBlock
+
+
+def _text_block(text: str) -> TextContentBlock:
+    """
+    构建 ACP 文本内容块
+
+    :param text: 文本内容
+    :return:
+    """
+    return TextContentBlock(type='text', text=text)
+
+
+def _image_block(data: str, mime_type: str, *, uri: str | None = None) -> ImageContentBlock:
+    """
+    构建 ACP 图片内容块
+
+    :param data: Base64 编码的图片数据
+    :param mime_type: 图片 MIME 类型
+    :param uri: 图片来源地址
+    :return:
+    """
+    return ImageContentBlock(type='image', data=data, mime_type=mime_type, uri=uri)
+
+
+def _audio_block(data: str, mime_type: str) -> AudioContentBlock:
+    """
+    构建 ACP 音频内容块
+
+    :param data: Base64 编码的音频数据
+    :param mime_type: 音频 MIME 类型
+    :return:
+    """
+    return AudioContentBlock(type='audio', data=data, mime_type=mime_type)
+
+
+def _resource_block(resource: BlobResourceContents) -> EmbeddedResourceContentBlock:
+    """
+    构建 ACP 内嵌资源内容块
+
+    :param resource: 内嵌资源内容
+    :return:
+    """
+    return EmbeddedResourceContentBlock(type='resource', resource=resource)
 
 
 def build_acp_prompt(
@@ -38,7 +80,7 @@ def build_acp_prompt(
     """
     if any(block.get('type') != 'text' for block in blocks):
         raise ACPError('委托指令必须是文本提示块')
-    prompt: list[AcpPromptBlock] = [text_block(str(block.get('text', ''))) for block in blocks]
+    prompt: list[AcpPromptBlock] = [_text_block(str(block.get('text', ''))) for block in blocks]
     remaining = 5 * 1024 * 1024
     for attachment in attachments:
         digest = hashlib.sha256(attachment.data).hexdigest()
@@ -50,7 +92,7 @@ def build_acp_prompt(
         )
         if digest in imported_hashes and (not native_supported or len(attachment.data) > remaining):
             prompt.append(
-                text_block(
+                _text_block(
                     f'附件 {attachment.identifier} 已导入当前工作区 inbound/，文件名以 {digest}- 开头。'
                     '请使用本地文件工具读取，具体路径以用户消息附带的导入记录为准'
                 )
@@ -63,15 +105,15 @@ def build_acp_prompt(
         encoded = base64.b64encode(attachment.data).decode('ascii')
         if attachment.media_type.startswith('text/'):
             try:
-                prompt.append(text_block(f'附件 {attachment.identifier}:\n{attachment.data.decode("utf-8")}'))
+                prompt.append(_text_block(f'附件 {attachment.identifier}:\n{attachment.data.decode("utf-8")}'))
             except UnicodeDecodeError as exc:
                 raise ACPError('文本附件不是 UTF-8，请转换编码后重新发送') from exc
         elif attachment.is_image and getattr(capabilities, 'image', False):
-            prompt.append(image_block(encoded, attachment.media_type, uri=uri))
+            prompt.append(_image_block(encoded, attachment.media_type, uri=uri))
         elif attachment.is_audio and getattr(capabilities, 'audio', False):
-            prompt.append(audio_block(encoded, attachment.media_type))
+            prompt.append(_audio_block(encoded, attachment.media_type))
         elif getattr(capabilities, 'embedded_context', False):
-            prompt.append(resource_block(BlobResourceContents(uri=uri, blob=encoded, mime_type=attachment.media_type)))
+            prompt.append(_resource_block(BlobResourceContents(uri=uri, blob=encoded, mime_type=attachment.media_type)))
         else:
             raise ACPError(f'外部 Agent 未声明支持附件 {attachment.identifier}（{attachment.media_type}），附件未发送')
     return prompt
