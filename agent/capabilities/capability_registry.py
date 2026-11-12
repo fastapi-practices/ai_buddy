@@ -10,6 +10,7 @@ from backend.plugin.ai_buddy.agent.capabilities.compaction import (
     build_compact_on_request_capability,
     build_compaction_capability,
 )
+from backend.plugin.ai_buddy.agent.capabilities.conversation_search import build_conversation_search_capability
 from backend.plugin.ai_buddy.agent.capabilities.files import build_file_understanding_capability
 from backend.plugin.ai_buddy.agent.capabilities.guardrails import build_guardrail_capabilities
 from backend.plugin.ai_buddy.agent.capabilities.mcp import build_mcp_capability
@@ -56,6 +57,8 @@ CAPABILITY_REGISTRY: tuple[CapabilityRegistration, ...] = (
     CapabilityRegistration(builder=build_skills_capability, scope=AIBuddyCapabilityScope.chat_and_work),
     CapabilityRegistration(builder=build_workspace_capability, scope=AIBuddyCapabilityScope.chat_and_work),
     CapabilityRegistration(builder=build_workspace_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
+    # 历史检索依赖步骤持久化落库，能力装配时按对话范围收敛语料
+    CapabilityRegistration(builder=build_conversation_search_capability, scope=AIBuddyCapabilityScope.chat_and_work),
     CapabilityRegistration(builder=build_sandbox_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
     CapabilityRegistration(builder=build_resource_tools_capability, scope=AIBuddyCapabilityScope.chat_and_work),
     CapabilityRegistration(builder=build_user_input_capability, scope=AIBuddyCapabilityScope.work_only),

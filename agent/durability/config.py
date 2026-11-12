@@ -11,7 +11,7 @@ def durability_enabled(forwarded_props: object | None = None) -> bool:
     :param forwarded_props: 本轮扩展参数
     :return:
     """
-    default = bool(getattr(settings, 'AI_BUDDY_AGENT_DURABILITY_ENABLED', False))
+    default = bool(settings.AI_BUDDY_AGENT_DURABILITY_ENABLED)
     if forwarded_props is None:
         return default
     override = getattr(forwarded_props, 'durability_enabled', None)
@@ -20,13 +20,23 @@ def durability_enabled(forwarded_props: object | None = None) -> bool:
     return bool(override)
 
 
+def step_persistence_enabled(forwarded_props: object | None = None) -> bool:
+    """
+    步骤持久化是否启用，容灾执行会强制开启，历史检索依赖它落库
+
+    :param forwarded_props: 本轮扩展参数
+    :return:
+    """
+    return bool(settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED) or durability_enabled(forwarded_props)
+
+
 def durability_recovery_enabled() -> bool:
     """
     是否开启崩溃恢复后台任务
 
     :return:
     """
-    return bool(getattr(settings, 'AI_BUDDY_AGENT_DURABILITY_RECOVERY_ENABLED', True))
+    return bool(settings.AI_BUDDY_AGENT_DURABILITY_RECOVERY_ENABLED)
 
 
 def durability_recovery_interval_seconds() -> int:
@@ -35,7 +45,7 @@ def durability_recovery_interval_seconds() -> int:
 
     :return:
     """
-    return max(5, int(getattr(settings, 'AI_BUDDY_AGENT_DURABILITY_RECOVERY_INTERVAL_SECONDS', 60)))
+    return max(5, int(settings.AI_BUDDY_AGENT_DURABILITY_RECOVERY_INTERVAL_SECONDS))
 
 
 def durability_stale_seconds() -> int:
@@ -44,4 +54,4 @@ def durability_stale_seconds() -> int:
 
     :return:
     """
-    return max(30, int(getattr(settings, 'AI_BUDDY_AGENT_DURABILITY_STALE_SECONDS', 60)))
+    return max(30, int(settings.AI_BUDDY_AGENT_DURABILITY_STALE_SECONDS))

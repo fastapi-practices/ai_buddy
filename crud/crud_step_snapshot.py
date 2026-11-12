@@ -37,6 +37,17 @@ class CRUDAIBuddyStepSnapshot(CRUDPlus[AIBuddyStepSnapshot]):
             stmt = stmt.where(self.model.state == 'complete')
         return (await db.execute(stmt.order_by(self.model.id.desc()).limit(1))).scalar_one_or_none()
 
+    async def get_list_by_run_id(self, db: AsyncSession, run_id: str) -> list[AIBuddyStepSnapshot]:
+        """
+        按写入顺序获取运行的已结算快照
+
+        :param db: 数据库会话
+        :param run_id: 运行 ID
+        :return:
+        """
+        stmt = select(self.model).where(self.model.run_id == run_id, self.model.state == 'complete')
+        return list((await db.execute(stmt.order_by(self.model.id.asc()))).scalars())
+
     @staticmethod
     async def create(db: AsyncSession, obj: AIBuddyStepSnapshot) -> None:
         """

@@ -86,6 +86,29 @@ def _tool_effect(row: AIBuddyStepToolEffect) -> ToolEffectRecord:
     )
 
 
+async def _snapshot_from_row(row: AIBuddyStepSnapshot, stored: dict[str, str]) -> ContinuableSnapshot:
+    """
+    将步骤快照记录转换为 SDK 快照
+
+    :param row: 步骤快照记录
+    :param stored: 消息内容索引
+    :return:
+    """
+    payloads: list[Any] = [json.loads(stored[ref]) for ref in row.message_refs]
+    messages = ModelMessagesTypeAdapter.validate_python(await decode_model_message_payloads(payloads))
+    return ContinuableSnapshot(
+        run_id=row.run_id,
+        step_index=row.step_index,
+        messages=messages,
+        conversation_id=row.conversation_id,
+        parent_run_id=row.parent_run_id,
+        agent_name=row.agent_name,
+        timestamp=row.snapshot_time,
+        state=row.state,
+        idempotency_key=row.idempotency_key,
+    )
+
+
 class AIBuddyStepStore:
     """基于 SQLAlchemy 的步骤持久化存储"""
 
@@ -249,19 +272,25 @@ class AIBuddyStepStore:
                 item.sha256: item.content
                 for item in await ai_buddy_step_message_dao.get_by_sha256s(db, set(row.message_refs))
             }
-        payloads: list[Any] = [json.loads(stored[ref]) for ref in row.message_refs]
-        messages = ModelMessagesTypeAdapter.validate_python(await decode_model_message_payloads(payloads))
-        return ContinuableSnapshot(
-            run_id=row.run_id,
-            step_index=row.step_index,
-            messages=messages,
-            conversation_id=row.conversation_id,
-            parent_run_id=row.parent_run_id,
-            agent_name=row.agent_name,
-            timestamp=row.snapshot_time,
-            state=row.state,
-            idempotency_key=row.idempotency_key,
-        )
+        return await _snapshot_from_row(row, stored)
+
+    @staticmethod
+    async def list_snapshots(*, run_id: str) -> list[ContinuableSnapshot]:
+        """
+        按写入顺序列出运行的已结算快照
+
+        :param run_id: 运行 ID
+        :return:
+        """
+        async with async_db_session() as db:
+            rows = await ai_buddy_step_snapshot_dao.get_list_by_run_id(db, run_id)
+            stored = {
+                item.sha256: item.content
+                for item in await ai_buddy_step_message_dao.get_by_sha256s(
+                    db, {ref for row in rows for ref in row.message_refs}
+                )
+            }
+        return [await _snapshot_from_row(row, stored) for row in rows]
 
     @staticmethod
     async def record_tool_effect(record: ToolEffectRecord) -> None:

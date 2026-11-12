@@ -10,7 +10,6 @@ from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyArtifactKind,
 from backend.plugin.ai_buddy.schema.artifact import CreateAIBuddyArtifactParam, UpdateAIBuddyArtifactParam
 from backend.plugin.ai_buddy.service.artifact_service import ai_buddy_artifact_service
 from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
-from backend.plugin.ai_buddy.service.message_history_service import ai_buddy_message_history_service
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
 
 _SNIPPET_CHARS = 240
@@ -42,7 +41,6 @@ def build_workspace_tools_capability(ctx: CapabilityContext) -> CapabilityResult
     toolset.tool(read_skill_file, metadata={'read_only': True})
     toolset.tool(list_artifacts, metadata={'read_only': True})
     toolset.tool(get_artifact, metadata={'read_only': True})
-    toolset.tool(search_conversation_history, metadata={'read_only': True})
     if ctx.forwarded_props.agent_mode != AIBuddyAgentMode.chat:
         toolset.tool(write_artifact)
     return CapabilityResult(
@@ -111,30 +109,6 @@ async def read_skill_file(
             )
     except (errors.NotFoundError, errors.RequestError) as exc:
         raise ModelRetry(exc.msg) from exc
-
-
-async def search_conversation_history(ctx: RunContext[ChatAgentDeps], query: str) -> str:
-    """
-    按关键字检索当前对话中已被压缩或过早的历史消息
-
-    :param ctx: 运行上下文
-    :param query: 检索关键字
-    :return:
-    """
-    if not ctx.deps.conversation_id:
-        return '当前没有可检索的对话'
-    try:
-        async with async_db_session() as db:
-            result = await ai_buddy_message_history_service.search(
-                db=db, conversation_id=ctx.deps.conversation_id, user_id=ctx.deps.user_id, q=query, cursor=None, limit=8
-            )
-    except errors.RequestError as exc:
-        raise ModelRetry(exc.msg) from exc
-    if not result.items:
-        return '未找到匹配的历史消息'
-    lines = [f'- #{item.message_index} {item.role}：{item.excerpt}' for item in result.items]
-    suffix = '\n仍有更多匹配，请使用更具体的关键字' if result.has_more else ''
-    return '匹配的历史消息：\n' + '\n'.join(lines) + suffix
 
 
 async def list_artifacts(ctx: RunContext[ChatAgentDeps]) -> str:
