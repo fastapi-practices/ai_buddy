@@ -10,6 +10,7 @@ from backend.plugin.ai_buddy.agent.capabilities.sandbox_tools import sandbox_too
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.model import AIBuddySkill
+from backend.plugin.ai_buddy.security.artifact_scanner import scan_artifact
 from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
 from backend.plugin.ai_buddy.utils.skill_parser import skill_file_guidance, skill_markdown_body
 
@@ -32,6 +33,18 @@ def build_skill_instruction(skill: AIBuddySkill, *, executable: bool = False) ->
     return f'{title}\n{guidance}\n\n{body}'
 
 
+def scan_skill(skill: AIBuddySkill) -> str | None:
+    """
+    扫描技能正文，命中提示注入或凭据外泄特征时返回风险摘要
+
+    :param skill: 技能记录
+    :return:
+    """
+    content = getattr(skill, 'content', '') or ''
+    result = scan_artifact(content, source=f'skill:{skill.id}')
+    return result.summary() if result.flagged else None
+
+
 def _skill_loader(*, skill_id: int, user_id: int, executable: bool) -> Callable[[], Awaitable[str]]:
     """
     在模型加载技能时重新校验可见性并读取正文
@@ -47,9 +60,12 @@ def _skill_loader(*, skill_id: int, user_id: int, executable: bool) -> Callable[
         try:
             async with async_db_session() as db:
                 skill = await ai_buddy_skill_service.get(db=db, pk=skill_id, user_id=user_id)
-            return build_skill_instruction(skill, executable=executable)
         except (errors.NotFoundError, errors.RequestError) as exc:
             raise ModelRetry('技能当前不可用，请使用其他技能或继续完成任务') from exc
+        threats = scan_skill(skill)
+        if threats:
+            raise ModelRetry(f'技能内容包含风险特征（{threats}），已拒绝加载，请改用其他技能')
+        return build_skill_instruction(skill, executable=executable)
 
     return load_instructions
 
@@ -73,6 +89,19 @@ async def build_skills_capability(ctx: CapabilityContext) -> Sequence[Capability
             skill = await ai_buddy_skill_service.get(db=ctx.db, pk=workspace_ref.id, user_id=ctx.user_id)
         except errors.NotFoundError:
             return ()
+        threats = scan_skill(skill)
+        if threats:
+            return (
+                CapabilityResult(
+                    capability=Capability(
+                        id=f'skill-{skill.id}',
+                        description=skill.description or skill.name,
+                        instructions=(
+                            f'技能「{skill.name}」的内容包含风险特征（{threats}），已扣留正文，请提示用户人工复核后再使用'
+                        ),
+                    )
+                ),
+            )
         return (
             CapabilityResult(
                 capability=Capability(

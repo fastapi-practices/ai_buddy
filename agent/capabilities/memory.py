@@ -6,6 +6,7 @@ from backend.plugin.ai_buddy.agent.work.memory_store import database_memory_stor
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
+from backend.plugin.ai_buddy.security.artifact_scanner import buddy_artifact_scanner
 from backend.plugin.ai_buddy.utils.memory_paths import memory_instructions
 
 
@@ -34,6 +35,8 @@ def build_memory_capability(ctx: CapabilityContext) -> list[CapabilityResult]:
                 store=database_memory_store,
                 namespace=str(ctx.user_id),
                 agent_name='fba-chat',
+                # 记忆跨会话复用，写入时拒绝注入，读取时扣留被标记的正文
+                scanner=buddy_artifact_scanner,
             ),
             introduces_function_tool_source=True,
         ),

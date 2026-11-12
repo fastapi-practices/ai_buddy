@@ -23,6 +23,7 @@ from backend.plugin.ai_buddy.model.skill import AIBuddySkill
 from backend.plugin.ai_buddy.schema.assistant import CreateAIBuddyAssistantParam, UpdateAIBuddyAssistantParam
 from backend.plugin.ai_buddy.schema.cron import CreateAIBuddyCronParam
 from backend.plugin.ai_buddy.schema.expert import CreateAIBuddyExpertParam, UpdateAIBuddyExpertParam
+from backend.plugin.ai_buddy.security.artifact_scanner import artifact_scan_notice, scan_artifact
 from backend.plugin.ai_buddy.service.assistant_service import ai_buddy_assistant_service
 from backend.plugin.ai_buddy.service.cron_service import ai_buddy_cron_service
 from backend.plugin.ai_buddy.service.expert_service import ai_buddy_expert_service
@@ -378,6 +379,10 @@ async def create_skill(
     """
     try:
         content = build_skill_markdown(name=name, description=description, body=body, version=version)
+        # 技能跨会话复用，写入前先拦截提示注入和凭据外泄
+        scanned = scan_artifact(content, source=f'skill:{name}')
+        if scanned.flagged:
+            return f'创建失败：{artifact_scan_notice(scanned)}'
         async with async_db_session.begin() as db:
             await ai_buddy_skill_service.create_from_payloads(
                 db=db,
@@ -408,6 +413,12 @@ async def update_skill(
     """
     if description is None and body is None and version is None:
         return '修改失败：没有需要修改的内容'
+    scanned = scan_artifact(
+        '\n'.join(part for part in (description, body, version) if part),
+        source=f'skill:{skill_id}',
+    )
+    if scanned.flagged:
+        return f'修改失败：{artifact_scan_notice(scanned)}'
     try:
         async with async_db_session.begin() as db:
             await ai_buddy_skill_service.update_content(
