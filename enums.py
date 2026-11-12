@@ -191,6 +191,7 @@ class AIBuddyWebSearchType(StrEnum):
     exa = 'exa'
     tavily = 'tavily'
     duckduckgo = 'duckduckgo'
+    keenable = 'keenable'
 
 
 class AIBuddyChatThinkingType(StrEnum):

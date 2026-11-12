@@ -16,12 +16,6 @@ from backend.plugin.core import check_plugin_installed_async
 from backend.utils.dynamic_config import load_config, str_to_bool
 from backend.utils.serializers import select_list_serialize
 
-_AI_CONFIG_KEYS: tuple[str, ...] = (
-    'AI_BUDDY_EXA_API_KEY',
-    'AI_BUDDY_TAVILY_API_KEY',
-    'AI_BUDDY_TYPESAFE_API_KEY',
-)
-
 
 def _non_negative_int(value: str) -> int:
     """
@@ -135,6 +129,7 @@ def _execution_backend(value: str) -> str:
 _AI_CONFIG_MAPPING: dict[str, Callable[[str], object]] = {
     'AI_BUDDY_AGENT_EXECUTION_BACKEND': _execution_backend,
     'AI_BUDDY_EXA_API_KEY': str,
+    'AI_BUDDY_KEENABLE_API_KEY': str,
     'AI_BUDDY_TAVILY_API_KEY': str,
     'AI_BUDDY_TYPESAFE_API_KEY': str,
     'AI_BUDDY_HTTP_MAX_RETRIES': _non_negative_int,
@@ -169,6 +164,9 @@ _AI_CONFIG_MAPPING: dict[str, Callable[[str], object]] = {
     'AI_BUDDY_RAG_TOP_K': _positive_int,
     'AI_BUDDY_JEV_MODEL': _jev_model,
     'AI_BUDDY_JEV_INPUT_THRESHOLD': _unit_interval,
+    'AI_BUDDY_AGENT_FALLBACK_MODELS': str,
+    'AI_BUDDY_AGENT_DYNAMIC_SUBAGENTS_ENABLED': str_to_bool,
+    'AI_BUDDY_AGENT_DYNAMIC_SUBAGENTS_MAX': _positive_int,
     'AI_BUDDY_AGENT_DURABILITY_ENABLED': str_to_bool,
     'AI_BUDDY_AGENT_DURABILITY_RECOVERY_ENABLED': str_to_bool,
     'AI_BUDDY_AGENT_DURABILITY_RECOVERY_INTERVAL_SECONDS': _positive_int,
@@ -208,7 +206,12 @@ async def get_ai_buddy_config_snapshot(db: AsyncSession) -> tuple[StatusType, di
     :param db: 数据库会话
     :return:
     """
-    values = {key: getattr(settings, key, '') for key in _AI_CONFIG_KEYS}
+    values = {
+        'AI_BUDDY_EXA_API_KEY': settings.AI_BUDDY_EXA_API_KEY,
+        'AI_BUDDY_KEENABLE_API_KEY': settings.AI_BUDDY_KEENABLE_API_KEY,
+        'AI_BUDDY_TAVILY_API_KEY': settings.AI_BUDDY_TAVILY_API_KEY,
+        'AI_BUDDY_TYPESAFE_API_KEY': settings.AI_BUDDY_TYPESAFE_API_KEY,
+    }
     if not await check_plugin_installed_async('config'):
         return StatusType.enable, values
     try:
@@ -225,7 +228,7 @@ async def get_ai_buddy_config_snapshot(db: AsyncSession) -> tuple[StatusType, di
             config_list = select_list_serialize(rows) if hasattr(rows[0], '__table__') else rows
             configs = {str(item['key']): item.get('value') or '' for item in config_list}
     status = StatusType.disable if configs.get('AI_BUDDY_CONFIG_STATUS', '1') == '0' else StatusType.enable
-    for key in _AI_CONFIG_KEYS:
+    for key in values:
         if key in configs:
             values[key] = configs[key]
     return status, values

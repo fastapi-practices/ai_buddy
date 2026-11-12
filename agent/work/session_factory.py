@@ -110,6 +110,7 @@ async def open_chat_session(
             db=db,
             forwarded_props=forwarded_props,
             generation_handler=generation_handler,
+            user_id=user_id,
             conversation_id=conversation_id,
             assistant_id=assistant_id,
             context_window=model.context_window,

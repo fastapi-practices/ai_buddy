@@ -10,6 +10,8 @@ _WEB_SEARCH_OPTIONS: tuple[tuple[AIBuddyWebSearchType, str, str | None], ...] = 
     (AIBuddyWebSearchType.duckduckgo, 'DuckDuckGo', None),
     (AIBuddyWebSearchType.exa, 'Exa', 'AI_BUDDY_EXA_API_KEY'),
     (AIBuddyWebSearchType.tavily, 'Tavily', 'AI_BUDDY_TAVILY_API_KEY'),
+    # Keenable 免密钥即可使用，托管密钥只用于提高限流，因此不校验密钥
+    (AIBuddyWebSearchType.keenable, 'Keenable', None),
 )
 
 

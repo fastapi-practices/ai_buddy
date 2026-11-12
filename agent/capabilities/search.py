@@ -6,6 +6,8 @@ from pydantic_ai.common_tools.exa import ExaToolset
 from pydantic_ai.common_tools.tavily import tavily_search_tool
 from pydantic_ai.native_tools import WebFetchTool, WebSearchTool, XSearchTool
 from pydantic_ai.toolsets import FunctionToolset
+from pydantic_ai_harness import KeenableSearch
+from pydantic_ai_harness.keenable import HttpKeenableClient
 
 from backend.common.exception import errors
 from backend.core.conf import settings
@@ -69,6 +71,21 @@ async def build_search_capabilities(ctx: CapabilityContext) -> Sequence[Capabili
             results.append(
                 CapabilityResult(
                     capability=Toolset(FunctionToolset([duckduckgo_search_tool()])),
+                    introduces_function_tool_source=True,
+                )
+            )
+        case AIBuddyWebSearchType.keenable:
+            # Keenable 默认免密钥，用托管密钥只是提高限流，缺少密钥时仍然可用
+            if not function_tools_allowed(
+                adapter=ctx.adapter, supports_tools=ctx.supports_tools, has_builtin_tools=ctx.has_builtin_tools
+            ):
+                raise errors.RequestError(msg='当前模型不支持联网搜索，请更换模型或关闭联网搜索')
+            await load_ai_buddy_config(ctx.db)
+            results.append(
+                CapabilityResult(
+                    capability=KeenableSearch(
+                        client=HttpKeenableClient(api_key=settings.AI_BUDDY_KEENABLE_API_KEY or None),
+                    ),
                     introduces_function_tool_source=True,
                 )
             )

@@ -8,6 +8,7 @@ from backend.common.log import log
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.agent.capabilities.capability_pipeline import assemble_capabilities
+from backend.plugin.ai_buddy.agent.model_fallback import build_fallback_models
 from backend.plugin.ai_buddy.agent.work.generation.image_direct import (
     DirectImageGenerationModel,
     build_direct_image_generation_settings,
@@ -142,6 +143,7 @@ class AgentSession:
         db: AsyncSession,
         forwarded_props: AIBuddyForwardedPropsParam,
         generation_handler: GenerationHandler,
+        user_id: int | None = None,
         conversation_id: str | None = None,
         assistant_id: int | None = None,
         context_window: int | None = None,
@@ -155,6 +157,7 @@ class AgentSession:
         :param db: 数据库会话
         :param forwarded_props: 聊天扩展参数
         :param generation_handler: 生成模式处理器
+        :param user_id: 用户 ID，备用模型按此用户可见范围解析
         :param conversation_id: 对话 ID
         :param assistant_id: 新建对话时的助手 ID
         :param context_window: 模型上下文窗口 token 数
@@ -186,10 +189,12 @@ class AgentSession:
         )
         supported_native_tools = profile.get('supported_native_tools', frozenset())
         supports_image_output = bool(profile.get('supports_image_output', False))
+        fallback_models = await build_fallback_models(user_id=user_id, http_client=self._http_client)
         capabilities = await assemble_capabilities(
             db=db,
             adapter=self.adapter,
             forwarded_props=forwarded_props,
+            fallback_models=fallback_models,
             user_id=None if self.invocation_context is None else self.invocation_context.user_id,
             is_superuser=False if self.invocation_context is None else self.invocation_context.is_superuser,
             supports_tools=supports_tools,

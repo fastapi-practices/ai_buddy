@@ -6,6 +6,7 @@ from pydantic_ai.capabilities import (
     Caching,
     IncludeToolReturnSchemas,
     Instrumentation,
+    ModelFallback,
     RaiseContentFilterError,
     ReinjectSystemPrompt,
     SetToolMetadata,
@@ -28,7 +29,7 @@ from backend.plugin.ai_buddy.agent.capabilities.capability_registry import (
     resolve_capability_mode,
 )
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
-from backend.plugin.ai_buddy.agent.durability.config import DURABILITY_AGENT_NAME, durability_enabled
+from backend.plugin.ai_buddy.agent.durability.config import DURABILITY_AGENT_NAME, step_persistence_enabled
 from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext
 from backend.plugin.ai_buddy.enums import (
@@ -60,6 +61,7 @@ async def assemble_capabilities(
     supported_native_tools: frozenset[type[AbstractNativeTool]],
     supports_image_output: bool,
     model: Model | None = None,
+    fallback_models: list[Model] | None = None,
     conversation_id: str | None = None,
     assistant_id: int | None = None,
     context_window: int | None = None,
@@ -78,6 +80,7 @@ async def assemble_capabilities(
     :param supported_native_tools: 支持的原生工具集合
     :param supports_image_output: 是否支持图片输出
     :param model: 当前模型实例
+    :param fallback_models: 备用模型链，主模型失败时依次尝试
     :param conversation_id: 对话 ID
     :param assistant_id: 新建对话时的助手 ID
     :param context_window: 模型上下文窗口 token 数
@@ -105,6 +108,8 @@ async def assemble_capabilities(
         thinking_effort = False if thinking == AIBuddyChatThinkingType.off else thinking
         capabilities.append(Thinking(thinking_effort))
     capabilities.append(RaiseContentFilterError())
+    if fallback_models:
+        capabilities.append(ModelFallback(*fallback_models))
     if text:
         capabilities.append(Caching(forwarded_props.cache_enabled))
         if forwarded_props.background_subagents_enabled and conversation_id and mode != AIBuddyAgentMode.chat:
@@ -116,7 +121,7 @@ async def assemble_capabilities(
             SetToolMetadata(tools=lambda _ctx, tool_def: is_jev_tool_risk(tool_def.name), ai_buddy_high_risk=True),
             DetectLoops(),
         ))
-        if settings.AI_BUDDY_AGENT_STEP_PERSISTENCE_ENABLED or durability_enabled(forwarded_props):
+        if step_persistence_enabled(forwarded_props):
             capabilities.append(StepPersistence(store=ai_buddy_step_store, agent_name=DURABILITY_AGENT_NAME))
         if settings.AI_BUDDY_AGENT_INCLUDE_TOOL_RETURN_SCHEMAS:
             capabilities.append(IncludeToolReturnSchemas())
