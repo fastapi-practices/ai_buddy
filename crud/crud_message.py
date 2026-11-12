@@ -2,7 +2,8 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Literal
 
-from sqlalchemy import Select, and_, false, func, or_, select, update
+from sqlalchemy import Select, and_, cast, false, func, or_, select, update
+from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -95,6 +96,38 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
         :return:
         """
         query = select(self.model).where(self.model.conversation_id == conversation_id, self.model.deleted == 0)
+        if before is not None:
+            index, pk = before
+            query = query.where(
+                or_(self.model.message_index < index, and_(self.model.message_index == index, self.model.id < pk))
+            )
+        result = await db.scalars(query.order_by(self.model.message_index.desc(), self.model.id.desc()).limit(limit))
+        return result.all()
+
+    async def get_search_page(
+        self,
+        db: AsyncSession,
+        conversation_id: str,
+        *,
+        pattern: str,
+        before: tuple[int, int] | None,
+        limit: int,
+    ) -> Sequence[AIBuddyMessage]:
+        """
+        按关键字检索历史消息，匹配下推到数据库，只返回命中的行
+
+        :param db: 数据库会话
+        :param conversation_id: 对话 ID
+        :param pattern: 转义后的匹配模式
+        :param before: 游标之前的消息 ID
+        :param limit: 数量上限
+        :return:
+        """
+        query = select(self.model).where(
+            self.model.conversation_id == conversation_id,
+            self.model.deleted == 0,
+            cast(self.model.model_messages, TEXT).ilike(f'%{pattern}%', escape='\\'),
+        )
         if before is not None:
             index, pk = before
             query = query.where(

@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.crud.crud_message_error import ai_buddy_message_error_dao
-from backend.plugin.ai_buddy.enums import AIBuddyMessageRole, AIBuddyMessageStatus, AIBuddyQueryLimit
+from backend.plugin.ai_buddy.enums import AIBuddyMessageRole, AIBuddyQueryLimit
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage
 from backend.plugin.ai_buddy.schema.chat_message import AIBuddyChatAgUiMessagesSnapshotDetail
 from backend.plugin.ai_buddy.schema.message_history import (
@@ -24,6 +24,17 @@ from backend.plugin.ai_buddy.utils.history_cursor import decode_history_cursor, 
 from backend.plugin.ai_buddy.utils.message_converter import expand_message_row_metadata, expand_message_rows
 from backend.plugin.ai_buddy.utils.message_snapshot import serialize_messages_to_snapshot
 from backend.plugin.ai_buddy.utils.plan_store import get_plan_store
+
+
+def _search_pattern(needle: str) -> str:
+    """
+    把检索关键字转成数据库文本里的样子，JSON 会转义换行与引号，通配符也要转义
+
+    :param needle: 检索关键字
+    :return:
+    """
+    escaped = json.dumps(needle, ensure_ascii=False)[1:-1]
+    return escaped.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 
 
 class AIBuddyMessageHistoryService:
@@ -83,51 +94,35 @@ class AIBuddyMessageHistoryService:
         limit = min(max(1, limit), AIBuddyQueryLimit.message_search.value)
         before = decode_history_cursor(cursor=cursor)
         items: list[GetAIBuddyMessageSearchHitDetail] = []
-        scanned = 0
-        last = None
-        while scanned < 500:
-            rows = await ai_buddy_message_dao.get_history_page(db, conversation_id, before=before, limit=51)
-            for row in rows[:50]:
-                last = row
-                scanned += 1
-                candidate = self._snapshot_text(value=row.model_messages) + json.dumps(
-                    row.model_messages, ensure_ascii=False
-                )
-                if (
-                    row.model_messages
-                    and row.status == AIBuddyMessageStatus.success
-                    and needle not in candidate.casefold()
-                ):
+        rows = await ai_buddy_message_dao.get_search_page(
+            db, conversation_id, needle=needle, before=before, limit=limit + 1
+        )
+        has_more = len(rows) > limit
+        for row in rows[:limit]:
+            snapshot = await self._serialize_rows(db=db, conversation_id=conversation_id, rows=[row])
+            payload = snapshot.model_dump(by_alias=True)
+            for message in payload.get('messages', []):
+                text = self._snapshot_text(value=message)
+                position = text.casefold().find(needle)
+                if position < 0:
                     continue
-                snapshot = await self._serialize_rows(db=db, conversation_id=conversation_id, rows=[row])
-                payload = snapshot.model_dump(by_alias=True)
-                for message in payload.get('messages', []):
-                    text = self._snapshot_text(value=message)
-                    position = text.casefold().find(needle)
-                    if position < 0:
-                        continue
-                    items.append(
-                        GetAIBuddyMessageSearchHitDetail(
-                            message_id=row.id,
-                            snapshot_id=message['id'],
-                            message_index=row.message_index,
-                            role=message['role'],
-                            text=text,
-                            excerpt=text[max(0, position - 80) : position + len(q) + 160],
-                        )
+                items.append(
+                    GetAIBuddyMessageSearchHitDetail(
+                        message_id=row.id,
+                        snapshot_id=message['id'],
+                        message_index=row.message_index,
+                        role=message['role'],
+                        text=text,
+                        excerpt=text[max(0, position - 80) : position + len(q) + 160],
                     )
-                    break
-                if len(items) >= limit:
-                    more = row is not rows[-1]
-                    return GetAIBuddyMessageSearchDetail(
-                        items=items, has_more=more, next_cursor=encode_history_cursor(row=row) if more else None
-                    )
-            if len(rows) <= 50:
-                return GetAIBuddyMessageSearchDetail(items=items, has_more=False)
-            assert last is not None
-            before = (last.message_index, last.id)
-        assert last is not None
-        return GetAIBuddyMessageSearchDetail(items=items, has_more=True, next_cursor=encode_history_cursor(row=last))
+                )
+                break
+        last = rows[limit - 1] if rows[:limit] else None
+        return GetAIBuddyMessageSearchDetail(
+            items=items,
+            has_more=has_more,
+            next_cursor=encode_history_cursor(row=last) if has_more and last is not None else None,
+        )
 
     @staticmethod
     async def plan(*, db: AsyncSession, conversation_id: str, user_id: int) -> GetAIBuddyPlanDetail:
