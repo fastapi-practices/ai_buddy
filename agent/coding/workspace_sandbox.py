@@ -10,7 +10,9 @@ from posixpath import join, normpath
 from shlex import quote
 from uuid import uuid4
 
+from pydantic_ai.messages import Authority
 from pydantic_ai.workspaces import (
+    AuthorityWorkspace,
     Workspace,
     WorkspaceError,
     WorkspaceOutputLimitError,
@@ -20,6 +22,7 @@ from pydantic_ai.workspaces import (
 
 from backend.common.exception import errors
 from backend.core.conf import settings
+from backend.plugin.ai_buddy.agent.coding.authority import authority_path_mapping
 from backend.plugin.ai_buddy.agent.coding.sandbox import (
     INPUT_ATTACHMENT_MAX_BYTES,
     LIVE_SANDBOXES,
@@ -66,7 +69,11 @@ class WorkspaceSandbox:
         :param permission_mode: 权限模式
         :return:
         """
-        self._workspace = workspace
+        self._workspace = AuthorityWorkspace(
+            workspace,
+            authority='user',
+            path_authority=authority_path_mapping(),
+        )
         self.provider = provider
         self._conversation_id = conversation_id
         self.execution_backend = AIBuddyExecutionBackend.sandbox
@@ -78,6 +85,15 @@ class WorkspaceSandbox:
         """从本进程摘除，沙箱本身由服务商的空闲与寿命策略回收，销毁见 destroy_conversation_sandbox"""
         if LIVE_SANDBOXES.get(self._conversation_id) is self:
             LIVE_SANDBOXES.pop(self._conversation_id, None)
+
+    async def authority_of(self, *, path: str) -> Authority:
+        """
+        判断路径下文件的权限等级，第三方目录返回 none
+
+        :param path: 文件路径
+        :return:
+        """
+        return await self._workspace.authority_of(resolve_sandbox_path(path))
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
         """

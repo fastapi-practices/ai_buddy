@@ -24,6 +24,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from backend.common.exception import errors
 from backend.core.conf import settings
+from backend.plugin.ai_buddy.agent.coding.authority import third_party_authority
 from backend.plugin.ai_buddy.enums import (
     AIBuddyCommandReason,
     AIBuddyExecutionBackend,
@@ -40,6 +41,7 @@ from backend.plugin.ai_buddy.schema.execution import AIBuddyExecutionFileEntry
 
 if TYPE_CHECKING:
     from opensandbox import Sandbox
+    from pydantic_ai.messages import Authority
 
     from backend.plugin.ai_buddy.agent.coding.execution_bridge import ExecutionBridge
 
@@ -113,6 +115,15 @@ class CodingSandbox(Protocol):
         列出工作区目录项
 
         :param path: 工作区相对路径
+        :return:
+        """
+        ...
+
+    async def authority_of(self, *, path: str) -> Authority:
+        """
+        判断路径下文件的权限等级，第三方目录返回 none
+
+        :param path: 文件路径
         :return:
         """
         ...
@@ -326,6 +337,15 @@ class DesktopBridgeWorkspace:
             pass
         finally:
             await self.bridge.close()
+
+    async def authority_of(self, *, path: str) -> Authority:
+        """
+        判断路径下文件的权限等级
+
+        :param path: 文件路径
+        :return:
+        """
+        return third_party_authority(path)
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
         """
@@ -569,6 +589,15 @@ class OpenSandboxWorkspace:
         self._stopped = True
         if LIVE_SANDBOXES.get(self._conversation_id) is self:
             LIVE_SANDBOXES.pop(self._conversation_id, None)
+
+    async def authority_of(self, *, path: str) -> Authority:
+        """
+        判断路径下文件的权限等级
+
+        :param path: 文件路径
+        :return:
+        """
+        return third_party_authority(path)
 
     async def list_entries(self, *, path: str = '.') -> list[dict[str, object]]:
         """

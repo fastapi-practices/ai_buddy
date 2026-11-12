@@ -355,6 +355,20 @@ def _delivery_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
     ]
 
 
+async def _reject_third_party_path(ctx: AgentRunContext, path: str) -> None:
+    """
+    拒绝改写第三方依赖与生成物目录下的文件
+
+    :param ctx: 运行上下文
+    :param path: 工作区相对路径
+    :return:
+    """
+    if ctx.sandbox is None:
+        return
+    if await ctx.sandbox.authority_of(path=path) == 'none':
+        raise errors.RequestError(msg='该路径属于第三方依赖或生成物目录，不可改写，请改在项目自有代码中')
+
+
 def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
     """
     构建 Agent 内置工具和资源引用工具
@@ -384,7 +398,9 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         :param arguments: 工具参数
         :return:
         """
-        return await ctx.sandbox.write_file(path=_string(arguments, 'path'), content=_string(arguments, 'content'))
+        path = _string(arguments, 'path')
+        await _reject_third_party_path(ctx, path)
+        return await ctx.sandbox.write_file(path=path, content=_string(arguments, 'content'))
 
     async def edit_file(arguments: dict[str, Any]) -> str:
         """
@@ -393,8 +409,10 @@ def build_builtin_tools(ctx: AgentRunContext) -> list[BoundAgentTool]:
         :param arguments: 工具参数
         :return:
         """
+        path = _string(arguments, 'path')
+        await _reject_third_party_path(ctx, path)
         return await ctx.sandbox.edit_file(
-            path=_string(arguments, 'path'),
+            path=path,
             old_text=_string(arguments, 'old_text'),
             new_text=_string(arguments, 'new_text'),
         )
