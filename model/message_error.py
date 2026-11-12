@@ -2,6 +2,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -20,4 +21,4 @@ class AIBuddyMessageError(Base):
     message_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='消息 ID')
     conversation_id: Mapped[str] = mapped_column(sa.String(64), index=True, comment='对话 ID')
     message: Mapped[str] = mapped_column(sa.Text, comment='错误信息')
-    detail: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='错误详情')
+    detail: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=None, comment='错误详情')

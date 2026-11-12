@@ -2,6 +2,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -21,7 +22,7 @@ class AIBuddyStepSnapshot(Base):
     step_index: Mapped[int] = mapped_column(comment='步骤序号')
     snapshot_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), comment='快照时间')
     state: Mapped[str] = mapped_column(sa.String(32), comment='快照状态')
-    message_refs: Mapped[list[str]] = mapped_column(sa.JSON(), comment='消息内容摘要引用')
+    message_refs: Mapped[list[str]] = mapped_column(JSONB, comment='消息内容摘要引用')
     conversation_id: Mapped[str | None] = mapped_column(sa.String(64), default=None, comment='对话 ID')
     parent_run_id: Mapped[str | None] = mapped_column(sa.String(64), default=None, comment='父运行 ID')
     agent_name: Mapped[str | None] = mapped_column(sa.String(128), default=None, comment='Agent 名称')

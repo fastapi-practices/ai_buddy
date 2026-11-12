@@ -2,6 +2,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.enums import StatusType
@@ -23,7 +24,7 @@ class AIBuddyChannel(Base):
     user_id: Mapped[int] = mapped_column(sa.BigInteger, comment='用户 ID')
     name: Mapped[str] = mapped_column(sa.String(64), comment='通道名称')
     type: Mapped[str] = mapped_column(sa.String(32), default=AIBuddyChannelType.feishu, comment='通道类型')
-    config: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='通道配置')
+    config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=None, comment='通道配置')
     status: Mapped[int] = mapped_column(default=StatusType.enable.value, comment='状态（0停用 1正常）')
     show_thinking: Mapped[bool] = mapped_column(default=True, comment='是否展示思考过程')
     show_tool_hints: Mapped[bool] = mapped_column(default=True, comment='是否展示工具调用提示')

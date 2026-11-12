@@ -129,3 +129,49 @@ values
 ('容灾静默阈值', 'AI', 'AI_BUDDY_AGENT_DURABILITY_STALE_SECONDS', '60', false, '控制助手消息静默多久判定为中断并触发恢复', now(), null);
 
 select setval(pg_get_serial_sequence('sys_config', 'id'), coalesce(max(id), 0) + 1, true) from sys_config;
+
+do $$
+-- 结构化列统一收敛为 JSONB：json 不支持包含运算与 GIN 索引，转换成 JSONB 后才能建索引
+-- 只转换仍是 json 类型的列，已是 JSONB 的列会被跳过，脚本可重复执行
+declare
+    target record;
+begin
+    for target in
+        select table_name, column_name
+        from information_schema.columns
+        where table_schema = current_schema()
+          and data_type = 'json'
+          and (table_name, column_name) in (
+                ('ai_buddy_assistant', 'starters'),
+                ('ai_buddy_channel', 'config'),
+                ('ai_buddy_channel_user', 'extra'),
+                ('ai_buddy_conversation_audit', 'detail'),
+                ('ai_buddy_cron', 'mcp_ids'),
+                ('ai_buddy_expert', 'starters'),
+                ('ai_buddy_expert', 'mcp_ids'),
+                ('ai_buddy_expert', 'skill_ids'),
+                ('ai_buddy_expert', 'knowledge_ids'),
+                ('ai_buddy_follow_up', 'attachments'),
+                ('ai_buddy_follow_up', 'forwarded_props'),
+                ('ai_buddy_follow_up', 'user_context'),
+                ('ai_buddy_mcp', 'headers'),
+                ('ai_buddy_mcp', 'args'),
+                ('ai_buddy_mcp', 'env'),
+                ('ai_buddy_message', 'model_messages'),
+                ('ai_buddy_message', 'turn_context'),
+                ('ai_buddy_message_error', 'detail'),
+                ('ai_buddy_model', 'capabilities'),
+                ('ai_buddy_model', 'input_modalities'),
+                ('ai_buddy_model', 'thinking_policy'),
+                ('ai_buddy_object_audit', 'detail'),
+                ('ai_buddy_step_event', 'event_metadata'),
+                ('ai_buddy_step_run', 'run_metadata'),
+                ('ai_buddy_step_snapshot', 'message_refs')
+          )
+    loop
+        execute format(
+            'alter table %I alter column %I type jsonb using %I::jsonb',
+            target.table_name, target.column_name, target.column_name
+        );
+    end loop;
+end $$;

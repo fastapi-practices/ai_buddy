@@ -1,8 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, cast
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -100,8 +99,8 @@ class CRUDAIBuddyModel(CRUDPlus[AIBuddyModel]):
             AIBuddyProvider.deleted == 0,
         )
         if capability is not None:
-            # PostgreSQL 内置 JSONB 包含运算，直接按数组元素匹配能力项
-            stmt = stmt.where(cast(self.model.capabilities, JSONB).contains([capability]))
+            # PostgreSQL 数组包含运算，直接按数组元素匹配能力项
+            stmt = stmt.where(self.model.capabilities.contains([capability]))
         return stmt
 
     async def get_all(

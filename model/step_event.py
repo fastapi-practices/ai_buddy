@@ -2,6 +2,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -27,5 +28,5 @@ class AIBuddyStepEvent(Base):
     tool_call_id: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='工具调用 ID')
     tool_name: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='工具名称')
     error: Mapped[str | None] = mapped_column(sa.Text, default=None, comment='错误信息')
-    event_metadata: Mapped[dict[str, str] | None] = mapped_column(sa.JSON(), default=None, comment='事件元数据')
+    event_metadata: Mapped[dict[str, str] | None] = mapped_column(JSONB, default=None, comment='事件元数据')
     idempotency_key: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='边界幂等键')

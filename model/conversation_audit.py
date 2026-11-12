@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -16,4 +17,4 @@ class AIBuddyConversationAudit(Base):
     conversation_id: Mapped[str] = mapped_column(sa.String(64), index=True, comment='对话 ID')
     action: Mapped[str] = mapped_column(sa.String(16), comment='审计动作')
     client: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='访问来源，取自 User-Agent')
-    detail: Mapped[dict[str, str | int | None] | None] = mapped_column(sa.JSON(), default=None, comment='审计详情')
+    detail: Mapped[dict[str, str | int | None] | None] = mapped_column(JSONB, default=None, comment='审计详情')

@@ -2,6 +2,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.enums import StatusType
@@ -27,7 +28,7 @@ class AIBuddyCron(Base):
     fresh_thread: Mapped[bool] = mapped_column(default=False, comment='每次执行是否新开对话')
     provider_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='覆盖供应商 ID')
     model_id: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='覆盖模型 ID')
-    mcp_ids: Mapped[list[int] | None] = mapped_column(sa.JSON(), default=None, comment='本轮 MCP ID 列表')
+    mcp_ids: Mapped[list[int] | None] = mapped_column(JSONB, default=None, comment='本轮 MCP ID 列表')
     status: Mapped[int] = mapped_column(default=StatusType.enable.value, comment='状态（0停用 1正常）')
     last_run_time: Mapped[datetime | None] = mapped_column(
         sa.DateTime(timezone=True), default=None, comment='最近执行时间'

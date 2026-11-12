@@ -2,6 +2,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -25,4 +26,4 @@ class AIBuddyChannelUser(Base):
     channel_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='通道 ID')
     user_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='系统用户 ID')
     external_id: Mapped[str] = mapped_column(sa.String(128), comment='平台用户标识')
-    extra: Mapped[dict[str, Any] | None] = mapped_column(sa.JSON(), default=None, comment='附加映射信息')
+    extra: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=None, comment='附加映射信息')

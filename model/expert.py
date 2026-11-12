@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -19,9 +20,9 @@ class AIBuddyExpert(Base):
     name: Mapped[str] = mapped_column(sa.String(64), comment='专家名称')
     prompt: Mapped[str] = mapped_column(sa.Text, comment='角色提示词')
     description: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='专家描述')
-    starters: Mapped[list[str] | None] = mapped_column(sa.JSON(), default=None, comment='开场白列表')
-    mcp_ids: Mapped[list[int] | None] = mapped_column(sa.JSON(), default=None, comment='默认 MCP ID 列表')
-    skill_ids: Mapped[list[int] | None] = mapped_column(sa.JSON(), default=None, comment='默认技能 ID 列表')
-    knowledge_ids: Mapped[list[int] | None] = mapped_column(sa.JSON(), default=None, comment='默认知识库 ID 列表')
+    starters: Mapped[list[str] | None] = mapped_column(JSONB, default=None, comment='开场白列表')
+    mcp_ids: Mapped[list[int] | None] = mapped_column(JSONB, default=None, comment='默认 MCP ID 列表')
+    skill_ids: Mapped[list[int] | None] = mapped_column(JSONB, default=None, comment='默认技能 ID 列表')
+    knowledge_ids: Mapped[list[int] | None] = mapped_column(JSONB, default=None, comment='默认知识库 ID 列表')
     sort: Mapped[int] = mapped_column(default=0, comment='排序')
     usage_count: Mapped[int] = mapped_column(default=0, server_default='0', comment='使用次数')

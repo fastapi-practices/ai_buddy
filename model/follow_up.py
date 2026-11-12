@@ -3,6 +3,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -24,9 +25,9 @@ class AIBuddyFollowUp(Base):
     user_id: Mapped[int] = mapped_column(sa.BigInteger, comment='用户 ID')
     client_request_id: Mapped[str] = mapped_column(sa.String(128), comment='客户端幂等 ID')
     content: Mapped[str] = mapped_column(sa.Text, comment='跟进文本')
-    attachments: Mapped[list[dict[str, Any]]] = mapped_column(sa.JSON, comment='AG-UI 附件内容')
-    forwarded_props: Mapped[dict[str, Any]] = mapped_column(sa.JSON, comment='本轮运行参数')
-    user_context: Mapped[dict[str, Any]] = mapped_column(sa.JSON, comment='提交时用户上下文')
+    attachments: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, comment='AG-UI 附件内容')
+    forwarded_props: Mapped[dict[str, Any]] = mapped_column(JSONB, comment='本轮运行参数')
+    user_context: Mapped[dict[str, Any]] = mapped_column(JSONB, comment='提交时用户上下文')
     mode: Mapped[str] = mapped_column(sa.String(16), comment='请求处理方式')
     position: Mapped[int] = mapped_column(sa.Integer, comment='排队顺序')
     status: Mapped[str] = mapped_column(sa.String(16), default=AIBuddyFollowUpStatus.queued.value, comment='跟进状态')
