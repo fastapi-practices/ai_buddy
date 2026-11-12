@@ -11,13 +11,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from backend.common.log import log
 from backend.database.db import async_db_session
 from backend.plugin.ai_buddy.crud.crud_memory_file import ai_buddy_memory_file_dao
 from backend.plugin.ai_buddy.crud.crud_memory_operation import ai_buddy_memory_operation_dao
 from backend.plugin.ai_buddy.model.memory_file import AIBuddyMemoryFile
-from backend.plugin.ai_buddy.utils.qdrant_store import delete_memory_vector, upsert_memory_vector
-from backend.plugin.ai_buddy.utils.text_vector import hash_embed
 
 
 class DatabaseMemoryStore:
@@ -150,11 +147,6 @@ class DatabaseMemoryStore:
                 await ai_buddy_memory_operation_dao.complete(
                     db, operation.id, version=mutation.version, existed=mutation.existed
                 )
-        try:
-            embedding = await run_in_threadpool(hash_embed, content)
-            await upsert_memory_vector(path=path, content=content, embedding=embedding)
-        except Exception as exc:
-            log.warning(f'记忆向量写入失败: {type(exc).__name__}')
         return mutation
 
     async def delete(
@@ -190,10 +182,6 @@ class DatabaseMemoryStore:
                 await ai_buddy_memory_operation_dao.complete(
                     db, operation.id, version=mutation.version, existed=mutation.existed
                 )
-        try:
-            await delete_memory_vector(path=path)
-        except Exception as exc:
-            log.warning(f'记忆向量删除失败: {type(exc).__name__}')
         return mutation
 
     @staticmethod
