@@ -39,8 +39,8 @@ COPY --from=node /opt/ /opt/
 
 # 文档处理依赖随镜像预装，沙箱默认禁止出网，技能脚本不能在运行时安装；版本与插件 requirements.txt 保持一致
 RUN pip install --no-cache-dir \
-        office-oxide==0.1.15 pypdf==6.21.4 pypdfium2==5.14.0 pdfplumber==0.11.10 reportlab==5.1.0 \
-        pandas==3.1.0 openpyxl==3.1.5 pillow==13.0.0 \
+        office-oxide==0.1.17 pypdf==7.0.1 pypdfium2==5.15.2 pdfplumber==0.11.10 reportlab==5.1.0 \
+        pandas==3.1.1 openpyxl==3.1.5 pillow==13.0.0 \
     && npm install -g pptxgenjs@4.0.1 \
     && npm cache clean --force
 ENV NODE_PATH=/usr/local/lib/node_modules

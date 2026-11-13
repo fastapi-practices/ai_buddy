@@ -28,6 +28,7 @@ from backend.plugin.ai_buddy.agent.capabilities.capability_registry import (
     build_profile_capabilities,
     resolve_capability_mode,
 )
+from backend.plugin.ai_buddy.agent.capabilities.extensions import build_extension_capabilities
 from backend.plugin.ai_buddy.agent.delegation import BuddyDelegationReports
 from backend.plugin.ai_buddy.agent.durability.config import DURABILITY_AGENT_NAME, step_persistence_enabled
 from backend.plugin.ai_buddy.agent.step_store import ai_buddy_step_store
@@ -150,6 +151,8 @@ async def assemble_capabilities(
     )
     assembly = await build_profile_capabilities(mode=mode, context=context)
     capabilities.extend(assembly.capabilities)
+    extension_results = await build_extension_capabilities(context=context)
+    capabilities.extend(result.capability for result in extension_results if result.capability is not None)
 
     _validate_capability_mix(
         has_fn_source=assembly.has_function_tool_source,
