@@ -17,7 +17,7 @@ class AIBuddySkill(Base):
     id: Mapped[id_key] = mapped_column(init=False)
     user_id: Mapped[int] = mapped_column(sa.BigInteger, index=True, comment='用户 ID')
     name: Mapped[str] = mapped_column(sa.String(128), comment='技能名称')
-    description: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='技能描述')
+    description: Mapped[str | None] = mapped_column(sa.String(1024), default=None, comment='技能描述')
     version: Mapped[str] = mapped_column(sa.String(32), default='0.1.0', server_default='0.1.0', comment='技能版本')
     object_key: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='对象键')
     storage_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='对象存储 ID')
