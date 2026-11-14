@@ -103,6 +103,14 @@ def build_run_error_payload(
                 if message is not None:
                     payload['message'] = message
                 break
+        # 业务异常可在 data 中携带机器码，供客户端替换为本地化文案
+        data = getattr(error, 'data', None)
+        if isinstance(data, dict):
+            payload.update({
+                key: value
+                for key in ('code', 'retryable')
+                if (value := data.get(key)) is not None and key not in payload
+            })
     payload.update({key: value for key, value in (extra or {}).items() if value is not None and key not in payload})
     return payload
 
