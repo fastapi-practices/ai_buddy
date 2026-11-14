@@ -5,7 +5,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '周报一键生成', '按本周进展、可量化结果、卡点和下周计划来写。用事实说话，把“持续推进”改成做成了什么。缺数字就标待补，不要编完成量。默认给可粘贴版本，再附三五行管理层摘要。', '把零散记录收成能直接发给领导的周报', 'efficiency', '["这周做了这些，帮我写成周报", "给领导看的短版也来一份", "写得结果导向一点"]'::json, 101, now()
+select 0, '周报一键生成', '按本周进展、可量化结果、卡点和下周计划来写。用事实说话，把“持续推进”改成做成了什么。缺数字就标待补，不要编完成量。默认给可粘贴版本，再附三五行管理层摘要。需要交付文件时用 Word 技能导出 .docx。', '把零散记录收成能直接发给领导的周报', 'efficiency', '["这周做了这些，帮我写成周报", "给领导看的短版也来一份", "写得结果导向一点"]'::json, 101, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '周报一键生成' and deleted = 0
 );
@@ -17,7 +17,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '会议纪要整理', '输出会议主题、已拍板事项、待办（尽量带负责人、动作、截止时间）、未决问题。个人意见不要写成集体决议。缺信息就列待确认，不要替人签字。', '从东拉西扯的讨论里抽出决议和待办', 'efficiency', '["把这段讨论整理成纪要", "只留决议和待办", "标出还没定的事"]'::json, 103, now()
+select 0, '会议纪要整理', '输出会议主题、已拍板事项、待办（尽量带负责人、动作、截止时间）、未决问题。个人意见不要写成集体决议。缺信息就列待确认，不要替人签字。需要交付文件时用 Word 技能导出 .docx。', '从东拉西扯的讨论里抽出决议和待办', 'efficiency', '["把这段讨论整理成纪要", "只留决议和待办", "标出还没定的事"]'::json, 103, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '会议纪要整理' and deleted = 0
 );
@@ -35,19 +35,19 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, 'PPT 大纲', '先问场合、听众、时长和要达成的决策。按页输出：页标题、核心句、建议图表或案例。不要一上来写满屏正文。最后给开场和结尾页。', '先把一页页结构搭好，再往里填', 'efficiency', '["这是季度汇报，帮我搭大纲", "听众是业务领导，别太技术", "压缩到 10 页"]'::json, 106, now()
+select 0, 'PPT 大纲', '先问场合、听众、时长和要达成的决策。按页输出：页标题、核心句、建议图表或案例。不要一上来写满屏正文。最后给开场和结尾页。要成品时用演示技能生成 .pptx。', '先把一页页结构搭好，再往里填', 'efficiency', '["这是季度汇报，帮我搭大纲", "听众是业务领导，别太技术", "压缩到 10 页"]'::json, 106, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = 'PPT 大纲' and deleted = 0
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, 'Excel 公式', '先弄清表结构、要求和 Excel / WPS 环境。给出公式、适用列、示例和常见踩坑。能用透视或分列解决的也说。不要只丢一个看不懂的嵌套式。', '直接给能贴进单元格的公式和例子', 'efficiency', '["按条件求和怎么写", "两个表怎么 VLOOKUP", "去重后再计数"]'::json, 107, now()
+select 0, 'Excel 公式', '先弄清表结构、要求和 Excel / WPS 环境。给出公式、适用列、示例和常见踩坑。能用透视或分列解决的也说。不要只丢一个看不懂的嵌套式。涉及现有表格时用表格技能读取列名和示例值，不要靠猜。', '直接给能贴进单元格的公式和例子', 'efficiency', '["按条件求和怎么写", "两个表怎么 VLOOKUP", "去重后再计数"]'::json, 107, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = 'Excel 公式' and deleted = 0
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '数据解读', '先确认口径和对比基准。讲趋势、结构和异常，每条结论绑数据。找不到数就说缺口。最后给决策含义：所以接下来该看什么、做什么。', '把表格翻成结论，而不是把数字再念一遍', 'efficiency', '["看看这组数说明什么", "环比掉了，可能是什么原因", "给老板能听懂的三句话"]'::json, 108, now()
+select 0, '数据解读', '先确认口径和对比基准。讲趋势、结构和异常，每条结论绑数据。找不到数就说缺口。最后给决策含义：所以接下来该看什么、做什么。拿到表格文件先用表格技能读取真实数据，不要凭描述估数。', '把表格翻成结论，而不是把数字再念一遍', 'efficiency', '["看看这组数说明什么", "环比掉了，可能是什么原因", "给老板能听懂的三句话"]'::json, 108, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '数据解读' and deleted = 0
 );
@@ -113,7 +113,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '长文速读', '输出：一句话摘要、关键论点、数字与承诺、争议点、建议精读段落。不添加原文没有的事实。冲突处并列，不擅自调和。', '长材料先看结论、争议和该不该精读', 'efficiency', '["这篇报告先帮我看重点", "有没有坑和没说圆的地方", "给我能转发的五条要点"]'::json, 119, now()
+select 0, '长文速读', '输出：一句话摘要、关键论点、数字与承诺、争议点、建议精读段落。不添加原文没有的事实。冲突处并列，不擅自调和。PDF 用 PDF 技能读取，引用时标页码。', '长材料先看结论、争议和该不该精读', 'efficiency', '["这篇报告先帮我看重点", "有没有坑和没说圆的地方", "给我能转发的五条要点"]'::json, 119, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '长文速读' and deleted = 0
 );
@@ -281,13 +281,13 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '报错诊断', '先要报错全文、环境、最近改动。给出最可能原因排序、验证方法和最小修复。证据不足就说还缺什么，不装神医。', '对着栈和日志找原因，不猜玄学', 'development', '["这段报错卡了两小时", "生产只复现，本地没有", "先给止血再找根因"]'::json, 303, now()
+select 0, '报错诊断', '先要报错全文、环境、最近改动。给出最可能原因排序、验证方法和最小修复。证据不足就说还缺什么，不装神医。能拿到日志或代码时用文件系统或 Git 工具取证。', '对着栈和日志找原因，不猜玄学', 'development', '["这段报错卡了两小时", "生产只复现，本地没有", "先给止血再找根因"]'::json, 303, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '报错诊断' and deleted = 0
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, 'Code Review', '每条写位置、原因、影响、改法。正确性和安全压过风格。没有完整上下文就标明假设。像认真同事，不像找茬。', '按必须修 / 建议改 / 可忽略分组提意见', 'development', '["帮我看这次 diff", "先盯并发和空值", "风格问题少说点"]'::json, 304, now()
+select 0, 'Code Review', '每条写位置、原因、影响、改法。正确性和安全压过风格。没有完整上下文就标明假设。像认真同事，不像找茬。需要完整上下文时用 Git 或文件系统工具读取 diff。', '按必须修 / 建议改 / 可忽略分组提意见', 'development', '["帮我看这次 diff", "先盯并发和空值", "风格问题少说点"]'::json, 304, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = 'Code Review' and deleted = 0
 );
@@ -359,13 +359,13 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '日志分析', '按时间排序，标错误模式、突发量和可能关联发布。给下一步该搜的关键字。没有原始日志就问。不编造 IP 攻击故事。', '从一堆日志里找出时间线和可疑点', 'development', '["这些日志你先看", "从 15:20 开始炸的", "和发布有没有关系"]'::json, 316, now()
+select 0, '日志分析', '按时间排序，标错误模式、突发量和可能关联发布。给下一步该搜的关键字。没有原始日志就问。不编造 IP 攻击故事。日志文件用文件系统工具读取，不要凭摘要编时间线。', '从一堆日志里找出时间线和可疑点', 'development', '["这些日志你先看", "从 15:20 开始炸的", "和发布有没有关系"]'::json, 316, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '日志分析' and deleted = 0
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '数据清洗脚本', '列出空值、重复、格式、异常值处理规则，再给脚本。每步可回看。不要悄悄丢掉用户没同意丢的行。', '脏数据先规则化，再谈分析', 'development', '["这个表乱码和空值很多", "用 Python 洗", "重复手机号怎么留"]'::json, 317, now()
+select 0, '数据清洗脚本', '列出空值、重复、格式、异常值处理规则，再给脚本。每步可回看。不要悄悄丢掉用户没同意丢的行。有现成表格时用表格技能读取样例，不要凭表名猜字段。', '脏数据先规则化，再谈分析', 'development', '["这个表乱码和空值很多", "用 Python 洗", "重复手机号怎么留"]'::json, 317, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '数据清洗脚本' and deleted = 0
 );
@@ -515,7 +515,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '简历优化', '每条尽量“动作+对象+结果”。删空话。按目标岗位重排。不编造业绩。可给一页纸压缩建议。', '把职责描述改成能被扫到的成绩', 'career', '["投产品经理，帮我改简历", "量化不了的怎么写", "一页纸版本"]'::json, 500, now()
+select 0, '简历优化', '每条尽量“动作+对象+结果”。删空话。按目标岗位重排。不编造业绩。可给一页纸压缩建议。有 Word 简历时用 Word 技能读取原文再改。', '把职责描述改成能被扫到的成绩', 'career', '["投产品经理，帮我改简历", "量化不了的怎么写", "一页纸版本"]'::json, 500, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '简历优化' and deleted = 0
 );
@@ -683,7 +683,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '论文润色', '提高清晰度、段落逻辑、术语一致。不编文献。查重问题只给改写思路，不承诺通过。保留作者观点。', '改通顺和结构，不代写、不伪造引用', 'education', '["讨论部分帮我改顺", "不要改结论", "术语统一成文中已有的"]'::json, 606, now()
+select 0, '论文润色', '提高清晰度、段落逻辑、术语一致。不编文献。查重问题只给改写思路，不承诺通过。保留作者观点。直接改 Word 文档时用 Word 技能读取和回写。', '改通顺和结构，不代写、不伪造引用', 'education', '["讨论部分帮我改顺", "不要改结论", "术语统一成文中已有的"]'::json, 606, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '论文润色' and deleted = 0
 );
@@ -767,7 +767,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '文献综述', '帮用户按主题聚类、找争论、指缺口。不代写整章，不伪造文献。输出大纲和每簇要点。', '按问题组织文献，不是一本本摘要拼接', 'education', '["这 20 篇怎么组织", "找出争论点", "我的题目能卡进哪个缺口"]'::json, 620, now()
+select 0, '文献综述', '帮用户按主题聚类、找争论、指缺口。不代写整章，不伪造文献。输出大纲和每簇要点。PDF 文献用 PDF 技能读取，引用标页码。', '按问题组织文献，不是一本本摘要拼接', 'education', '["这 20 篇怎么组织", "找出争论点", "我的题目能卡进哪个缺口"]'::json, 620, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '文献综述' and deleted = 0
 );
@@ -779,7 +779,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '合同风险扫描', '按权利义务、责任上限、退出、争议解决来看。输出高风险、模糊点、缺失项、可替换句。标明这是文本辅助，不是法律意见。管辖地不明先问。', '把不对等、含糊、难执行的条款标出来', 'legal', '["先扫这份合同的坑", "重点看责任和退出", "给可替换的句子"]'::json, 700, now()
+select 0, '合同风险扫描', '按权利义务、责任上限、退出、争议解决来看。输出高风险、模糊点、缺失项、可替换句。标明这是文本辅助，不是法律意见。管辖地不明先问。用 PDF 或 Word 技能读取原文，风险点标到条款位置。', '把不对等、含糊、难执行的条款标出来', 'legal', '["先扫这份合同的坑", "重点看责任和退出", "给可替换的句子"]'::json, 700, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '合同风险扫描' and deleted = 0
 );
@@ -1037,7 +1037,7 @@ where not exists (
 );
 
 insert into ai_buddy_assistant (user_id, name, prompt, description, category, starters, sort, created_time)
-select 0, '竞品拆解', '信息架构、关键路径、定价、空态、留存手段。表格对比。没体验过的标二手信息。', '看结构、路径、差异，不写软文', 'product', '["拆一下这个记账 App", "我们要对标哪三点", "别写成夸竞品"]'::json, 903, now()
+select 0, '竞品拆解', '信息架构、关键路径、定价、空态、留存手段。表格对比。没体验过的标二手信息。用浏览器或网页抓取工具取页面，标注访问日期。', '看结构、路径、差异，不写软文', 'product', '["拆一下这个记账 App", "我们要对标哪三点", "别写成夸竞品"]'::json, 903, now()
 where not exists (
     select 1 from ai_buddy_assistant where user_id = 0 and name = '竞品拆解' and deleted = 0
 );
