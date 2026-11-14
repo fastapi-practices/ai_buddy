@@ -4,6 +4,8 @@
 
 本插件与基础 `ai` 插件互斥，不要同时安装
 
+可选的配套插件：`ai_buddy_group`（资源分组与可见性）和 `ai_buddy_billing`（价格、用量、余额和预算）。两者都通过 `depends_on` 依赖本插件，按需安装即可，不安装或停用不影响本插件独立运行。
+
 > [!WARNING]
 > 自 0.1.1 版本起不再支持 MySQL 数据库，仅支持 PostgreSQL
 
@@ -54,7 +56,7 @@ AI_BUDDY_DOC2X_API_URL = "https://v2.doc2x.noedgeai.com"
 AI_BUDDY_MISTRAL_API_URL = "https://api.mistral.ai"
 AI_BUDDY_EMBEDDING_BACKEND = "remote"
 AI_BUDDY_ONNX_EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
-AI_BUDDY_OCR_BACKEND = "system"
+AI_BUDDY_OCR_BACKEND = "onnx"
 AI_BUDDY_RAG_CHUNK_CHARS = 500
 AI_BUDDY_RAG_CHUNK_OVERLAP = 80
 AI_BUDDY_RAG_TOP_K = 6
@@ -80,7 +82,7 @@ AI_BUDDY_KNOWLEDGE_MAX_FILES = 200
 AI_BUDDY_KNOWLEDGE_MAX_TOTAL_BYTES = 104857600
 AI_BUDDY_KNOWLEDGE_MAX_PDF_PAGES = 200
 AI_BUDDY_KNOWLEDGE_MAX_IMAGES = 200
-AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES = 104857600
+AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES = 20971520
 AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS = 40000000
 AI_BUDDY_OCR_TIMEOUT_SECONDS = 300
 AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS = 30
@@ -131,12 +133,13 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 - `AI_BUDDY_HTTP_MAX_RETRIES`：控制模型供应商 HTTP 请求的最大重试次数
 - `AI_BUDDY_MCP_MAX_RETRIES`：控制 MCP 工具调用的最大重试次数
 - `AI_BUDDY_DOCUMENT_EXTRACT_BACKEND`：控制知识文档抽取后端
+- `AI_BUDDY_OCR_BACKEND`：控制后台管理的服务端 OCR 后端，可选 `paddleocr`、`onnx`、`vision`、`mistral`，不包含服务器系统 OCR，也不会自动回退
 - `AI_BUDDY_UNSTRUCTURED_API_URL`：控制 Unstructured API 地址
 - `AI_BUDDY_DOC2X_API_URL`：控制 Doc2X API 地址
 - `AI_BUDDY_MISTRAL_API_URL`：控制 Mistral API 地址
 - `AI_BUDDY_EMBEDDING_BACKEND`：控制知识库未指定模型时的向量化方式
 - `AI_BUDDY_ONNX_EMBEDDING_MODEL`：控制 RAG 默认使用的本地 ONNX 向量模型
-- `AI_BUDDY_OCR_BACKEND`：控制知识 OCR 后端
+- `AI_BUDDY_EMBEDDING_BACKEND`：控制知识库未指定模型时的向量化方式
 - `AI_BUDDY_RAG_CHUNK_CHARS`：控制知识切片的字符长度
 - `AI_BUDDY_RAG_CHUNK_OVERLAP`：控制相邻知识切片的重叠字符数
 - `AI_BUDDY_RAG_TOP_K`：控制知识语义检索返回的条数
@@ -161,10 +164,11 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 - `AI_BUDDY_KNOWLEDGE_MAX_FILES`：控制知识库单次导入的文件数量上限
 - `AI_BUDDY_KNOWLEDGE_MAX_TOTAL_BYTES`：控制知识库单次导入的文件总字节数上限
 - `AI_BUDDY_KNOWLEDGE_MAX_PDF_PAGES`：控制单个 PDF 的最大解析页数
-- `AI_BUDDY_KNOWLEDGE_MAX_IMAGES`：控制单次导入的图片数量上限
+- `AI_BUDDY_KNOWLEDGE_MAX_IMAGES`：控制单次导入累计解析的图片数量上限
 - `AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES`：控制单张图片的字节数上限
-- `AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS`：控制单张图片的像素数上限
-- `AI_BUDDY_OCR_TIMEOUT_SECONDS`：控制知识文档 OCR 的超时秒数
+- `AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS`：控制单次导入累计解析的图片像素总数
+- `AI_BUDDY_OCR_TIMEOUT_SECONDS`：控制服务端 OCR 的超时秒数
+- `AI_BUDDY_PADDLEOCR_API_URL`：控制自建 PaddleOCR 服务地址，空则使用本机 paddleocr
 - `AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS`：控制工作区命令的执行超时
 - `AI_BUDDY_AGENT_MAX_FILE_BYTES`：控制工作区单文件读写大小上限
 - `AI_BUDDY_AGENT_EXECUTION_BACKEND`：控制客户端未显式选择执行后端时的默认值，`local` 为桌面本机，`sandbox` 为服务端沙箱
@@ -183,20 +187,37 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 1. 安装并启用参数配置、S3 和 AI Buddy 插件，完成数据库初始化后重启后端服务
 2. 安装配套前端插件，在后台配置默认 S3 存储、供应商、模型和默认模型，并维护系统内置资源
 3. 在客户端选择模型和助手，发起对话或工作任务，管理个人 MCP、知识、技能与产物；通道绑定和对话定时也在客户端完成
-4. 编码任务使用独立会话，选择桌面本机工作区或服务端沙箱；使用 ACP 外部助手前，先在本机安装并登录对应 Agent，再通过桌面连接
-5. 工作模式通过服务端沙箱生成和编辑 Excel、PPT、Word、PDF，需要部署 OpenSandbox 并构建沙箱镜像；升级后必须重新构建镜像，旧镜像缺少文档处理依赖
-6. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
-7. 运行机制与执行环境准备见 [架构文档](架构.md)
+4. 客户端上传的知识文档由客户端在本地完成 OCR，并通过 `texts`（JSON，键为文件名或 zip 内路径）提交文本，客户端入口不接受服务端 OCR；后台管理入口使用 `AI_BUDDY_OCR_BACKEND` 指定的服务端引擎处理图片和扫描页，不再提供服务器系统 OCR，也没有自动回退
+5. 编码任务使用独立会话，选择桌面本机工作区或服务端沙箱；使用 ACP 外部助手前，先在本机安装并登录对应 Agent，再通过桌面连接
+6. 工作模式通过服务端沙箱生成和编辑 Excel、PPT、Word、PDF，需要部署 OpenSandbox 并构建沙箱镜像；升级后必须重新构建镜像，旧镜像缺少文档处理依赖
+7. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
+8. 运行机制与执行环境准备见 [架构文档](架构.md)
 
-## 数据库特性
+## 内置资源脚本
 
-仅支持 PostgreSQL，插件直接使用其内置能力：
+`sql/postgresql` 下除 `init*.sql` 和 `destroy*.sql` 外的脚本用于写入可直接使用的系统内置资源，均为幂等脚本，可反复执行：
 
-| 场景 | PostgreSQL 内置能力 |
-|---|---|
-| 消息错误写入 | `INSERT ... ON CONFLICT (message_id, deleted) DO UPDATE`，单条语句完成写入与更新 |
-| 模型能力过滤 | JSON 列按 `::jsonb` 转换后使用 `@>` 包含运算，精确匹配数组元素 |
-| 名称、标题与内容检索 | `ILIKE` 大小写不敏感模糊匹配 |
+| 脚本 | 内容 |
+| --- | --- |
+| `init_assistant.sql` | 按分类整理的内置助手，覆盖效率办公、写作创作、翻译语言、职场求职、编程开发、学习教育、生活兴趣、产品运营、法律合规和金融财务 |
+| `init_expert.sql` | 内置专家模板，绑定实际存在的内置 MCP 与内置技能，例如代码审查绑定 Git 仓库、合同审阅绑定 PDF 与 Word 解析 |
+| `init_mcp.sql` | 可直接运行的内置 MCP，包括文件系统、网页抓取、Git 仓库、GitHub、记忆、时间、逐步推理和浏览器 |
+| `init_quick_phrase.sql` | 对话中常用的快捷短语 |
+| `init_subagent.sql` | 调研、写作、审查、规划和编码子代理 |
+
+- `DATABASE_PK_MODE=autoincrement` 时执行不带后缀的脚本，`DATABASE_PK_MODE=snowflake` 时执行 `init_snowflake_*.sql`，不要混用
+- `init.sql` 中已包含菜单、权限和参数配置，按其他插件的安装脚本约定只执行一次；内置资源脚本按 `user_id + name` 去重，不会覆盖已有同名资源
+- 内置 MCP 通过服务器上已有的 `npx`、`uvx` 启动，其中文件系统、Git 仓库和记忆使用 `AI_BUDDY_MCP_*` 环境变量指定实际目录，未设置时回落到服务账号主目录，具体说明见各条 MCP 的描述
+- 执行示例：
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f sql/postgresql/init_mcp.sql \
+  -f sql/postgresql/init_expert.sql \
+  -f sql/postgresql/init_assistant.sql \
+  -f sql/postgresql/init_quick_phrase.sql \
+  -f sql/postgresql/init_subagent.sql
+```
 
 ## 卸载说明
 

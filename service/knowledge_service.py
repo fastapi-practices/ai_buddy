@@ -1,6 +1,6 @@
 import asyncio
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import httpx
@@ -41,7 +41,6 @@ from backend.plugin.ai_buddy.utils.knowledge_ocr import (
     ocr_images_with_mistral,
     ocr_images_with_onnx,
     ocr_images_with_paddleocr,
-    ocr_images_with_system,
     resolve_ocr_backend,
 )
 from backend.plugin.ai_buddy.utils.knowledge_parser import parse_knowledge_uploads
@@ -422,6 +421,8 @@ class AIBuddyKnowledgeService:
         title: str | None = None,
         provider_id: int | None = None,
         model_id: str | None = None,
+        texts: Mapping[str, str] | None = None,
+        allow_server_ocr: bool = False,
         is_superuser: bool = False,
         allow_system: bool = False,
     ) -> None:
@@ -435,6 +436,8 @@ class AIBuddyKnowledgeService:
         :param title: 知识标题，仅单个文件时生效，空值使用文件名
         :param provider_id: 向量化供应商 ID
         :param model_id: 向量化模型 ID
+        :param texts: 客户端已完成的 OCR 文本，键为文件名或 zip 内路径
+        :param allow_server_ocr: 是否允许使用服务端 OCR，仅后台管理入口开启
         :param is_superuser: 是否为超级管理员
         :param allow_system: 后台写入是否允许系统知识库
         :return:
@@ -456,21 +459,18 @@ class AIBuddyKnowledgeService:
             model_id=model_id if model_id is not None else knowledge_base.model_id,
         )
         payloads = [(item.filename, await item.read()) for item in files]
-        documents = await run_blocking_io(parse_knowledge_uploads, files=payloads, title=title)
+        documents = await run_blocking_io(parse_knowledge_uploads, files=payloads, title=title, texts=texts)
         loop = asyncio.get_running_loop()
         ocr_deadline = loop.time() + settings.AI_BUDDY_OCR_TIMEOUT_SECONDS
         for uploaded in documents:
-            backend = resolve_ocr_backend()
             images = [item for item in uploaded.segments if item.image]
             content = uploaded.content
-            if not images:
-                if not content:
-                    raise errors.RequestError(msg='知识内容不能为空')
-            else:
+            if images:
+                if not allow_server_ocr:
+                    raise errors.RequestError(msg='图片和扫描页需要客户端先完成 OCR 并提供文本')
+                backend = resolve_ocr_backend()
                 remaining = max(0.0, ocr_deadline - loop.time())
-                if backend == AIBuddyOcrBackend.system:
-                    texts = await _run_ocr_in_thread(ocr_images_with_system, images, timeout=remaining)
-                elif backend == AIBuddyOcrBackend.paddleocr:
+                if backend == AIBuddyOcrBackend.paddleocr:
                     texts = await _run_ocr_in_thread(ocr_images_with_paddleocr, images, timeout=remaining)
                 elif backend == AIBuddyOcrBackend.onnx:
                     texts = await _run_ocr_in_thread(ocr_images_with_onnx, images, timeout=remaining)
@@ -536,6 +536,8 @@ class AIBuddyKnowledgeService:
                 else:
                     raise errors.RequestError(msg='OCR 后端无效')
                 content = join_ocr_segments(uploaded.segments, texts)
+            if not content:
+                raise errors.RequestError(msg='知识内容不能为空')
 
             knowledge = await ai_buddy_knowledge_dao.create(
                 db,

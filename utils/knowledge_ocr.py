@@ -310,46 +310,6 @@ def join_ocr_segments(segments: Sequence[KnowledgeSegment], texts: Sequence[str]
     return content
 
 
-def ocr_images_with_system(images: Sequence[KnowledgeSegment]) -> list[str]:
-    """
-    使用本机 OCR：优先 Tesseract，其次 PaddleOCR
-
-    :param images: 含图片字节的片段
-    :return:
-    """
-    try:
-        return _ocr_images_with_tesseract(images)
-    except errors.RequestError:
-        return ocr_images_with_paddleocr(images)
-
-
-def _ocr_images_with_tesseract(images: Sequence[KnowledgeSegment]) -> list[str]:
-    """
-    使用 Tesseract 识别图片文字
-
-    :param images: 含图片字节的片段
-    :return:
-    """
-    texts: list[str] = []
-    for segment in images:
-        try:
-            import pytesseract
-
-            from PIL import Image
-        except ImportError as exc:
-            raise errors.RequestError(
-                msg='Tesseract OCR 需要安装 pytesseract 和 pillow，并在主机安装 tesseract'
-            ) from exc
-        if not segment.image:
-            texts.append('')
-            continue
-        try:
-            texts.append(pytesseract.image_to_string(Image.open(BytesIO(segment.image))).strip())
-        except Exception as exc:
-            raise errors.RequestError(msg='Tesseract OCR 失败，请确认已安装 tesseract') from exc
-    return texts
-
-
 def ocr_images_with_onnx(images: Sequence[KnowledgeSegment]) -> list[str]:
     """
     使用 RapidOCR（本地 ONNX）识别图片文字

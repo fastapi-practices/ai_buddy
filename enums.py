@@ -88,9 +88,8 @@ class AIBuddyDocumentExtractBackend(StrEnum):
 
 
 class AIBuddyOcrBackend(StrEnum):
-    """知识 OCR 后端"""
+    """知识 OCR 后端，仅服务端可部署的显式引擎"""
 
-    system = 'system'
     paddleocr = 'paddleocr'
     onnx = 'onnx'
     vision = 'vision'

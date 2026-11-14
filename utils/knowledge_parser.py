@@ -1,6 +1,7 @@
 import contextlib
+import json
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from io import BytesIO
 from math import ceil
 from pathlib import Path
@@ -45,17 +46,44 @@ def _resolve_document_extract_backend(value: str | None = None) -> AIBuddyDocume
         return AIBuddyDocumentExtractBackend.native
 
 
+def parse_knowledge_texts(value: str | None) -> dict[str, str]:
+    """
+    解析客户端提交的 OCR 文本
+
+    :param value: JSON 对象原文，键为文件名或 zip 内路径
+    :return:
+    """
+    text = (value or '').strip()
+    if not text:
+        return {}
+    try:
+        payload = json.loads(text)
+    except ValueError as exc:
+        raise errors.RequestError(msg='texts 需要是文件名到文本的 JSON 对象') from exc
+    if not isinstance(payload, dict):
+        raise errors.RequestError(msg='texts 需要是文件名到文本的 JSON 对象')
+    texts: dict[str, str] = {}
+    for key, item in payload.items():
+        if not isinstance(key, str) or not isinstance(item, str):
+            raise errors.RequestError(msg='texts 的键和值都需要是文本')
+        if key.strip() and item.strip():
+            texts[key.strip()] = item.strip()
+    return texts
+
+
 # 目录、压缩包与文件格式校验共同决定本次上传结果
 def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
     *,
     files: Sequence[tuple[str | None, bytes]],
     title: str | None = None,
+    texts: Mapping[str, str] | None = None,
 ) -> list[KnowledgeUpload]:
     """
     解析上传的知识文件、目录或 zip
 
     :param files: 知识文件、目录或包含 md、txt 的 zip
     :param title: 可选标题，仅单个文件时生效，空值使用文件名
+    :param texts: 客户端已完成的 OCR 文本，键为文件名或 zip 内路径
     :return:
     """
     if not files:
@@ -114,8 +142,9 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
     resolved_title = (title or '').strip() or None
     if resolved_title and len(documents) > 1:
         raise errors.RequestError(msg='批量上传不能指定标题')
+    client_texts = {key.strip(): value.strip() for key, value in (texts or {}).items() if key.strip() and value.strip()}
     uploads: list[KnowledgeUpload] = []
-    image_count = image_bytes = image_pixels = 0
+    image_count = image_pixels = 0
     for filename, data in documents:
         source = '/'.join(safe_relative_parts(filename, msg='知识路径包含非法路径'))
         if not source:
@@ -127,7 +156,10 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
             else AIBuddyKnowledgeFileType({'markdown': 'md', 'text': 'txt'}.get(ext, ext))
         )
         segments: list[KnowledgeSegment] = []
-        if ext in _TEXT_EXTS:
+        client_text = client_texts.get(source) or client_texts.get(Path(source).name) or ''
+        if client_text:
+            segments.append(KnowledgeSegment(text=client_text))
+        elif ext in _TEXT_EXTS:
             try:
                 text = data.decode('utf-8-sig').strip()
             except UnicodeDecodeError as exc:
@@ -168,13 +200,13 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
                     except ImportError as exc:
                         raise errors.RequestError(msg='解析 pptx 需要安装 python-pptx') from exc
                     presentation = Presentation(BytesIO(data))
-                    texts: list[str] = []
+                    slide_texts: list[str] = []
                     for slide in presentation.slides:
                         for shape in slide.shapes:
-                            text = getattr(shape, 'text', None)
-                            if isinstance(text, str) and text.strip():
-                                texts.append(text.strip())
-                    text = '\n'.join(texts).strip()
+                            value = getattr(shape, 'text', None)
+                            if isinstance(value, str) and value.strip():
+                                slide_texts.append(value.strip())
+                    text = '\n'.join(slide_texts).strip()
                 elif ext == 'xlsx':
                     try:
                         from openpyxl import load_workbook
@@ -195,10 +227,9 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
                     raise errors.RequestError(msg='不支持的知识文件类型')
                 if text:
                     segments.append(KnowledgeSegment(text=text))
-        image_count, image_bytes, image_pixels = _accumulate_image_limits(
+        image_count, image_pixels = _accumulate_image_limits(
             segments,
             image_count=image_count,
-            image_bytes=image_bytes,
             image_pixels=image_pixels,
         )
         content = join_knowledge_text_segments(segments)
@@ -258,41 +289,38 @@ def _accumulate_image_limits(
     segments: Sequence[KnowledgeSegment],
     *,
     image_count: int,
-    image_bytes: int,
     image_pixels: int,
-) -> tuple[int, int, int]:
+) -> tuple[int, int]:
     """
-    累计校验本次上传的图片数量、字节和像素预算
+    累计校验本次上传的图片数量与像素预算，字节上限按单张图片校验
 
     :param segments: 当前文件的解析片段
     :param image_count: 已累计图片数量
-    :param image_bytes: 已累计图片字节数
     :param image_pixels: 已累计图片像素数
     :return:
     """
     images = [segment.image for segment in segments if segment.image]
     if not images:
-        return image_count, image_bytes, image_pixels
+        return image_count, image_pixels
     try:
         from PIL import Image
     except ImportError as exc:
         raise errors.RequestError(msg='解析知识图片需要安装 pillow') from exc
     for data in images:
+        if len(data) > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES:
+            raise errors.RequestError(msg='单张知识图片超出字节上限')
         image_count += 1
-        image_bytes += len(data)
+        if image_count > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGES:
+            raise errors.RequestError(msg='知识图片数量超出限制')
         try:
             with Image.open(BytesIO(data)) as image:
                 width, height = image.size
         except Exception as exc:
             raise errors.RequestError(msg='知识图片格式无效') from exc
         image_pixels += width * height
-        if (
-            image_count > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGES
-            or image_bytes > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES
-            or image_pixels > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS
-        ):
-            raise errors.RequestError(msg='知识图片资源超出限制')
-    return image_count, image_bytes, image_pixels
+        if image_pixels > settings.AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS:
+            raise errors.RequestError(msg='知识图片像素总数超出限制')
+    return image_count, image_pixels
 
 
 def _extract_pdf_segments(data: bytes) -> list[KnowledgeSegment]:  # ruff: ignore[complex-structure]

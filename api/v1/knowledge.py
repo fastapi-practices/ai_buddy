@@ -14,6 +14,7 @@ from backend.plugin.ai_buddy.schema.knowledge import (
     GetAIBuddyKnowledgeDetail,
 )
 from backend.plugin.ai_buddy.service.knowledge_service import ai_buddy_knowledge_service
+from backend.plugin.ai_buddy.utils.knowledge_parser import parse_knowledge_texts
 
 router = APIRouter()
 
@@ -85,6 +86,9 @@ async def create_ai_buddy_knowledge_document(
     pk: Annotated[int, Path(description='知识库 ID')],
     file: Annotated[list[UploadFile], File(description='知识文件、目录或 zip')],
     title: Annotated[str | None, Form(description='知识标题，仅单个文件时生效，空值使用文件名')] = None,
+    texts: Annotated[
+        str | None, Form(description='客户端已完成的 OCR 文本，JSON 对象，键为文件名或 zip 内路径')
+    ] = None,
     provider_id: Annotated[int | None, Form(description='向量化供应商 ID，空则使用知识库配置')] = None,
     model_id: Annotated[str | None, Form(description='向量化模型 ID，空则使用知识库配置')] = None,
 ) -> ResponseModel:
@@ -94,8 +98,10 @@ async def create_ai_buddy_knowledge_document(
         files=file,
         knowledge_base_id=pk,
         title=title,
+        texts=parse_knowledge_texts(texts),
         provider_id=provider_id,
         model_id=model_id,
+        allow_server_ocr=True,
         is_superuser=request.user.is_superuser,
         allow_system=True,
     )
@@ -113,6 +119,9 @@ async def create_my_ai_buddy_knowledge_document(
     pk: Annotated[int, Path(description='知识库 ID')],
     file: Annotated[list[UploadFile], File(description='知识文件、目录或 zip')],
     title: Annotated[str | None, Form(description='知识标题，仅单个文件时生效，空值使用文件名')] = None,
+    texts: Annotated[
+        str | None, Form(description='客户端已完成的 OCR 文本，JSON 对象，键为文件名或 zip 内路径')
+    ] = None,
     provider_id: Annotated[int | None, Form(description='向量化供应商 ID，空则使用知识库配置')] = None,
     model_id: Annotated[str | None, Form(description='向量化模型 ID，空则使用知识库配置')] = None,
 ) -> ResponseModel:
@@ -122,6 +131,7 @@ async def create_my_ai_buddy_knowledge_document(
         files=file,
         knowledge_base_id=pk,
         title=title,
+        texts=parse_knowledge_texts(texts),
         provider_id=provider_id,
         model_id=model_id,
         is_superuser=False,

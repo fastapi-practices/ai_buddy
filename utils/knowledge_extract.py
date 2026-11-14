@@ -24,7 +24,7 @@ def extract_with_backend(  # ruff: ignore[complex-structure]
     *, backend: AIBuddyDocumentExtractBackend, filename: str, data: bytes, ext: str
 ) -> str:
     """
-    用指定后端抽取文档正文，失败返回空字符串供 OCR 回退
+    用指定后端抽取文档正文，失败返回空字符串交给内置解析
 
     :param backend: 抽取后端
     :param filename: 文件名

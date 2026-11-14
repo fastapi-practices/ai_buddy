@@ -100,12 +100,14 @@ def _embedding_backend(value: str) -> str:
 
 def _ocr_backend(value: str) -> str:
     """
-    将配置值转为 OCR 后端
+    将配置值转为 OCR 后端，旧的 system 配置迁移到本地 ONNX
 
     :param value: 配置原文
     :return:
     """
     text = (value or '').strip().lower()
+    if text in {'off', 'system', 'tesseract'}:
+        text = AIBuddyOcrBackend.onnx.value
     try:
         return AIBuddyOcrBackend(text).value
     except ValueError as exc:

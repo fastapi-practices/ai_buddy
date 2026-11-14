@@ -8,7 +8,7 @@ import anyio
 from starlette.concurrency import run_in_threadpool
 
 _KNOWLEDGE_IO_MAX_WORKERS = 2
-"""知识文件解析与 OCR 的线程池并发上限"""
+"""知识文件解析的线程池并发上限"""
 
 _KNOWLEDGE_COMPUTE_MAX_WORKERS = 1
 """文本切块与 ONNX 推理的线程池并发上限"""
