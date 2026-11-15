@@ -4,33 +4,31 @@ from fastapi import APIRouter, Path, Request, WebSocket
 
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
-from backend.core.conf import settings
 from backend.database.db import CurrentSession
 from backend.plugin.ai_buddy.agent.coding.execution_bridge import (
     close_owned_bridge,
     create_bridge,
     serve_bridge,
 )
-from backend.plugin.ai_buddy.enums import AIBuddyExecutionCapability
 from backend.plugin.ai_buddy.schema.execution import (
     CreateAIBuddyExecutionBridgeParam,
     GetAIBuddyExecutionBridgeDetail,
     GetAIBuddyExecutionOptionsDetail,
 )
-from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
+from backend.plugin.ai_buddy.service.execution_service import ai_buddy_execution_service
 
 router = APIRouter()
 
 
-@router.get('/options', summary='获取编码默认执行配置', dependencies=[DependsJwtAuth])
+@router.get(
+    '/options',
+    summary='获取编码默认执行配置',
+    description='返回默认执行后端、沙箱服务商及当前主机可用性',
+    dependencies=[DependsJwtAuth],
+)
 async def get_ai_buddy_execution_options(db: CurrentSession) -> ResponseSchemaModel[GetAIBuddyExecutionOptionsDetail]:
-    await load_ai_buddy_config(db)
-    return response_base.success(
-        data={
-            'default_backend': settings.AI_BUDDY_AGENT_EXECUTION_BACKEND,
-            'capabilities': list(AIBuddyExecutionCapability),
-        }
-    )
+    data = await ai_buddy_execution_service.get_options(db=db)
+    return response_base.success(data=data)
 
 
 @router.post('/bridges', summary='登记桌面端执行连接', dependencies=[DependsJwtAuth])

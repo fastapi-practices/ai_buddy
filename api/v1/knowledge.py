@@ -1,6 +1,8 @@
+from pathlib import PurePath
 from typing import Annotated
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, Path, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Path, Query, Request, Response, UploadFile
 
 from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
@@ -70,6 +72,29 @@ async def get_ai_buddy_knowledge_document(
 ) -> ResponseSchemaModel[GetAIBuddyKnowledgeDetail]:
     data = await ai_buddy_knowledge_service.get(db=db, pk=doc_id, user_id=request.user.id, knowledge_base_id=pk)
     return response_base.success(data=data)
+
+
+@router.get(
+    '/{pk}/documents/{doc_id}/file',
+    summary='获取知识原始文件',
+    description='返回上传时的原始文档或图片，抽取正文仍从文档详情读取',
+    dependencies=[DependsJwtAuth],
+)
+async def get_ai_buddy_knowledge_document_file(
+    request: Request,
+    db: CurrentSession,
+    pk: Annotated[int, Path(description='知识库 ID')],
+    doc_id: Annotated[int, Path(description='知识文档 ID')],
+) -> Response:
+    data, media_type, filename = await ai_buddy_knowledge_service.get_source_file(
+        db=db,
+        pk=doc_id,
+        user_id=request.user.id,
+        is_superuser=request.user.is_superuser,
+        knowledge_base_id=pk,
+    )
+    disposition = f"inline; filename*=UTF-8''{quote(PurePath(filename).name or 'knowledge')}"
+    return Response(content=data, media_type=media_type, headers={'Content-Disposition': disposition})
 
 
 @router.post(

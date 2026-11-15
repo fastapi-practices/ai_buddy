@@ -29,7 +29,11 @@ class AIBuddyKnowledge(Base):
         server_default=AIBuddyKnowledgeFileType.txt.value,
         comment='文档类型',
     )
-    object_key: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='对象键')
-    storage_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='对象存储 ID')
+    object_key: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='抽取正文对象键')
+    storage_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='抽取正文对象存储 ID')
+    source_object_key: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='原始文件对象键')
+    source_storage_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='原始文件对象存储 ID')
+    source_mime_type: Mapped[str | None] = mapped_column(sa.String(128), default=None, comment='原始文件媒体类型')
+    source_size: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='原始文件字节数')
     provider_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, comment='向量化供应商 ID')
     model_id: Mapped[str | None] = mapped_column(sa.String(512), default=None, comment='向量化模型 ID')

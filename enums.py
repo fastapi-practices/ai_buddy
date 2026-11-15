@@ -552,6 +552,20 @@ class AIBuddySandboxProvider(StrEnum):
     smol = 'smol'
     boxlite = 'boxlite'
 
+    @property
+    def label(self) -> str:
+        """展示名称"""
+        return {
+            AIBuddySandboxProvider.opensandbox: 'OpenSandbox',
+            AIBuddySandboxProvider.docker: 'Docker / Podman',
+            AIBuddySandboxProvider.e2b: 'E2B',
+            AIBuddySandboxProvider.modal: 'Modal',
+            AIBuddySandboxProvider.daytona: 'Daytona',
+            AIBuddySandboxProvider.sprites: 'Sprites',
+            AIBuddySandboxProvider.smol: 'smolvm',
+            AIBuddySandboxProvider.boxlite: 'BoxLite',
+        }[self]
+
 
 class AIBuddyExecutionCapability(StrEnum):
     """桌面执行协议能力"""

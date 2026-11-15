@@ -12,6 +12,7 @@ from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.database.redis import redis_client
 from backend.plugin.ai_buddy.agent.durability.recovery import recovery_loop
+from backend.plugin.ai_buddy.agent.work.memory_store import reset_memory_store
 from backend.plugin.ai_buddy.agent.work.runs import shutdown_runs as shutdown_chat_runs
 from backend.plugin.ai_buddy.cron.tasks import tick_due_crons
 from backend.plugin.ai_buddy.schema.object import AIBuddyObjectGarbageCollectParam
@@ -24,6 +25,7 @@ from backend.plugin.ai_buddy.service.skill_service import ai_buddy_skill_service
 from backend.plugin.ai_buddy.utils.blocking_io import run_blocking_io, shutdown_blocking_io_tasks
 from backend.plugin.ai_buddy.utils.dynamic_config import load_ai_buddy_config
 from backend.plugin.ai_buddy.utils.knowledge_reindex import register_reindex_runner
+from backend.plugin.ai_buddy.utils.pg_pool import close_pg_pool
 from backend.plugin.ai_buddy.utils.skill_parser import load_builtin_skill_payloads
 
 _RECONCILE_INTERVAL_SECONDS = 30
@@ -181,3 +183,5 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await shutdown_chat_runs()
         finally:
             await shutdown_blocking_io_tasks()
+            reset_memory_store()
+            await close_pg_pool()

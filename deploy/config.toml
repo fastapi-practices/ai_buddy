@@ -12,10 +12,10 @@ level = "INFO"
 
 [runtime]
 type = "docker"
-execd_image = "opensandbox/execd:release-1.1.1"
+execd_image = "opensandbox/execd:release-1.2.1"
 
 [egress]
-image = "opensandbox/egress:release-1.1.1"
+image = "opensandbox/egress:release-1.2.1"
 mode = "dns+nft"
 
 [docker]

@@ -1,5 +1,6 @@
 import contextlib
 import json
+import mimetypes
 
 from collections.abc import Mapping, Sequence
 from io import BytesIO
@@ -15,7 +16,37 @@ from backend.plugin.ai_buddy.utils.archive import validate_archive_size
 from backend.plugin.ai_buddy.utils.knowledge_extract import extract_with_backend
 from backend.plugin.ai_buddy.utils.workspace import safe_relative_parts
 
-_TEXT_EXTS = frozenset({'md', 'markdown', 'txt', 'text'})
+_MARKDOWN_EXTS = frozenset({'md', 'markdown'})
+_TEXT_EXTS = _MARKDOWN_EXTS | frozenset({
+    'txt',
+    'text',
+    'csv',
+    'tsv',
+    'json',
+    'jsonl',
+    'html',
+    'htm',
+    'xml',
+    'yaml',
+    'yml',
+    'log',
+    'ini',
+    'toml',
+    'sql',
+    'py',
+    'js',
+    'ts',
+    'java',
+    'go',
+    'rs',
+    'c',
+    'cpp',
+    'h',
+    'hpp',
+    'css',
+    'scss',
+    'sh',
+})
 _OFFICE_EXTS = frozenset({'pdf', 'docx', 'pptx', 'xlsx'})
 _IMAGE_EXTS = frozenset({'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tif', 'tiff'})
 _KNOWLEDGE_EXTS = _TEXT_EXTS | _OFFICE_EXTS | _IMAGE_EXTS
@@ -104,7 +135,9 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
         name = Path(source).name
         ext = name.rsplit('.', 1)[-1].lower() if '.' in name else ''
         if ext != 'zip' and ext not in _KNOWLEDGE_EXTS:
-            raise errors.RequestError(msg='知识仅支持 md、txt、pdf、docx、pptx、xlsx、图片或包含这些文件的 zip')
+            raise errors.RequestError(
+                msg='知识仅支持文本、Markdown、PDF、Word、PowerPoint、Excel、图片或包含这些文件的 zip'
+            )
         payloads.append((source, data))
     documents: list[tuple[str, bytes]] = []
     for filename, data in payloads:
@@ -150,11 +183,14 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
         if not source:
             raise errors.RequestError(msg='文件名不能为空')
         ext = Path(source).suffix.lower().lstrip('.')
-        file_type = (
-            AIBuddyKnowledgeFileType.image
-            if ext in _IMAGE_EXTS
-            else AIBuddyKnowledgeFileType({'markdown': 'md', 'text': 'txt'}.get(ext, ext))
-        )
+        if ext in _IMAGE_EXTS:
+            file_type = AIBuddyKnowledgeFileType.image
+        elif ext in _MARKDOWN_EXTS:
+            file_type = AIBuddyKnowledgeFileType.md
+        elif ext in _TEXT_EXTS:
+            file_type = AIBuddyKnowledgeFileType.txt
+        else:
+            file_type = AIBuddyKnowledgeFileType(ext)
         segments: list[KnowledgeSegment] = []
         client_text = client_texts.get(source) or client_texts.get(Path(source).name) or ''
         if client_text:
@@ -238,6 +274,7 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
         document_title = resolved_title or Path(source).stem.strip()
         if not document_title:
             raise errors.RequestError(msg='知识标题不能为空')
+        source_mime_type = _IMAGE_MEDIA_TYPES.get(ext) or mimetypes.guess_type(source)[0]
         uploads.append(
             KnowledgeUpload(
                 title=document_title,
@@ -245,6 +282,8 @@ def parse_knowledge_uploads(  # ruff: ignore[complex-structure]
                 source=source,
                 file_type=file_type,
                 segments=tuple(segments),
+                source_data=data,
+                source_mime_type=source_mime_type or 'application/octet-stream',
             )
         )
     return uploads

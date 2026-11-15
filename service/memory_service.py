@@ -1,5 +1,5 @@
 from backend.common.exception import errors
-from backend.plugin.ai_buddy.agent.work.memory_store import database_memory_store
+from backend.plugin.ai_buddy.agent.work.memory_store import get_memory_store
 from backend.plugin.ai_buddy.schema.memory import GetAIBuddyMemoryDetail, GetAIBuddyMemoryListDetail
 from backend.plugin.ai_buddy.utils.memory_paths import memory_path_prefix
 
@@ -19,7 +19,7 @@ class AIBuddyMemoryService:
         :param user_id: 用户 ID
         :return:
         """
-        store = database_memory_store
+        store = await get_memory_store()
         paths = await store.list_paths(prefix=memory_path_prefix(user_id), limit=_LIST_LIMIT)
         items: list[GetAIBuddyMemoryListDetail] = []
         for path in paths:
@@ -48,7 +48,7 @@ class AIBuddyMemoryService:
         prefix = memory_path_prefix(user_id)
         if not normalized or '..' in normalized.split('/') or not normalized.startswith(prefix):
             raise errors.RequestError(msg='记忆路径非法')
-        store = database_memory_store
+        store = await get_memory_store()
         memory_file = await store.read(normalized, max_chars=_DETAIL_CHARS)
         if memory_file is None:
             raise errors.NotFoundError(msg='记忆不存在')
@@ -68,7 +68,7 @@ class AIBuddyMemoryService:
         :return:
         """
         detail = await self.get(user_id=user_id, path=path)
-        store = database_memory_store
+        store = await get_memory_store()
         await store.delete(detail.path, expected_version=detail.version)
 
 

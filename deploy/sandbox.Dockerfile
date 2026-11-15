@@ -1,7 +1,7 @@
-ARG DOCX_CLI_VERSION=v0.28.0
+ARG DOCX_CLI_VERSION=v0.29.0
 ARG DOCX_CLI_BASE_URL=https://github.com/kklimuk/docx-cli/releases/download
-ARG DOCX_CLI_SHA256_AMD64=e540eacc28dff30a61d502d1a24b7ebde53586295fd5c6a213e74458c4a0ad92
-ARG DOCX_CLI_SHA256_ARM64=68a91b828cd1f61cd67a254198dbbc6a421d99c950525fd9cfeb2bef956fa947
+ARG DOCX_CLI_SHA256_AMD64=e70f7d9373caa6ca95ff5667ace76746a9aab2a51287bfeffee299a7cc58d166
+ARG DOCX_CLI_SHA256_ARM64=e8425f900d88efc153cfcfab43b97976e186617dfda0d67194b40f62a17d77e9
 
 FROM node:22-bookworm-slim AS node
 
@@ -39,7 +39,7 @@ COPY --from=node /opt/ /opt/
 
 # 文档处理依赖随镜像预装，沙箱默认禁止出网，技能脚本不能在运行时安装；版本与插件 requirements.txt 保持一致
 RUN pip install --no-cache-dir \
-        office-oxide==0.1.17 pypdf==7.0.1 pypdfium2==5.15.2 pdfplumber==0.11.10 reportlab==5.1.0 \
+        office-oxide==0.1.17 pypdf==7.1.0 pypdfium2==5.15.2 pdfplumber==0.11.10 reportlab==5.1.0 \
         pandas==3.1.1 openpyxl==3.1.5 pillow==13.0.0 \
     && npm install -g pptxgenjs@4.0.1 \
     && npm cache clean --force

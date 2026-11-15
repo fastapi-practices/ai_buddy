@@ -45,7 +45,7 @@ from backend.plugin.ai_buddy.utils.knowledge_ocr import (
 )
 from backend.plugin.ai_buddy.utils.knowledge_parser import parse_knowledge_uploads
 from backend.plugin.ai_buddy.utils.model_catalog import require_model_kind
-from backend.plugin.ai_buddy.utils.object_key import build_knowledge_key
+from backend.plugin.ai_buddy.utils.object_key import build_knowledge_key, build_knowledge_source_key
 from backend.plugin.ai_buddy.utils.onnx_embed import embed_onnx_texts, require_onnx_model_downloaded
 from backend.plugin.ai_buddy.utils.ownership import SYSTEM_OWNER_USER_ID
 from backend.plugin.ai_buddy.utils.qdrant_store import (
@@ -56,7 +56,8 @@ from backend.plugin.ai_buddy.utils.qdrant_store import (
     upsert_knowledge_chunks,
 )
 from backend.plugin.ai_buddy.utils.text_vector import split_chunks
-from backend.plugin.s3.utils.text_store import read_text, require_storage, write_text
+from backend.plugin.s3.service.file_service import s3_file_service
+from backend.plugin.s3.utils.text_store import read_text, require_storage, write_bytes, write_text
 
 
 async def _require_knowledge_base(
@@ -411,6 +412,39 @@ class AIBuddyKnowledgeService:
                 item['content'] = ''
         return page_data
 
+    async def get_source_file(
+        self,
+        *,
+        db: AsyncSession,
+        pk: int,
+        user_id: int,
+        is_superuser: bool = False,
+        knowledge_base_id: int | None = None,
+    ) -> tuple[bytes, str, str]:
+        """
+        读取知识原始文件，用于预览图片或下载文档
+
+        :param db: 数据库会话
+        :param pk: 知识 ID
+        :param user_id: 当前用户 ID
+        :param is_superuser: 是否为后台超级管理员
+        :param knowledge_base_id: 限定所属知识库 ID
+        :return:
+        """
+        knowledge = await self.get(
+            db=db,
+            pk=pk,
+            user_id=user_id,
+            is_superuser=is_superuser,
+            knowledge_base_id=knowledge_base_id,
+        )
+        if not knowledge.source_object_key or knowledge.source_storage_id is None:
+            raise errors.NotFoundError(msg='知识原始文件不存在')
+        data = await s3_file_service.get_bytes(
+            db=db, key=knowledge.source_object_key, storage_id=knowledge.source_storage_id
+        )
+        return data, knowledge.source_mime_type or 'application/octet-stream', knowledge.source or knowledge.title
+
     async def create(  # ruff: ignore[complex-structure]
         self,
         *,
@@ -552,13 +586,26 @@ class AIBuddyKnowledgeService:
                 ),
             )
             object_key = build_knowledge_key(pk=knowledge.id)
+            source_object_key = build_knowledge_source_key(pk=knowledge.id, filename=uploaded.source)
             storage = await require_storage(db=db)
             await write_text(db=db, key=object_key, content=content, storage_id=storage.id)
+            if uploaded.source_data:
+                await write_bytes(
+                    db=db,
+                    key=source_object_key,
+                    data=uploaded.source_data,
+                    storage_id=storage.id,
+                )
+                knowledge.source_object_key = source_object_key
+                knowledge.source_storage_id = storage.id
+                knowledge.source_mime_type = uploaded.source_mime_type
+                knowledge.source_size = len(uploaded.source_data)
             knowledge.object_key = object_key
             knowledge.storage_id = storage.id
             knowledge.content = content
             await db.flush()
             await self._track_object(db=db, knowledge=knowledge, content=content, released=False)
+            await self._track_source_object(db=db, knowledge=knowledge, released=False)
             try:
                 await self._index(db=db, knowledge=knowledge)
             except Exception as exc:
@@ -590,6 +637,30 @@ class AIBuddyKnowledgeService:
         )
         track = ai_buddy_object_service.remove_reference if released else ai_buddy_object_service.add_reference
         await track(db=db, obj=stored, owner_type='knowledge', owner_id=str(knowledge.id), actor_id=None)
+
+    @staticmethod
+    async def _track_source_object(*, db: AsyncSession, knowledge: AIBuddyKnowledge, released: bool) -> None:
+        """
+        同步知识原始文件与统一对象的引用，缺失原始文件时跳过
+
+        :param db: 数据库会话
+        :param knowledge: 知识记录
+        :param released: 是否释放引用
+        :return:
+        """
+        if not knowledge.source_object_key or knowledge.source_storage_id is None:
+            return
+        stored = await ai_buddy_object_service.register(
+            db=db,
+            user_id=knowledge.user_id,
+            kind=AIBuddyObjectKind.knowledge,
+            object_key=knowledge.source_object_key,
+            storage_id=knowledge.source_storage_id,
+            size=knowledge.source_size,
+            mime_type=knowledge.source_mime_type,
+        )
+        track = ai_buddy_object_service.remove_reference if released else ai_buddy_object_service.add_reference
+        await track(db=db, obj=stored, owner_type='knowledge_source', owner_id=str(knowledge.id), actor_id=None)
 
     @staticmethod
     def _assert_can_write_knowledge_base(
@@ -661,6 +732,7 @@ class AIBuddyKnowledgeService:
             )
         if knowledge is not None:
             await self._track_object(db=db, knowledge=knowledge, content=None, released=True)
+            await self._track_source_object(db=db, knowledge=knowledge, released=True)
         count = await ai_buddy_knowledge_dao.delete(db, pk)
         if count > 0:
             try:

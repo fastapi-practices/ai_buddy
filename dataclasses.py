@@ -353,3 +353,5 @@ class KnowledgeUpload:
     source: str
     file_type: AIBuddyKnowledgeFileType
     segments: tuple[KnowledgeSegment, ...] = ()
+    source_data: bytes = b''
+    source_mime_type: str | None = None

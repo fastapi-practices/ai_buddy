@@ -14,8 +14,6 @@ from backend.plugin.ai_buddy.model.knowledge_base import AIBuddyKnowledgeBase as
 from backend.plugin.ai_buddy.model.mcp import AIBuddyMcp as AIBuddyMcp
 from backend.plugin.ai_buddy.model.mcp_oauth import AIBuddyMcpOauth as AIBuddyMcpOauth
 from backend.plugin.ai_buddy.model.mcp_oauth_config import AIBuddyMcpOauthConfig as AIBuddyMcpOauthConfig
-from backend.plugin.ai_buddy.model.memory_file import AIBuddyMemoryFile as AIBuddyMemoryFile
-from backend.plugin.ai_buddy.model.memory_operation import AIBuddyMemoryOperation as AIBuddyMemoryOperation
 from backend.plugin.ai_buddy.model.message import AIBuddyMessage as AIBuddyMessage
 from backend.plugin.ai_buddy.model.message_error import AIBuddyMessageError as AIBuddyMessageError
 from backend.plugin.ai_buddy.model.model import AIBuddyModel as AIBuddyModel

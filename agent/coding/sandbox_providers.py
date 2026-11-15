@@ -1,4 +1,8 @@
 import importlib
+import importlib.util
+import platform
+import shutil
+import sys
 
 from dataclasses import dataclass
 from datetime import timedelta
@@ -28,6 +32,7 @@ from backend.plugin.ai_buddy.agent.coding.workspace_sandbox import WorkspaceSand
 from backend.plugin.ai_buddy.crud.crud_sandbox_workspace import ai_buddy_sandbox_workspace_dao
 from backend.plugin.ai_buddy.enums import AIBuddyExecutionBackend, AIBuddyPermissionMode, AIBuddySandboxProvider
 from backend.plugin.ai_buddy.model.sandbox_workspace import AIBuddySandboxWorkspace
+from backend.plugin.ai_buddy.schema.execution import GetAIBuddySandboxProviderDetail
 from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
 
 
@@ -41,46 +46,267 @@ class HarnessProvider:
     extra: str
     image_kwarg: str | None
     network_kwarg: bool
+    sdk_module: str | None
+    local: bool
+    platforms: tuple[str, ...]
 
 
-_SUPPORTED_PROVIDERS = frozenset(AIBuddySandboxProvider)
+_OPEN_SANDBOX_PLATFORMS = ('all',)
 
 _HARNESS_PROVIDERS: dict[str, HarnessProvider] = {
     AIBuddySandboxProvider.docker: HarnessProvider(
-        'docker_sandbox', 'DockerSandbox', 'DockerSandboxBackend', 'docker', 'image', True
+        'docker_sandbox',
+        'DockerSandbox',
+        'DockerSandboxBackend',
+        'docker',
+        'image',
+        True,
+        None,
+        True,
+        ('darwin', 'linux'),
     ),
     AIBuddySandboxProvider.e2b: HarnessProvider(
-        'e2b_sandbox', 'E2BSandbox', 'E2BSandboxBackend', 'e2b', 'template', True
+        'e2b_sandbox', 'E2BSandbox', 'E2BSandboxBackend', 'e2b', 'template', True, 'e2b', False, ('all',)
     ),
     AIBuddySandboxProvider.modal: HarnessProvider(
-        'modal_sandbox', 'ModalSandbox', 'ModalSandboxBackend', 'modal', 'image', False
+        'modal_sandbox', 'ModalSandbox', 'ModalSandboxBackend', 'modal', 'image', False, 'modal', False, ('all',)
     ),
     AIBuddySandboxProvider.daytona: HarnessProvider(
-        'daytona_sandbox', 'DaytonaSandbox', 'DaytonaSandboxBackend', 'daytona', 'snapshot', True
+        'daytona_sandbox',
+        'DaytonaSandbox',
+        'DaytonaSandboxBackend',
+        'daytona',
+        'snapshot',
+        True,
+        'daytona',
+        False,
+        ('all',),
     ),
     AIBuddySandboxProvider.sprites: HarnessProvider(
-        'sprites_sandbox', 'SpritesSandbox', 'SpritesSandboxBackend', 'sprites', None, False
+        'sprites_sandbox',
+        'SpritesSandbox',
+        'SpritesSandboxBackend',
+        'sprites',
+        None,
+        False,
+        'sprites',
+        False,
+        ('all',),
     ),
     AIBuddySandboxProvider.smol: HarnessProvider(
-        'smol_sandbox', 'SmolSandbox', 'SmolSandboxBackend', 'smol', 'image', True
+        'smol_sandbox',
+        'SmolSandbox',
+        'SmolSandboxBackend',
+        'smol',
+        'image',
+        True,
+        'smol',
+        True,
+        ('darwin-arm64', 'linux-x86_64', 'linux-aarch64'),
     ),
     AIBuddySandboxProvider.boxlite: HarnessProvider(
-        'boxlite_sandbox', 'BoxLiteSandbox', 'BoxLiteSandboxBackend', 'boxlite', 'image', True
+        'boxlite_sandbox',
+        'BoxLiteSandbox',
+        'BoxLiteSandboxBackend',
+        'boxlite',
+        'image',
+        True,
+        'boxlite',
+        True,
+        ('darwin-arm64', 'linux-x86_64', 'linux-aarch64'),
     ),
 }
 
 
-def resolve_provider(requested: str | None) -> str:
+def _platform_keys() -> tuple[str, str]:
     """
-    解析本轮沙箱服务商，未指定时使用配置的默认服务商
+    返回当前主机操作系统与架构标识
 
-    :param requested: 客户端请求的服务商，为空使用配置的默认服务商
     :return:
     """
-    provider = requested or settings.AI_BUDDY_AGENT_SANDBOX_PROVIDER
-    if provider not in _SUPPORTED_PROVIDERS:
-        raise errors.RequestError(msg=f'不支持的沙箱服务商 {provider}')
-    return provider
+    return sys.platform, platform.machine().lower()
+
+
+def _status(
+    provider: AIBuddySandboxProvider,
+    *,
+    available: bool,
+    local: bool,
+    platforms: tuple[str, ...],
+    reason: str | None = None,
+) -> GetAIBuddySandboxProviderDetail:
+    """
+    构建沙箱服务商状态
+
+    :param provider: 沙箱服务商
+    :param available: 是否可用
+    :param local: 是否本地运行
+    :param platforms: 支持平台
+    :param reason: 不可用原因
+    :return:
+    """
+    return GetAIBuddySandboxProviderDetail(
+        provider=provider,
+        label=provider.label,
+        available=available,
+        local=local,
+        platforms=list(platforms),
+        reason=reason,
+    )
+
+
+def _sdk_installed(module: str | None) -> bool:
+    """检查可选 SDK 是否已安装"""
+    if module is None:
+        return True
+    try:
+        return importlib.util.find_spec(module) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _docker_executable() -> str | None:
+    """返回可用的容器 CLI，优先 Docker，其次 Podman"""
+    if shutil.which('docker'):
+        return 'docker'
+    if shutil.which('podman'):
+        return 'podman'
+    return None
+
+
+def _status_for(provider: AIBuddySandboxProvider) -> GetAIBuddySandboxProviderDetail:
+    """
+    检测单个服务商在当前主机的可用性
+
+    :param provider: 沙箱服务商
+    :return:
+    """
+    platform_key, machine = _platform_keys()
+    if provider == AIBuddySandboxProvider.opensandbox:
+        available = bool(settings.AI_BUDDY_OPENSANDBOX_DOMAIN.strip()) and _sdk_installed('opensandbox')
+        reason = None if available else '未配置 OpenSandbox 服务地址或 SDK'
+        return _status(provider, available=available, local=False, platforms=_OPEN_SANDBOX_PLATFORMS, reason=reason)
+    spec = _HARNESS_PROVIDERS[provider]
+    supported = (
+        'all' in spec.platforms or f'{platform_key}-{machine}' in spec.platforms or platform_key in spec.platforms
+    )
+    if not supported:
+        return _status(
+            provider,
+            available=False,
+            local=spec.local,
+            platforms=spec.platforms,
+            reason='当前操作系统不支持',
+        )
+    if provider == AIBuddySandboxProvider.docker:
+        executable = _docker_executable()
+        return _status(
+            provider,
+            available=executable is not None,
+            local=True,
+            platforms=spec.platforms,
+            reason=None if executable else '未找到 docker 或 podman 命令',
+        )
+    sdk_installed = _sdk_installed(spec.sdk_module)
+    return _status(
+        provider,
+        available=sdk_installed,
+        local=spec.local,
+        platforms=spec.platforms,
+        reason=None if sdk_installed else f'未安装 {spec.extra} extra',
+    )
+
+
+def _configured_provider_names() -> list[str]:
+    """
+    读取服务端显式提供的沙箱服务商，列表为空时兼容旧的单值配置
+
+    :return:
+    """
+    raw = getattr(settings, 'AI_BUDDY_AGENT_SANDBOX_PROVIDERS', '').strip()
+    names = [name.strip().lower() for name in raw.split(',') if name.strip()]
+    if not names:
+        legacy = getattr(settings, 'AI_BUDDY_AGENT_SANDBOX_PROVIDER', '').strip().lower()
+        if legacy:
+            names = [legacy]
+    return names
+
+
+def provided_sandbox_providers() -> tuple[AIBuddySandboxProvider, ...]:
+    """
+    返回服务端实际提供的沙箱服务商，未配置时返回空
+
+    :return:
+    """
+    providers: list[AIBuddySandboxProvider] = []
+    for name in _configured_provider_names():
+        try:
+            provider = AIBuddySandboxProvider(name)
+        except ValueError:
+            log.warning(f'忽略未知的沙箱服务商配置: {name}')
+            continue
+        if provider not in providers:
+            providers.append(provider)
+    return tuple(providers)
+
+
+def list_sandbox_providers() -> list[GetAIBuddySandboxProviderDetail]:
+    """
+    列出服务端实际提供的沙箱服务商及当前主机可用性
+
+    :return:
+    """
+    return [_status_for(provider) for provider in provided_sandbox_providers()]
+
+
+def has_server_sandbox() -> bool:
+    """判断服务端是否提供了至少一个当前可用的沙箱"""
+    return any(item.available for item in list_sandbox_providers())
+
+
+def default_sandbox_provider() -> AIBuddySandboxProvider | None:
+    """
+    返回服务端默认沙箱，只在已提供且当前可用的服务商中选择
+
+    :return:
+    """
+    provided = provided_sandbox_providers()
+    configured = getattr(settings, 'AI_BUDDY_AGENT_SANDBOX_PROVIDER', '').strip().lower()
+    for provider in provided:
+        if provider.value == configured and _status_for(provider).available:
+            return provider
+    for provider in provided:
+        if _status_for(provider).available:
+            return provider
+    return None
+
+
+def resolve_provider(requested: str | None) -> str:
+    """
+    解析本轮沙箱服务商，只允许选择服务端实际提供且当前可用的服务商
+
+    :param requested: 客户端请求的服务商，为空使用服务端默认沙箱
+    :return:
+    """
+    provided = provided_sandbox_providers()
+    if not provided:
+        raise errors.RequestError(msg='服务端未提供沙箱，请使用本地沙箱')
+    if requested is None or not requested.strip():
+        selected = default_sandbox_provider()
+        if selected is None:
+            raise errors.RequestError(msg='服务端提供的沙箱当前不可用，请使用本地沙箱')
+        return selected.value
+    try:
+        selected = AIBuddySandboxProvider(requested.strip().lower())
+    except ValueError as exc:
+        raise errors.RequestError(msg=f'不支持的沙箱服务商 {requested}') from exc
+    if selected not in provided:
+        raise errors.RequestError(msg=f'服务端未提供沙箱服务商 {selected.value}')
+    status = _status_for(selected)
+    if not status.available:
+        reason = status.reason or '依赖或配置缺失'
+        raise errors.RequestError(msg=f'沙箱服务商 {status.label} 当前不可用：{reason}')
+    return selected.value
 
 
 def _load_harness(provider: str) -> tuple[HarnessProvider, type, type]:
@@ -194,7 +420,9 @@ async def _attach_harness(
     """
     _, capability, _ = _load_harness(provider)
     ref_provider, _, ref_id = record.sandbox_ref.partition(':')
-    workspace = Workspace(capability().backend(WorkspaceRef(provider=ref_provider, id=ref_id)))
+    executable = _docker_executable() if provider == AIBuddySandboxProvider.docker else None
+    attached = capability(executable=executable) if executable and executable != 'docker' else capability()
+    workspace = Workspace(attached.backend(WorkspaceRef(provider=ref_provider, id=ref_id)))
     try:
         await workspace.run(['true'], timeout=120)
     except WorkspaceError as exc:
@@ -223,6 +451,9 @@ async def _create_harness(
         kwargs[spec.image_kwarg] = settings.AI_BUDDY_AGENT_SANDBOX_IMAGE
     if spec.network_kwarg:
         kwargs['allow_internet_access'] = permission_mode == AIBuddyPermissionMode.full
+    executable = _docker_executable() if provider == AIBuddySandboxProvider.docker else None
+    if executable and executable != 'docker':
+        kwargs['executable'] = executable
     backend = backend_cls(**kwargs)
     workspace = Workspace(backend)
     try:
@@ -255,7 +486,9 @@ async def _destroy(record: AIBuddySandboxWorkspace) -> None:
         else:
             _, capability, _ = _load_harness(record.provider)
             ref_provider, _, ref_id = record.sandbox_ref.partition(':')
-            await capability().destroy(WorkspaceRef(provider=ref_provider, id=ref_id))
+            executable = _docker_executable() if record.provider == AIBuddySandboxProvider.docker else None
+            destroyer = capability(executable=executable) if executable and executable != 'docker' else capability()
+            await destroyer.destroy(WorkspaceRef(provider=ref_provider, id=ref_id))
     except SandboxApiException as exc:
         if exc.status_code != 404:
             log.warning(f'销毁沙箱失败 provider={record.provider} ref={record.sandbox_ref}: {exc!r}')

@@ -83,6 +83,10 @@ where "key" in (
 
 drop table if exists ai_buddy_memory_operation;
 drop table if exists ai_buddy_memory_file;
+drop table if exists ai_buddy_memory_metadata;
+drop table if exists ai_buddy_memory_operations;
+drop table if exists ai_buddy_memory;
+drop sequence if exists ai_buddy_memory_versions;
 drop table if exists ai_buddy_message_error;
 drop table if exists ai_buddy_message;
 drop table if exists ai_buddy_follow_up;

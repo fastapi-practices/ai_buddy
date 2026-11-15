@@ -13,6 +13,7 @@ from backend.common.exception import errors
 from backend.common.log import log
 from backend.database.db import async_db_session, uuid4_str
 from backend.plugin.ai_buddy.agent.coding.conversation_run import run_conversation_coding
+from backend.plugin.ai_buddy.agent.coding.sandbox_providers import has_server_sandbox
 from backend.plugin.ai_buddy.agent.coding.session import resolve_coding_invocation
 from backend.plugin.ai_buddy.agent.work.inputs import build_run_context, decode_input_messages, sanitize_input_messages
 from backend.plugin.ai_buddy.agent.work.runs import abort_prepared_run, activate_run
@@ -22,6 +23,7 @@ from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.dataclasses import CompletionPersistenceContext
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,
+    AIBuddyExecutionBackend,
     AIBuddyMessageRole,
     AIBuddyMessageStatus,
     AIBuddyOrigin,
@@ -32,13 +34,13 @@ from backend.plugin.ai_buddy.schema.chat import (
     AIBuddyForwardedPropsParam,
 )
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
-from backend.plugin.ai_buddy.service.workspace_service import ai_buddy_workspace_service
-from backend.plugin.ai_buddy.utils.media_store import dump_model_message_payloads, encode_model_message_payloads
-from backend.plugin.ai_buddy.utils.message_converter import (
+from backend.plugin.ai_buddy.service.media_service import dump_model_message_payloads, encode_model_message_payloads
+from backend.plugin.ai_buddy.service.message_converter import (
     build_chat_message_record,
     filter_history_model_messages,
     parse_current_turn_input,
 )
+from backend.plugin.ai_buddy.service.workspace_service import ai_buddy_workspace_service
 from backend.plugin.ai_buddy.utils.turn_context import build_turn_context
 from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
 
@@ -409,6 +411,14 @@ class AIBuddyChatService:
         forwarded_props = ai_buddy_conversation_service.resolve_work_location(
             forwarded_props=forwarded_props, message_rows=message_rows
         )
+        if (
+            not forwarded_props.acp_runner
+            and forwarded_props.execution_backend == AIBuddyExecutionBackend.sandbox
+            and not has_server_sandbox()
+        ):
+            if forwarded_props.agent_mode == AIBuddyAgentMode.coding:
+                raise errors.RequestError(msg='服务端未提供可用沙箱，请使用本地沙箱')
+            forwarded_props = forwarded_props.model_copy(update={'execution_backend': AIBuddyExecutionBackend.local})
         if forwarded_props.agent_mode != AIBuddyAgentMode.coding:
             return forwarded_props
         inherited_workspace_id = None

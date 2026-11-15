@@ -48,7 +48,7 @@ services:
       - ai_buddy_sandbox
 
   opensandbox-server:
-    image: opensandbox/server:release-1.1.1
+    image: opensandbox/server:release-1.2.1
     container_name: ai_buddy_opensandbox
     restart: always
     extra_hosts:

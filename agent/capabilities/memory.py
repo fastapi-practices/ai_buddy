@@ -2,7 +2,7 @@ from pydantic_ai.capabilities import Capability
 from pydantic_ai_harness import Memory
 
 from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allowed
-from backend.plugin.ai_buddy.agent.work.memory_store import database_memory_store
+from backend.plugin.ai_buddy.agent.work.memory_store import get_memory_store
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam
@@ -10,7 +10,7 @@ from backend.plugin.ai_buddy.security.artifact_scanner import buddy_artifact_sca
 from backend.plugin.ai_buddy.utils.memory_paths import memory_instructions
 
 
-def build_memory_capability(ctx: CapabilityContext) -> list[CapabilityResult]:
+async def build_memory_capability(ctx: CapabilityContext) -> list[CapabilityResult]:
     """
     构建当前用户的跨会话记忆能力
 
@@ -29,10 +29,11 @@ def build_memory_capability(ctx: CapabilityContext) -> list[CapabilityResult]:
         has_builtin_tools=ctx.has_builtin_tools,
     ):
         return []
+    store = await get_memory_store()
     results = [
         CapabilityResult(
             capability=Memory(
-                store=database_memory_store,
+                store=store,
                 namespace=str(ctx.user_id),
                 agent_name='fba-chat',
                 # 记忆跨会话复用，写入时拒绝注入，读取时扣留被标记的正文
