@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """
 xlsx_add_column.py — Add a new column to a worksheet in an unpacked xlsx.

@@ -3,6 +3,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.channel_user import AIBuddyChannelUser
 
 
@@ -33,9 +34,8 @@ class CRUDAIBuddyChannelUser(CRUDPlus[AIBuddyChannelUser]):
         :return:
         """
         mapping = self.model(channel_id=channel_id, user_id=user_id, external_id=external_id)
-        db.add(mapping)
-        await db.flush()
-        return mapping
+        rows = await self.bulk_create_models(db, [orm_values(mapping)], flush=True)
+        return rows[0]
 
     async def update_extra(self, db: AsyncSession, pk: int, extra: dict[str, Any]) -> int:
         """

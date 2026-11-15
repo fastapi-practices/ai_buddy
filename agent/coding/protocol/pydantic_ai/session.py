@@ -165,7 +165,7 @@ class PydanticAICodingSession:
         active_acp_call: str | None = None
         acp_text = ''
         if self._acp_service is not None:
-            self._acp_service.set_wait_approval(wait_approval)
+            self._acp_service.set_wait_approval(wait_approval=wait_approval)
 
             async def acp_event(payload: dict[str, Any], _is_last: object) -> None:
                 """
@@ -202,7 +202,7 @@ class PydanticAICodingSession:
                             },
                         )
 
-            self._acp_service.set_event_handler(acp_event)
+            self._acp_service.set_event_handler(handler=acp_event)
         await persist_message(AgentMessage(role=AIBuddyMessageRole.user, content=prompt))
         adapter = get_provider_adapter(self._spec.provider_type)
         http_client = build_retry_http_client()

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.conversation_audit import AIBuddyConversationAudit
 
 
@@ -30,8 +31,7 @@ class CRUDAIBuddyConversationAudit(CRUDPlus[AIBuddyConversationAudit]):
             stmt = stmt.where(self.model.id < before)
         return (await db.execute(stmt.order_by(self.model.id.desc()).limit(limit))).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyConversationAudit) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyConversationAudit) -> None:
         """
         追加审计记录
 
@@ -39,8 +39,7 @@ class CRUDAIBuddyConversationAudit(CRUDPlus[AIBuddyConversationAudit]):
         :param obj: 审计记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
 
 ai_buddy_conversation_audit_dao: CRUDAIBuddyConversationAudit = CRUDAIBuddyConversationAudit(AIBuddyConversationAudit)

@@ -4,13 +4,7 @@
 
 本插件与基础 `ai` 插件互斥，不要同时安装
 
-可选的配套插件：`ai_buddy_group`（资源分组与可见性）和 `ai_buddy_billing`（价格、用量、余额和预算）。两者都通过 `depends_on` 依赖本插件，按需安装即可，不安装或停用不影响本插件独立运行。
-
-> [!WARNING]
-> 自 0.1.1 版本起不再支持 MySQL 数据库，仅支持 PostgreSQL
-
-> [!NOTE]
-> 自 0.2.0 版本起要求 fba `>=2.0.0,<3.0.0`，并直接使用 PostgreSQL 内置能力完成写入与检索
+可选的配套插件：`ai_buddy_group`（资源分组与可见性）和 `ai_buddy_billing`（价格、用量、余额和预算）。两者都通过 `depends_on` 依赖本插件，按需安装即可，不安装或停用不影响本插件独立运行
 
 ## 插件类型
 
@@ -27,6 +21,8 @@ AI_BUDDY_QDRANT_API_KEY=''
 AI_BUDDY_OPENSANDBOX_DOMAIN='127.0.0.1:8090'
 AI_BUDDY_OPENSANDBOX_API_KEY='ai-buddy-opensandbox-local'
 AI_BUDDY_OPENSANDBOX_PROTOCOL='http'
+AI_BUDDY_AGENT_SANDBOX_PROVIDERS=''
+AI_BUDDY_AGENT_SANDBOX_PROVIDER=''
 AI_BUDDY_EXA_API_KEY=''
 AI_BUDDY_KEENABLE_API_KEY=''
 AI_BUDDY_TAVILY_API_KEY=''
@@ -88,7 +84,6 @@ AI_BUDDY_OCR_TIMEOUT_SECONDS = 300
 AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS = 30
 AI_BUDDY_AGENT_MAX_FILE_BYTES = 1000000
 AI_BUDDY_AGENT_EXECUTION_BACKEND = "local"
-AI_BUDDY_AGENT_SANDBOX_PROVIDER = "opensandbox"
 AI_BUDDY_AGENT_SANDBOX_IMAGE = "fba-ai-buddy-sandbox:latest"
 AI_BUDDY_AGENT_SANDBOX_CPU = "1"
 AI_BUDDY_AGENT_SANDBOX_MEMORY = "2Gi"
@@ -111,6 +106,8 @@ AI_BUDDY_QDRANT_API_KEY: str = ''
 AI_BUDDY_OPENSANDBOX_DOMAIN: str = '127.0.0.1:8090'
 AI_BUDDY_OPENSANDBOX_API_KEY: str = 'ai-buddy-opensandbox-local'
 AI_BUDDY_OPENSANDBOX_PROTOCOL: str = 'http'
+AI_BUDDY_AGENT_SANDBOX_PROVIDERS: str = ''
+AI_BUDDY_AGENT_SANDBOX_PROVIDER: str = ''
 AI_BUDDY_EXA_API_KEY: str = ''
 AI_BUDDY_KEENABLE_API_KEY: str = ''
 AI_BUDDY_TAVILY_API_KEY: str = ''
@@ -133,13 +130,12 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 - `AI_BUDDY_HTTP_MAX_RETRIES`：控制模型供应商 HTTP 请求的最大重试次数
 - `AI_BUDDY_MCP_MAX_RETRIES`：控制 MCP 工具调用的最大重试次数
 - `AI_BUDDY_DOCUMENT_EXTRACT_BACKEND`：控制知识文档抽取后端
-- `AI_BUDDY_OCR_BACKEND`：控制后台管理的服务端 OCR 后端，可选 `paddleocr`、`onnx`、`vision`、`mistral`，不包含服务器系统 OCR，也不会自动回退
 - `AI_BUDDY_UNSTRUCTURED_API_URL`：控制 Unstructured API 地址
 - `AI_BUDDY_DOC2X_API_URL`：控制 Doc2X API 地址
 - `AI_BUDDY_MISTRAL_API_URL`：控制 Mistral API 地址
 - `AI_BUDDY_EMBEDDING_BACKEND`：控制知识库未指定模型时的向量化方式
 - `AI_BUDDY_ONNX_EMBEDDING_MODEL`：控制 RAG 默认使用的本地 ONNX 向量模型
-- `AI_BUDDY_EMBEDDING_BACKEND`：控制知识库未指定模型时的向量化方式
+- `AI_BUDDY_OCR_BACKEND`：控制后台管理的服务端 OCR 后端，可选 `paddleocr`、`onnx`、`vision`、`mistral`，不包含服务器系统 OCR，也不会自动回退
 - `AI_BUDDY_RAG_CHUNK_CHARS`：控制知识切片的字符长度
 - `AI_BUDDY_RAG_CHUNK_OVERLAP`：控制相邻知识切片的重叠字符数
 - `AI_BUDDY_RAG_TOP_K`：控制知识语义检索返回的条数
@@ -168,11 +164,9 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 - `AI_BUDDY_KNOWLEDGE_MAX_IMAGE_BYTES`：控制单张图片的字节数上限
 - `AI_BUDDY_KNOWLEDGE_MAX_IMAGE_PIXELS`：控制单次导入累计解析的图片像素总数
 - `AI_BUDDY_OCR_TIMEOUT_SECONDS`：控制服务端 OCR 的超时秒数
-- `AI_BUDDY_PADDLEOCR_API_URL`：控制自建 PaddleOCR 服务地址，空则使用本机 paddleocr
 - `AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS`：控制工作区命令的执行超时
 - `AI_BUDDY_AGENT_MAX_FILE_BYTES`：控制工作区单文件读写大小上限
-- `AI_BUDDY_AGENT_EXECUTION_BACKEND`：控制客户端未显式选择执行后端时的默认值，`local` 为桌面本机，`sandbox` 为服务端沙箱
-- `AI_BUDDY_AGENT_SANDBOX_PROVIDER`：控制服务端沙箱的默认服务商，客户端可通过 `sandboxProvider` 在受支持的服务商中切换，除 `opensandbox` 外的服务商需安装对应扩展，如 `uv add "pydantic-ai-harness[e2b]"`
+- `AI_BUDDY_AGENT_EXECUTION_BACKEND`：控制客户端未显式选择执行后端时的默认值，`local` 为桌面本机，`sandbox` 为服务端沙箱；服务端没有可用沙箱时会强制回落到 `local`
 - `AI_BUDDY_AGENT_SANDBOX_IMAGE`：控制新建沙箱使用的镜像或模板，E2B 为模板名，Daytona 为快照名，Sprites 不使用
 - `AI_BUDDY_AGENT_SANDBOX_CPU`：控制 OpenSandbox 沙箱 CPU 限额，其他服务商不使用
 - `AI_BUDDY_AGENT_SANDBOX_MEMORY`：控制 OpenSandbox 沙箱内存限额，其他服务商不使用
@@ -187,37 +181,13 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 1. 安装并启用参数配置、S3 和 AI Buddy 插件，完成数据库初始化后重启后端服务
 2. 安装配套前端插件，在后台配置默认 S3 存储、供应商、模型和默认模型，并维护系统内置资源
 3. 在客户端选择模型和助手，发起对话或工作任务，管理个人 MCP、知识、技能与产物；通道绑定和对话定时也在客户端完成
-4. 客户端上传的知识文档由客户端在本地完成 OCR，并通过 `texts`（JSON，键为文件名或 zip 内路径）提交文本，客户端入口不接受服务端 OCR；后台管理入口使用 `AI_BUDDY_OCR_BACKEND` 指定的服务端引擎处理图片和扫描页，不再提供服务器系统 OCR，也没有自动回退
-5. 编码任务使用独立会话，选择桌面本机工作区或服务端沙箱；使用 ACP 外部助手前，先在本机安装并登录对应 Agent，再通过桌面连接
-6. 工作模式通过服务端沙箱生成和编辑 Excel、PPT、Word、PDF，需要部署 OpenSandbox 并构建沙箱镜像；升级后必须重新构建镜像，旧镜像缺少文档处理依赖
-7. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
-8. 运行机制与执行环境准备见 [架构文档](架构.md)
-
-## 内置资源脚本
-
-`sql/postgresql` 下除 `init*.sql` 和 `destroy*.sql` 外的脚本用于写入可直接使用的系统内置资源，均为幂等脚本，可反复执行：
-
-| 脚本 | 内容 |
-| --- | --- |
-| `init_assistant.sql` | 按分类整理的内置助手，覆盖效率办公、写作创作、翻译语言、职场求职、编程开发、学习教育、生活兴趣、产品运营、法律合规和金融财务 |
-| `init_expert.sql` | 内置专家模板，绑定实际存在的内置 MCP 与内置技能，例如代码审查绑定 Git 仓库、合同审阅绑定 PDF 与 Word 解析 |
-| `init_mcp.sql` | 可直接运行的内置 MCP，包括文件系统、网页抓取、Git 仓库、GitHub、记忆、时间、逐步推理和浏览器 |
-| `init_quick_phrase.sql` | 对话中常用的快捷短语 |
-| `init_subagent.sql` | 调研、写作、审查、规划和编码子代理 |
-
-- `DATABASE_PK_MODE=autoincrement` 时执行不带后缀的脚本，`DATABASE_PK_MODE=snowflake` 时执行 `init_snowflake_*.sql`，不要混用
-- `init.sql` 中已包含菜单、权限和参数配置，按其他插件的安装脚本约定只执行一次；内置资源脚本按 `user_id + name` 去重，不会覆盖已有同名资源
-- 内置 MCP 通过服务器上已有的 `npx`、`uvx` 启动，其中文件系统、Git 仓库和记忆使用 `AI_BUDDY_MCP_*` 环境变量指定实际目录，未设置时回落到服务账号主目录，具体说明见各条 MCP 的描述
-- 执行示例：
-
-```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -f sql/postgresql/init_mcp.sql \
-  -f sql/postgresql/init_expert.sql \
-  -f sql/postgresql/init_assistant.sql \
-  -f sql/postgresql/init_quick_phrase.sql \
-  -f sql/postgresql/init_subagent.sql
-```
+4. 知识库支持 Markdown、TXT、CSV、JSON、HTML、XML、YAML、常见源码、PDF、Word、PowerPoint、Excel、图片和 zip；客户端在本地完成 OCR，并通过 `texts`（JSON，键为文件名或 zip 内路径）提交文本，客户端入口不接受服务端 OCR；后台管理入口使用 `AI_BUDDY_OCR_BACKEND` 指定的服务端引擎处理图片和扫描页，不再提供服务器系统 OCR，也没有自动回退
+5. 上传的原始文件始终保留在 S3，图片仍以图片保存，OCR 只生成用于检索的抽取正文；知识详情的原始文件入口可读取原始文件
+6. 编码任务使用独立会话，选择桌面本机工作区或服务端沙箱；使用 ACP 外部助手前，先在本机安装并登录对应 Agent，再通过桌面连接
+7. 服务端只允许选择 `AI_BUDDY_AGENT_SANDBOX_PROVIDERS` 中显式提供的沙箱，例如 `opensandbox` 或 `opensandbox,docker`；没有提供时执行选项接口返回空的沙箱列表并强制使用本地执行。macOS Apple 芯片可用 BoxLite（基于 Apple Hypervisor，作为原生 Container 的稳定替代），Linux 可用 Docker/Podman，Windows 建议在 WSL2 中运行后端并使用 Docker
+8. 工作模式只有服务端实际提供可用沙箱时才装配沙箱工具，用于生成和编辑 Excel、PPT、Word、PDF；没有提供沙箱时禁用这些工具。使用沙箱镜像时升级后必须重新构建，旧镜像缺少文档处理依赖
+9. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
+10. 运行机制与执行环境准备见 [架构文档](架构.md)
 
 ## 卸载说明
 

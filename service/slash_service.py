@@ -17,12 +17,12 @@ from backend.plugin.ai_buddy.schema.slash import GetAIBuddySlashCommandDetail, G
 from backend.plugin.ai_buddy.service.chat_polish_service import ai_buddy_chat_polish_service
 from backend.plugin.ai_buddy.service.chat_service import ai_buddy_chat_service
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
-from backend.plugin.ai_buddy.utils.conversation_title import normalize_conversation_title
-from backend.plugin.ai_buddy.utils.message_converter import (
+from backend.plugin.ai_buddy.service.message_converter import (
     expand_message_rows,
     extract_message_preview_text,
     is_user_prompt_message,
 )
+from backend.plugin.ai_buddy.utils.conversation_title import normalize_conversation_title
 
 
 class AIBuddySlashService:

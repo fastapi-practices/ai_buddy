@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """
 style_audit.py — Financial formatting compliance checker for xlsx files.

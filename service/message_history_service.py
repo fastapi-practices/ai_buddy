@@ -20,8 +20,8 @@ from backend.plugin.ai_buddy.schema.message_history import (
     GetAIBuddyPlanDetail,
 )
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
+from backend.plugin.ai_buddy.service.message_converter import expand_message_row_metadata, expand_message_rows
 from backend.plugin.ai_buddy.utils.history_cursor import decode_history_cursor, encode_history_cursor
-from backend.plugin.ai_buddy.utils.message_converter import expand_message_row_metadata, expand_message_rows
 from backend.plugin.ai_buddy.utils.message_snapshot import serialize_messages_to_snapshot
 from backend.plugin.ai_buddy.utils.plan_store import get_plan_store
 
@@ -95,7 +95,12 @@ class AIBuddyMessageHistoryService:
         before = decode_history_cursor(cursor=cursor)
         items: list[GetAIBuddyMessageSearchHitDetail] = []
         rows = await ai_buddy_message_dao.get_search_page(
-            db, conversation_id, needle=needle, before=before, limit=limit + 1
+            db,
+            conversation_id,
+            query_text=q.strip(),
+            pattern=_search_pattern(needle),
+            before=before,
+            limit=limit + 1,
         )
         has_more = len(rows) > limit
         for row in rows[:limit]:

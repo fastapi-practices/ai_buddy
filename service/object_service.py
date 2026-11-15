@@ -217,7 +217,7 @@ class AIBuddyObjectService:
             )
             try:
                 async with db.begin_nested():
-                    await ai_buddy_object_dao.create(db, obj)
+                    obj = await ai_buddy_object_dao.create(db, obj)
                     await self.record(
                         db=db, object_id=obj.id, action=AIBuddyObjectAuditAction.register, actor_id=user_id
                     )

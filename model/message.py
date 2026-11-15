@@ -2,7 +2,7 @@ from typing import Any
 
 import sqlalchemy as sa
 
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.model import Base, id_key
@@ -13,6 +13,10 @@ class AIBuddyMessage(Base):
     """AI 消息表"""
 
     __tablename__ = 'ai_buddy_message'
+    __table_args__ = (
+        sa.Index('ix_ai_buddy_message_search_vector', 'search_vector', postgresql_using='gin'),
+        {'comment': 'AI 消息表'},
+    )
 
     id: Mapped[id_key] = mapped_column(init=False)
     conversation_id: Mapped[str] = mapped_column(sa.String(64), index=True, comment='对话 ID')
@@ -21,6 +25,12 @@ class AIBuddyMessage(Base):
     message_index: Mapped[int] = mapped_column(index=True, comment='消息索引')
     role: Mapped[str] = mapped_column(sa.String(16), comment='消息角色')
     model_messages: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, comment='原始 Pydantic 模型消息列表')
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        sa.Computed("to_tsvector('simple', model_messages::text)", persisted=True),
+        init=False,
+        comment='全文检索向量',
+    )
     origin: Mapped[str] = mapped_column(
         sa.String(16),
         default=AIBuddyOrigin.web,

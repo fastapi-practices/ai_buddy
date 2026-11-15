@@ -2,11 +2,12 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Literal
 
-from sqlalchemy import Select, and_, cast, false, func, or_, select, update
+from sqlalchemy import Select, and_, cast, false, func, literal_column, or_, select, update
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.enums import AIBuddyMessageStatus
 from backend.plugin.ai_buddy.model import AIBuddyMessage
 from backend.plugin.ai_buddy.model.conversation import AIBuddyConversation
@@ -109,24 +110,28 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
         db: AsyncSession,
         conversation_id: str,
         *,
+        query_text: str,
         pattern: str,
         before: tuple[int, int] | None,
         limit: int,
     ) -> Sequence[AIBuddyMessage]:
         """
-        按关键字检索历史消息，匹配下推到数据库，只返回命中的行
+        按关键字检索历史消息，使用 PostgreSQL 全文检索并保留子串匹配兜底
 
         :param db: 数据库会话
         :param conversation_id: 对话 ID
-        :param pattern: 转义后的匹配模式
+        :param query_text: 原始检索内容
+        :param pattern: 转义后的子串匹配模式
         :param before: 游标之前的消息 ID
         :param limit: 数量上限
         :return:
         """
+        full_text = func.websearch_to_tsquery(literal_column("'simple'"), query_text).op('@@')(self.model.search_vector)
+        substring = cast(self.model.model_messages, TEXT).ilike(f'%{pattern}%', escape='\\')
         query = select(self.model).where(
             self.model.conversation_id == conversation_id,
             self.model.deleted == 0,
-            cast(self.model.model_messages, TEXT).ilike(f'%{pattern}%', escape='\\'),
+            or_(full_text, substring),
         )
         if before is not None:
             index, pk = before
@@ -343,9 +348,8 @@ class CRUDAIBuddyMessage(CRUDPlus[AIBuddyMessage]):
         :return:
         """
         message = self.model(**obj)
-        db.add(message)
-        await db.flush()
-        return message
+        rows = await self.bulk_create_models(db, [orm_values(message)], flush=True)
+        return rows[0]
 
     async def bulk_create(self, db: AsyncSession, objs: list[dict[str, Any]]) -> None:
         """

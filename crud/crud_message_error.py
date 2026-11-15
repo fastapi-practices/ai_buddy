@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model import AIBuddyMessageError
 from backend.utils.timezone import timezone
 
@@ -47,9 +48,8 @@ class CRUDAIBuddyMessageError(CRUDPlus[AIBuddyMessageError]):
         :return:
         """
         error = self.model(**obj)
-        db.add(error)
-        await db.flush()
-        return error
+        rows = await self.bulk_create_models(db, [orm_values(error)], flush=True)
+        return rows[0]
 
     async def upsert(self, db: AsyncSession, obj: dict[str, Any]) -> AIBuddyMessageError:
         """

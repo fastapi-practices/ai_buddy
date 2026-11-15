@@ -4,6 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.step_tool_effect import AIBuddyStepToolEffect
 
 
@@ -36,8 +37,7 @@ class CRUDAIBuddyStepToolEffect(CRUDPlus[AIBuddyStepToolEffect]):
         )
         return (await db.execute(stmt)).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyStepToolEffect) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyStepToolEffect) -> None:
         """
         新增台账记录
 
@@ -45,8 +45,7 @@ class CRUDAIBuddyStepToolEffect(CRUDPlus[AIBuddyStepToolEffect]):
         :param obj: 台账记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     @staticmethod
     async def delete_by_run_ids(db: AsyncSession, run_ids: Collection[str]) -> int:

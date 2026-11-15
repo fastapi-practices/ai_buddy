@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.step_message import AIBuddyStepMessage
 
 
@@ -23,8 +24,7 @@ class CRUDAIBuddyStepMessage(CRUDPlus[AIBuddyStepMessage]):
         stmt = select(self.model).where(self.model.sha256.in_(sha256s))
         return (await db.execute(stmt)).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyStepMessage) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyStepMessage) -> None:
         """
         保存消息内容
 
@@ -32,8 +32,7 @@ class CRUDAIBuddyStepMessage(CRUDPlus[AIBuddyStepMessage]):
         :param obj: 消息内容
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
 
 ai_buddy_step_message_dao: CRUDAIBuddyStepMessage = CRUDAIBuddyStepMessage(AIBuddyStepMessage)

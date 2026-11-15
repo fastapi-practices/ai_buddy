@@ -4,6 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.step_snapshot import AIBuddyStepSnapshot
 
 
@@ -48,8 +49,7 @@ class CRUDAIBuddyStepSnapshot(CRUDPlus[AIBuddyStepSnapshot]):
         stmt = select(self.model).where(self.model.run_id == run_id, self.model.state == 'complete')
         return list((await db.execute(stmt.order_by(self.model.id.asc()))).scalars())
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyStepSnapshot) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyStepSnapshot) -> None:
         """
         保存快照
 
@@ -57,8 +57,7 @@ class CRUDAIBuddyStepSnapshot(CRUDPlus[AIBuddyStepSnapshot]):
         :param obj: 快照
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     @staticmethod
     async def delete_by_run_ids(db: AsyncSession, run_ids: Collection[str]) -> int:

@@ -1,9 +1,10 @@
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.mcp_oauth_config import AIBuddyMcpOauthConfig
 
 
@@ -18,11 +19,9 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
         :param mcp_id: MCP ID
         :return:
         """
-        stmt = select(self.model).where(self.model.mcp_id == mcp_id, self.model.deleted == 0)
-        return (await db.execute(stmt)).scalar_one_or_none()
+        return await self.select_model_by_column(db, mcp_id=mcp_id, deleted=0)
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyMcpOauthConfig) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyMcpOauthConfig) -> None:
         """
         创建平台客户端配置
 
@@ -30,8 +29,7 @@ class CRUDAIBuddyMcpOauthConfig(CRUDPlus[AIBuddyMcpOauthConfig]):
         :param obj: 配置对象
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     async def update(self, db: AsyncSession, mcp_id: int, generation: str, values: dict[str, Any]) -> int:
         """

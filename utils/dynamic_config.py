@@ -80,8 +80,8 @@ def _document_extract_backend(value: str) -> str:
     text = (value or '').strip().lower()
     try:
         return AIBuddyDocumentExtractBackend(text).value
-    except ValueError:
-        return AIBuddyDocumentExtractBackend.native.value
+    except ValueError as exc:
+        raise ValueError('文档抽取后端配置无效') from exc
 
 
 def _embedding_backend(value: str) -> str:
@@ -94,20 +94,18 @@ def _embedding_backend(value: str) -> str:
     text = (value or '').strip().lower()
     try:
         return AIBuddyEmbeddingBackend(text).value
-    except ValueError:
-        return AIBuddyEmbeddingBackend.remote.value
+    except ValueError as exc:
+        raise ValueError('向量化后端配置无效') from exc
 
 
 def _ocr_backend(value: str) -> str:
     """
-    将配置值转为 OCR 后端，旧的 system 配置迁移到本地 ONNX
+    将配置值转为 OCR 后端
 
     :param value: 配置原文
     :return:
     """
     text = (value or '').strip().lower()
-    if text in {'off', 'system', 'tesseract'}:
-        text = AIBuddyOcrBackend.onnx.value
     try:
         return AIBuddyOcrBackend(text).value
     except ValueError as exc:
@@ -116,7 +114,7 @@ def _ocr_backend(value: str) -> str:
 
 def _execution_backend(value: str) -> str:
     """
-    校验默认执行后端，未知值使用本机并要求桌面连接
+    校验默认执行后端
 
     :param value: 配置原文
     :return:
@@ -124,8 +122,8 @@ def _execution_backend(value: str) -> str:
     text = (value or '').strip().lower()
     try:
         return AIBuddyExecutionBackend(text).value
-    except ValueError:
-        return AIBuddyExecutionBackend.local.value
+    except ValueError as exc:
+        raise ValueError('默认执行后端配置无效') from exc
 
 
 _AI_CONFIG_MAPPING: dict[str, Callable[[str], object]] = {
@@ -194,8 +192,6 @@ async def load_ai_buddy_config(db: AsyncSession, *, reindex_on_change: bool = Tr
     if fingerprint == AIBuddyEmbeddingBackend.onnx:
         fingerprint += f'|{settings.AI_BUDDY_ONNX_EMBEDDING_MODEL.strip()}'
     stored = await redis_client.get(fingerprint_key)
-    if stored is not None and stored.startswith(f'{AIBuddyEmbeddingBackend.remote.value}|'):
-        stored = AIBuddyEmbeddingBackend.remote.value
     await redis_client.set(fingerprint_key, fingerprint)
     if stored is not None and stored != fingerprint:
         schedule_reindex()

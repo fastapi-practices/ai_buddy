@@ -53,6 +53,14 @@ from backend.plugin.ai_buddy.schema.conversation import (
 )
 from backend.plugin.ai_buddy.service.assistant_service import ai_buddy_assistant_service
 from backend.plugin.ai_buddy.service.conversation_audit_service import ai_buddy_conversation_audit_service
+from backend.plugin.ai_buddy.service.media_service import track_copied_attachments
+from backend.plugin.ai_buddy.service.message_converter import (
+    expand_message_row_metadata,
+    expand_message_rows,
+    extract_payload_preview_text,
+    get_message_row_model_message_payloads,
+    normalize_message_preview,
+)
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
 from backend.plugin.ai_buddy.service.step_service import ai_buddy_step_service
 from backend.plugin.ai_buddy.utils.conversation_title import (
@@ -60,14 +68,6 @@ from backend.plugin.ai_buddy.utils.conversation_title import (
     normalize_generated_conversation_title,
 )
 from backend.plugin.ai_buddy.utils.history_cursor import encode_history_cursor
-from backend.plugin.ai_buddy.utils.media_store import track_copied_attachments
-from backend.plugin.ai_buddy.utils.message_converter import (
-    expand_message_row_metadata,
-    expand_message_rows,
-    extract_payload_preview_text,
-    get_message_row_model_message_payloads,
-    normalize_message_preview,
-)
 from backend.plugin.ai_buddy.utils.message_snapshot import serialize_messages_to_snapshot
 from backend.plugin.ai_buddy.utils.plan_store import copy_conversation_plan, delete_conversation_plan
 from backend.utils.timezone import timezone

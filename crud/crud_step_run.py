@@ -4,6 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.step_run import AIBuddyStepRun
 
 
@@ -38,8 +39,7 @@ class CRUDAIBuddyStepRun(CRUDPlus[AIBuddyStepRun]):
             stmt = stmt.where(self.model.conversation_id == conversation_id)
         return (await db.execute(stmt.order_by(self.model.started_time.asc(), self.model.id.asc()))).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyStepRun) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyStepRun) -> None:
         """
         创建运行记录
 
@@ -47,8 +47,7 @@ class CRUDAIBuddyStepRun(CRUDPlus[AIBuddyStepRun]):
         :param obj: 运行记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     async def get_run_ids(self, db: AsyncSession, conversation_id: str) -> Sequence[str]:
         """

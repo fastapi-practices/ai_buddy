@@ -80,7 +80,7 @@ class ACPService:
         self._input_attachments = input_attachments
         self._imported_attachment_hashes = imported_attachment_hashes
 
-    def set_event_handler(self, handler: MessageHandler) -> None:
+    def set_event_handler(self, *, handler: MessageHandler) -> None:
         """
         将外部 Agent 的执行进度转发给本轮界面
 
@@ -89,7 +89,7 @@ class ACPService:
         """
         self._on_event = handler
 
-    async def _relay_message(self, handler: MessageHandler, payload: dict[str, Any], is_last: object) -> None:
+    async def _relay_message(self, *, handler: MessageHandler, payload: dict[str, Any], is_last: object) -> None:
         """
         同时转发 ACP 消息到界面和本轮回调
 
@@ -102,7 +102,7 @@ class ACPService:
             await self._on_event(payload, bool(is_last))
         await handler(payload, bool(is_last))
 
-    def set_wait_approval(self, wait_approval: ApprovalWaiter | None) -> None:
+    def set_wait_approval(self, *, wait_approval: ApprovalWaiter | None) -> None:
         """
         本轮 HITL 回调，挂到已打开的 ACP 会话
 
@@ -159,7 +159,7 @@ class ACPService:
                 :param is_last: 是否为本轮最后一条消息
                 :return:
                 """
-                await self._relay_message(on_message, payload, is_last)
+                await self._relay_message(handler=on_message, payload=payload, is_last=is_last)
 
             conversation.client.start_prompt(relay)
             prompt = build_acp_prompt(
@@ -212,7 +212,7 @@ class ACPService:
                 :param is_last: 是否为本轮最后一条消息
                 :return:
                 """
-                await self._relay_message(on_message, payload, is_last)
+                await self._relay_message(handler=on_message, payload=payload, is_last=is_last)
 
             conversation.client.resume_prompt(relay)
             conversation.client.resolve_permission(option_id)
@@ -229,7 +229,7 @@ class ACPService:
         async with self._lock:
             conversation = self._sessions.pop((thread_id, runner), None)
         if conversation is not None:
-            await self._close_conversation(conversation)
+            await self._close_conversation(conversation=conversation)
 
     async def check_connection(self, *, thread_id: str, runner: str) -> None:
         """
@@ -248,13 +248,13 @@ class ACPService:
             conversations = list(self._sessions.values())
             self._sessions.clear()
         results = await asyncio.gather(
-            *(self._close_conversation(item) for item in conversations), return_exceptions=True
+            *(self._close_conversation(conversation=item) for item in conversations), return_exceptions=True
         )
         for result in results:
             if isinstance(result, BaseException):
                 raise result
 
-    async def _get_session(self, thread_id: str, runner: str) -> _Conversation | None:
+    async def _get_session(self, *, thread_id: str, runner: str) -> _Conversation | None:
         """
         在锁保护下读取 ACP 会话
 
@@ -273,7 +273,7 @@ class ACPService:
         :param runner: ACP 执行器名称
         :return:
         """
-        conversation = await self._get_session(thread_id, runner)
+        conversation = await self._get_session(thread_id=thread_id, runner=runner)
         return conversation is not None and not conversation.closed
 
     async def get_session_id(self, *, thread_id: str, runner: str) -> str | None:
@@ -284,7 +284,7 @@ class ACPService:
         :param runner: ACP 执行器名称
         :return:
         """
-        conversation = await self._get_session(thread_id, runner)
+        conversation = await self._get_session(thread_id=thread_id, runner=runner)
         return conversation.acp_session_id if conversation is not None and not conversation.closed else None
 
     async def get_pending_permission(self, *, thread_id: str, runner: str) -> Any | None:
@@ -295,7 +295,7 @@ class ACPService:
         :param runner: ACP 执行器名称
         :return:
         """
-        conversation = await self._get_session(thread_id, runner)
+        conversation = await self._get_session(thread_id=thread_id, runner=runner)
         if conversation is None:
             return None
         return conversation.client.pending_permission
@@ -308,7 +308,7 @@ class ACPService:
         :param runner: ACP 执行器名称
         :return:
         """
-        conversation = await self._get_session(thread_id, runner)
+        conversation = await self._get_session(thread_id=thread_id, runner=runner)
         if conversation is None:
             return False
         prompt_task = conversation.prompt_task
@@ -459,7 +459,7 @@ class ACPService:
                     await permission_task
 
     @staticmethod
-    async def _close_conversation(conversation: _Conversation) -> None:
+    async def _close_conversation(*, conversation: _Conversation) -> None:
         """
         取消提示任务并关闭 ACP 连接与传输资源
 

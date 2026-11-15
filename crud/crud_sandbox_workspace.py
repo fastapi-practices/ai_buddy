@@ -3,6 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.sandbox_workspace import AIBuddySandboxWorkspace
 
 
@@ -25,8 +26,8 @@ class CRUDAIBuddySandboxWorkspace(CRUDPlus[AIBuddySandboxWorkspace]):
             .with_for_update()
         )
 
-    @staticmethod
     async def save(
+        self,
         db: AsyncSession,
         record: AIBuddySandboxWorkspace | None,
         *,
@@ -56,11 +57,11 @@ class CRUDAIBuddySandboxWorkspace(CRUDPlus[AIBuddySandboxWorkspace]):
                 sandbox_ref=sandbox_ref,
                 permission_mode=permission_mode,
             )
-            db.add(record)
-        else:
-            record.provider = provider
-            record.sandbox_ref = sandbox_ref
-            record.permission_mode = permission_mode
+            rows = await self.bulk_create_models(db, [orm_values(record)], flush=True)
+            return rows[0]
+        record.provider = provider
+        record.sandbox_ref = sandbox_ref
+        record.permission_mode = permission_mode
         await db.flush()
         return record
 

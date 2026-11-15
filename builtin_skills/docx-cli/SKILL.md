@@ -16,7 +16,7 @@ plus a one-line confirmation — so even small, cheap models can drive it reliab
 
 ## 0. The binary
 
-`docx` is preinstalled in this sandbox at `/usr/local/bin/docx` (release v0.28.0). Run `docx --version` to confirm. Do not try to install or upgrade it: the sandbox has no network by default. If the command is missing, the sandbox image is outdated; tell the user an administrator must rebuild it.
+`docx` is preinstalled in this sandbox at `/usr/local/bin/docx` (release v0.29.0). Run `docx --version` to confirm. Do not try to install or upgrade it: the sandbox has no network by default. If the command is missing, the sandbox image is outdated; tell the user an administrator must rebuild it.
 
 `SKILL_DIR` is this skill's folder in the sandbox: `/workspace/skills/docx-cli` after `install_skill`. `docx` here is this CLI binary: it is NOT the npm `docx` (docx-js) library.
 

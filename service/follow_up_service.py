@@ -138,7 +138,7 @@ class AIBuddyFollowUpService:
             position=position,
             reason=_STEER_REASON if obj.mode == AIBuddyFollowUpMode.steer else None,
         )
-        await ai_buddy_follow_up_dao.create(db, row)
+        row = await ai_buddy_follow_up_dao.create(db, row)
         return GetAIBuddyFollowUpDetail.model_validate(row)
 
     async def get_list(self, *, db: AsyncSession, conversation_id: str, user_id: int) -> GetAIBuddyFollowUpsDetail:

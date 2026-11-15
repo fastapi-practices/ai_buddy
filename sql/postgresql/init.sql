@@ -94,7 +94,7 @@ select setval(pg_get_serial_sequence('sys_menu', 'id'), coalesce(max(id), 0) + 1
 insert into sys_config (name, type, "key", value, is_frontend, remark, created_time, updated_time)
 values
 ('状态', 'AI', 'AI_BUDDY_CONFIG_STATUS', '1', false, null, now(), null),
-('默认执行后端', 'AI', 'AI_BUDDY_AGENT_EXECUTION_BACKEND', 'local', false, '桌面 OS 沙箱 local 或远程 opensandbox', now(), null),
+('默认执行后端', 'AI', 'AI_BUDDY_AGENT_EXECUTION_BACKEND', 'local', false, '桌面 OS 沙箱 local 或服务端沙箱 sandbox', now(), null),
 ('Exa API Key', 'AI', 'AI_BUDDY_EXA_API_KEY', '', false, '用于 AI 联网搜索的 Exa API Key', now(), null),
 ('Tavily API Key', 'AI', 'AI_BUDDY_TAVILY_API_KEY', '', false, '用于 AI 联网搜索的 Tavily API Key', now(), null),
 ('TypeSafe API Key', 'AI', 'AI_BUDDY_TYPESAFE_API_KEY', '', false, '用于 Jev 安全判定的 TypeSafe API Key', now(), null),

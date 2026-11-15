@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.enums import AIBuddyFollowUpStatus
 from backend.plugin.ai_buddy.model.follow_up import AIBuddyFollowUp
 
@@ -89,8 +90,7 @@ class CRUDAIBuddyFollowUp(CRUDPlus[AIBuddyFollowUp]):
             ).all()
         )
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyFollowUp) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyFollowUp) -> AIBuddyFollowUp:
         """
         保存跟进记录
 
@@ -98,8 +98,8 @@ class CRUDAIBuddyFollowUp(CRUDPlus[AIBuddyFollowUp]):
         :param obj: 跟进记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        rows = await self.bulk_create_models(db, [orm_values(obj)], flush=True)
+        return rows[0]
 
 
 ai_buddy_follow_up_dao = CRUDAIBuddyFollowUp(AIBuddyFollowUp)

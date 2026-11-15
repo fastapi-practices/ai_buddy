@@ -4,6 +4,7 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.enums import AIBuddyArtifactKind
 from backend.plugin.ai_buddy.model import AIBuddyArtifact
 from backend.plugin.ai_buddy.schema.artifact import (
@@ -92,9 +93,8 @@ class CRUDAIBuddyArtifact(CRUDPlus[AIBuddyArtifact]):
             sha256=obj.sha256,
             state=obj.state,
         )
-        db.add(ins)
-        await db.flush()
-        return ins
+        rows = await self.bulk_create_models(db, [orm_values(ins)], flush=True)
+        return rows[0]
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateAIBuddyArtifactParam | dict) -> int:
         """

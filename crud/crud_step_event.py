@@ -4,6 +4,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.step_event import AIBuddyStepEvent
 
 
@@ -32,8 +33,7 @@ class CRUDAIBuddyStepEvent(CRUDPlus[AIBuddyStepEvent]):
         stmt = select(self.model).where(self.model.run_id == run_id).order_by(self.model.id.asc())
         return (await db.execute(stmt)).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyStepEvent) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyStepEvent) -> None:
         """
         追加事件
 
@@ -41,8 +41,7 @@ class CRUDAIBuddyStepEvent(CRUDPlus[AIBuddyStepEvent]):
         :param obj: 步骤事件记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     @staticmethod
     async def delete_by_run_ids(db: AsyncSession, run_ids: Collection[str]) -> int:

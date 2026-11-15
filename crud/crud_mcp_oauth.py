@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.mcp import AIBuddyMcp
 from backend.plugin.ai_buddy.model.mcp_oauth import AIBuddyMcpOauth
 from backend.plugin.ai_buddy.model.mcp_oauth_config import AIBuddyMcpOauthConfig
@@ -21,13 +22,9 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
         :param mcp_id: MCP ID
         :return:
         """
-        stmt = select(self.model).where(
-            self.model.user_id == user_id, self.model.mcp_id == mcp_id, self.model.deleted == 0
-        )
-        return (await db.execute(stmt)).scalar_one_or_none()
+        return await self.select_model_by_column(db, user_id=user_id, mcp_id=mcp_id, deleted=0)
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyMcpOauth) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyMcpOauth) -> None:
         """
         创建用户授权连接
 
@@ -35,8 +32,7 @@ class CRUDAIBuddyMcpOauth(CRUDPlus[AIBuddyMcpOauth]):
         :param obj: 连接对象
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     async def update(self, db: AsyncSession, user_id: int, mcp_id: int, generation: str, values: dict[str, Any]) -> int:
         """

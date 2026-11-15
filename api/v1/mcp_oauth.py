@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import PlainTextResponse
 
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
@@ -30,7 +30,7 @@ async def ai_buddy_mcp_oauth_callback(
 
 @router.get('/{pk}/oauth', summary='获取 MCP OAuth 连接状态', dependencies=[DependsJwtAuth])
 async def get_ai_buddy_mcp_oauth(
-    request: Request, db: CurrentSession, pk: int
+    request: Request, db: CurrentSession, pk: Annotated[int, Path(description='MCP ID')]
 ) -> ResponseSchemaModel[GetAIBuddyMcpOauthDetail]:
     data = await ai_buddy_mcp_oauth_service.get(db=db, user_id=request.user.id, mcp_id=pk)
     return response_base.success(data=data)
@@ -42,7 +42,7 @@ async def get_ai_buddy_mcp_oauth(
     dependencies=[Depends(RequestPermission('ai:mcp:query')), DependsRBAC],
 )
 async def get_ai_buddy_mcp_oauth_config(
-    request: Request, db: CurrentSession, pk: int
+    request: Request, db: CurrentSession, pk: Annotated[int, Path(description='MCP ID')]
 ) -> ResponseSchemaModel[GetAIBuddyMcpOauthConfigDetail]:
     data = await ai_buddy_mcp_oauth_service.get_config(
         db=db, user_id=request.user.id, mcp_id=pk, is_superuser=request.user.is_superuser
@@ -56,7 +56,10 @@ async def get_ai_buddy_mcp_oauth_config(
     dependencies=[Depends(RequestPermission('ai:mcp:edit')), DependsRBAC],
 )
 async def update_ai_buddy_mcp_oauth_config(
-    request: Request, db: CurrentSessionTransaction, pk: int, obj: UpdateAIBuddyMcpOauthParam
+    request: Request,
+    db: CurrentSessionTransaction,
+    pk: Annotated[int, Path(description='MCP ID')],
+    obj: UpdateAIBuddyMcpOauthParam,
 ) -> ResponseModel:
     await ai_buddy_mcp_oauth_service.update_config(
         db=db, user_id=request.user.id, mcp_id=pk, obj=obj, is_superuser=request.user.is_superuser
@@ -66,13 +69,15 @@ async def update_ai_buddy_mcp_oauth_config(
 
 @router.post('/{pk}/oauth/authorize', summary='开始 MCP OAuth 浏览器授权', dependencies=[DependsJwtAuth])
 async def authorize_ai_buddy_mcp_oauth(
-    request: Request, db: CurrentSessionTransaction, pk: int
+    request: Request, db: CurrentSessionTransaction, pk: Annotated[int, Path(description='MCP ID')]
 ) -> ResponseSchemaModel[GetAIBuddyMcpOauthAuthorizeDetail]:
     data = await ai_buddy_mcp_oauth_service.authorize(db=db, user_id=request.user.id, mcp_id=pk)
     return response_base.success(data=data)
 
 
 @router.delete('/{pk}/oauth', summary='断开 MCP OAuth 连接', dependencies=[DependsJwtAuth])
-async def disconnect_ai_buddy_mcp_oauth(request: Request, db: CurrentSessionTransaction, pk: int) -> ResponseModel:
+async def disconnect_ai_buddy_mcp_oauth(
+    request: Request, db: CurrentSessionTransaction, pk: Annotated[int, Path(description='MCP ID')]
+) -> ResponseModel:
     await ai_buddy_mcp_oauth_service.disconnect(db=db, user_id=request.user.id, mcp_id=pk)
     return response_base.success()

@@ -110,7 +110,7 @@ class AIBuddyCronService:
         return cron
 
     @staticmethod
-    def _validate_trigger(trigger: str) -> None:
+    def _validate_trigger(*, trigger: str) -> None:
         """
         校验触发器的最小间隔和一次性任务的执行时间
 
@@ -133,7 +133,7 @@ class AIBuddyCronService:
         :return:
         """
         obj = await self._normalize(db=db, obj=obj, user_id=user_id, fallback=obj.conversation_id.strip())
-        self._validate_trigger(obj.trigger)
+        self._validate_trigger(trigger=obj.trigger)
         await self._ensure_quota(db=db, user_id=user_id)
         if await ai_buddy_cron_dao.get_by_name(db, user_id, obj.name):
             raise errors.ConflictError(msg='任务名称已存在')
@@ -158,7 +158,7 @@ class AIBuddyCronService:
         obj = await self._normalize(db=db, obj=obj, user_id=user_id, fallback=str(pk))
         trigger_changed = obj.trigger != cron.trigger
         if trigger_changed:
-            self._validate_trigger(obj.trigger)
+            self._validate_trigger(trigger=obj.trigger)
         existed = await ai_buddy_cron_dao.get_by_name(db, user_id, obj.name)
         if existed and existed.id != pk:
             raise errors.ConflictError(msg='任务名称已存在')

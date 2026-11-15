@@ -30,7 +30,7 @@ from backend.plugin.ai_buddy.crud.crud_message import ai_buddy_message_dao
 from backend.plugin.ai_buddy.crud.crud_message_error import ai_buddy_message_error_dao
 from backend.plugin.ai_buddy.enums import AIBuddyChatGenerationType, AIBuddyMessageRole, AIBuddyMessageStatus
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
-from backend.plugin.ai_buddy.utils.media_store import dump_model_message_payloads, encode_model_message_payloads
+from backend.plugin.ai_buddy.service.media_service import dump_model_message_payloads, encode_model_message_payloads
 from backend.plugin.ai_buddy.utils.run_error import build_run_error_payload
 from backend.plugin.ai_buddy.utils.run_timeout import resolve_run_timeout
 

@@ -25,7 +25,7 @@ router = APIRouter()
 async def get_ai_buddy_message_history(
     request: Request,
     db: CurrentSession,
-    conversation_id: str,
+    conversation_id: Annotated[str, Path(description='对话 ID')],
     query: Annotated[AIBuddyMessageHistoryQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyMessagePageDetail]:
     data = await ai_buddy_message_history_service.page(
@@ -42,7 +42,7 @@ async def get_ai_buddy_message_history(
 async def search_ai_buddy_message_history(
     request: Request,
     db: CurrentSession,
-    conversation_id: str,
+    conversation_id: Annotated[str, Path(description='对话 ID')],
     query: Annotated[AIBuddyMessageSearchQueryParam, Query()],
 ) -> ResponseSchemaModel[GetAIBuddyMessageSearchDetail]:
     data = await ai_buddy_message_history_service.search(
@@ -60,7 +60,7 @@ async def search_ai_buddy_message_history(
 async def get_ai_buddy_message_versions(
     request: Request,
     db: CurrentSession,
-    conversation_id: str,
+    conversation_id: Annotated[str, Path(description='对话 ID')],
     pk: Annotated[int, Path(description='消息 ID')],
 ) -> ResponseSchemaModel[list[GetAIBuddyMessageVersionDetail]]:
     data = await ai_buddy_message_history_service.versions(

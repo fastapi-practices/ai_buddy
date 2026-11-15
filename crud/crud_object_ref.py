@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.model.object_ref import AIBuddyObjectRef
 
 
@@ -48,8 +49,7 @@ class CRUDAIBuddyObjectRef(CRUDPlus[AIBuddyObjectRef]):
         stmt = select(func.count()).select_from(AIBuddyObjectRef).where(AIBuddyObjectRef.object_id == object_id)
         return (await db.execute(stmt)).scalar_one()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyObjectRef) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyObjectRef) -> None:
         """
         创建引用
 
@@ -57,8 +57,7 @@ class CRUDAIBuddyObjectRef(CRUDPlus[AIBuddyObjectRef]):
         :param obj: 引用
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     @staticmethod
     async def delete_by_owner(db: AsyncSession, object_id: int, owner_type: str, owner_id: str) -> int:

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request, WebSocket
+from typing import Annotated
+
+from fastapi import APIRouter, Path, Request, WebSocket
 
 from backend.common.response.response_schema import ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
@@ -17,7 +19,9 @@ router = APIRouter()
 
 @router.post('/{runner}/check', summary='检测 ACP Agent 连接', dependencies=[DependsJwtAuth])
 async def check_ai_buddy_acp(
-    request: Request, runner: AIBuddyAcpRunnerName, obj: CheckAIBuddyAcpParam
+    request: Request,
+    runner: Annotated[AIBuddyAcpRunnerName, Path(description='ACP Agent 名称')],
+    obj: CheckAIBuddyAcpParam,
 ) -> ResponseSchemaModel[GetAIBuddyAcpCheckDetail]:
     data = await ai_buddy_acp_service.check(user_id=request.user.id, runner=runner, obj=obj)
     return response_base.success(data=data)

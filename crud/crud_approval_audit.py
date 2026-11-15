@@ -5,6 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.enums import AIBuddyApprovalStatus
 from backend.plugin.ai_buddy.model.approval_audit import AIBuddyApprovalAudit
 
@@ -21,11 +22,7 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
         :param request_id: 请求 ID
         :return:
         """
-        return (
-            await db.execute(
-                select(self.model).where(self.model.user_id == user_id, self.model.request_id == request_id)
-            )
-        ).scalar_one_or_none()
+        return await self.select_model_by_column(db, user_id=user_id, request_id=request_id)
 
     async def get_all(
         self, db: AsyncSession, user_id: int, *, before: int | None = None, limit: int = 100
@@ -44,8 +41,7 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
             stmt = stmt.where(self.model.id < before)
         return (await db.execute(stmt.order_by(self.model.id.desc()).limit(limit))).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyApprovalAudit) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyApprovalAudit) -> None:
         """
         保存审批请求
 
@@ -53,8 +49,7 @@ class CRUDAIBuddyApprovalAudit(CRUDPlus[AIBuddyApprovalAudit]):
         :param obj: 审计记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        await self.bulk_create_models(db, [orm_values(obj)], flush=True)
 
     async def resolve(
         self, db: AsyncSession, user_id: int, request_id: str, status: AIBuddyApprovalStatus, resolved_time: datetime

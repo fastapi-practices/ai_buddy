@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
+from backend.plugin.ai_buddy.crud.helpers import orm_values
 from backend.plugin.ai_buddy.enums import AIBuddyObjectState
 from backend.plugin.ai_buddy.model.object import AIBuddyObject
 
@@ -74,8 +75,7 @@ class CRUDAIBuddyObject(CRUDPlus[AIBuddyObject]):
         stmt = stmt.order_by(self.model.id.asc()).limit(limit).with_for_update(skip_locked=True)
         return (await db.execute(stmt)).scalars().all()
 
-    @staticmethod
-    async def create(db: AsyncSession, obj: AIBuddyObject) -> None:
+    async def create(self, db: AsyncSession, obj: AIBuddyObject) -> AIBuddyObject:
         """
         创建对象
 
@@ -83,8 +83,8 @@ class CRUDAIBuddyObject(CRUDPlus[AIBuddyObject]):
         :param obj: 对象记录
         :return:
         """
-        db.add(obj)
-        await db.flush()
+        rows = await self.bulk_create_models(db, [orm_values(obj)], flush=True)
+        return rows[0]
 
 
 ai_buddy_object_dao: CRUDAIBuddyObject = CRUDAIBuddyObject(AIBuddyObject)

@@ -18,9 +18,9 @@ from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, 
 from backend.plugin.ai_buddy.schema.conversation import CreateAIBuddyConversationParam, UpdateAIBuddyConversationParam
 from backend.plugin.ai_buddy.security.output_redaction import redact_model_response
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
+from backend.plugin.ai_buddy.service.media_service import dump_model_message_payloads, encode_model_message_payloads
+from backend.plugin.ai_buddy.service.message_converter import build_chat_message_record, is_user_prompt_message
 from backend.plugin.ai_buddy.utils.conversation_title import normalize_generated_conversation_title
-from backend.plugin.ai_buddy.utils.media_store import dump_model_message_payloads, encode_model_message_payloads
-from backend.plugin.ai_buddy.utils.message_converter import build_chat_message_record, is_user_prompt_message
 
 _DEFAULT_ERROR_MESSAGE = '生成失败'
 

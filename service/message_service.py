@@ -30,7 +30,7 @@ from backend.plugin.ai_buddy.enums import AIBuddyAgentMode, AIBuddyMessageStatus
 from backend.plugin.ai_buddy.schema.chat import AIBuddyChatForwardedPropsParam, AIBuddyChatRegenerateParam
 from backend.plugin.ai_buddy.schema.conversation import UpdateAIBuddyConversationParam
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
-from backend.plugin.ai_buddy.utils.message_converter import (
+from backend.plugin.ai_buddy.service.message_converter import (
     expand_message_rows,
     filter_history_model_messages,
     get_message_row_index,

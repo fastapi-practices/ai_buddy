@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from sqlalchemy import Select, update
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -144,13 +144,12 @@ class CRUDAIBuddyAssistant(CRUDPlus[AIBuddyAssistant]):
         :param pk: 助手 ID
         :return:
         """
-        stmt = (
-            update(self.model)
-            .where(self.model.id == pk, self.model.deleted == 0)
-            .values(usage_count=self.model.usage_count + 1)
+        return await self.update_model_by_column(
+            db,
+            {'usage_count': self.model.usage_count + 1},
+            id=pk,
+            deleted=0,
         )
-        result = await db.execute(stmt)
-        return result.rowcount or 0
 
     async def delete(self, db: AsyncSession, pk: int, user_id: int) -> int:
         """

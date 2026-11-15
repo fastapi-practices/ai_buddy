@@ -23,7 +23,7 @@ from backend.plugin.ai_buddy.model.step_message import AIBuddyStepMessage
 from backend.plugin.ai_buddy.model.step_run import AIBuddyStepRun
 from backend.plugin.ai_buddy.model.step_snapshot import AIBuddyStepSnapshot
 from backend.plugin.ai_buddy.model.step_tool_effect import AIBuddyStepToolEffect
-from backend.plugin.ai_buddy.utils.media_store import decode_model_message_payloads, encode_model_message_payloads
+from backend.plugin.ai_buddy.service.media_service import decode_model_message_payloads, encode_model_message_payloads
 
 
 def _run_record(row: AIBuddyStepRun) -> RunRecord:

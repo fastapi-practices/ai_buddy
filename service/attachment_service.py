@@ -9,8 +9,8 @@ from backend.plugin.ai_buddy.enums import AIBuddyConversationSource, AIBuddyObje
 from backend.plugin.ai_buddy.model.object import AIBuddyObject
 from backend.plugin.ai_buddy.schema.attachment import GetAIBuddyAttachmentDetail
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
+from backend.plugin.ai_buddy.service.media_service import attachment_object_key
 from backend.plugin.ai_buddy.service.object_service import ai_buddy_object_service
-from backend.plugin.ai_buddy.utils.media_store import attachment_object_key
 from backend.plugin.ai_buddy.utils.remote_download import download_public_file, match_content_type
 from backend.plugin.s3.utils.text_store import require_storage, write_bytes
 

@@ -239,6 +239,8 @@ class AIBuddyGatewayChannelService:
         """
         将原生入站交给业务服务，并将完整回复交还原生通道发送
 
+        SDK 以位置参数调用该处理器，保持回调签名
+
         :param message: 原生 SDK 已校验的消息与回复目标
         :return:
         """

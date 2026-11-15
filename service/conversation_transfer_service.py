@@ -23,7 +23,7 @@ from backend.plugin.ai_buddy.schema.conversation_transfer import (
 )
 from backend.plugin.ai_buddy.service.conversation_audit_service import ai_buddy_conversation_audit_service
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
-from backend.plugin.ai_buddy.utils.media_store import decode_model_message_payloads, encode_model_message_payloads
+from backend.plugin.ai_buddy.service.media_service import decode_model_message_payloads, encode_model_message_payloads
 from backend.utils.timezone import timezone
 
 _TRANSFER_FORMAT = 'ai-buddy-conversation'

@@ -46,7 +46,7 @@ router = APIRouter()
 async def get_ai_buddy_delegations(
     request: Request,
     db: CurrentSession,
-    pk: str,
+    pk: Annotated[str, Path(description='对话 ID')],
     query: Annotated[AIBuddyDelegationQueryParam, Query()],
 ) -> ResponseModel:
     data = await ai_buddy_delegation_service.get_list(
@@ -62,8 +62,8 @@ async def get_ai_buddy_delegations(
 async def control_ai_buddy_delegation(
     request: Request,
     db: CurrentSession,
-    pk: str,
-    task_id: UUID,
+    pk: Annotated[str, Path(description='对话 ID')],
+    task_id: Annotated[UUID, Path(description='子任务 ID')],
     obj: ControlAIBuddyDelegationParam,
 ) -> ResponseModel:
     await ai_buddy_delegation_service.control(
@@ -80,7 +80,7 @@ async def control_ai_buddy_delegation(
 async def get_ai_buddy_input_requests(
     request: Request,
     db: CurrentSession,
-    pk: str,
+    pk: Annotated[str, Path(description='对话 ID')],
 ) -> ResponseSchemaModel[GetAIBuddyInputRequestsDetail]:
     data = await ai_buddy_input_request_service.get_list(db=db, conversation_id=pk, user_id=request.user.id)
     return response_base.success(data=data)
@@ -90,8 +90,8 @@ async def get_ai_buddy_input_requests(
 async def resolve_ai_buddy_input_request(
     request: Request,
     db: CurrentSession,
-    pk: str,
-    request_id: UUID,
+    pk: Annotated[str, Path(description='对话 ID')],
+    request_id: Annotated[UUID, Path(description='请求 ID')],
     obj: ResolveAIBuddyInputRequestParam,
 ) -> ResponseModel:
     await ai_buddy_input_request_service.resolve(
@@ -267,7 +267,7 @@ async def fork_ai_buddy_conversation(
 async def get_ai_buddy_conversation_plan(
     request: Request,
     db: CurrentSession,
-    pk: str,
+    pk: Annotated[str, Path(description='对话 ID')],
 ) -> ResponseSchemaModel[GetAIBuddyPlanDetail]:
     data = await ai_buddy_message_history_service.plan(db=db, conversation_id=pk, user_id=request.user.id)
     return response_base.success(data=data)
@@ -318,8 +318,8 @@ async def stop_ai_buddy_conversation_generation(
 async def resolve_ai_buddy_coding_approval(
     request: Request,
     db: CurrentSession,
-    pk: str,
-    request_id: UUID,
+    pk: Annotated[str, Path(description='对话 ID')],
+    request_id: Annotated[UUID, Path(description='请求 ID')],
     obj: ResolveAIBuddyCodingApprovalParam,
 ) -> ResponseModel:
     await ai_buddy_conversation_service.resolve_coding_approval(
@@ -348,7 +348,7 @@ async def delete_ai_buddy_conversation(
 async def submit_ai_buddy_follow_up(
     request: Request,
     db: CurrentSessionTransaction,
-    pk: str,
+    pk: Annotated[str, Path(description='对话 ID')],
     obj: SubmitAIBuddyFollowUpParam,
 ) -> ResponseSchemaModel[GetAIBuddyFollowUpDetail]:
     data = await ai_buddy_follow_up_service.submit(db=db, conversation_id=pk, user_id=request.user.id, obj=obj)
@@ -359,7 +359,7 @@ async def submit_ai_buddy_follow_up(
 async def get_ai_buddy_follow_ups(
     request: Request,
     db: CurrentSession,
-    pk: str,
+    pk: Annotated[str, Path(description='对话 ID')],
 ) -> ResponseSchemaModel[GetAIBuddyFollowUpsDetail]:
     data = await ai_buddy_follow_up_service.get_list(db=db, conversation_id=pk, user_id=request.user.id)
     return response_base.success(data=data)
@@ -369,8 +369,8 @@ async def get_ai_buddy_follow_ups(
 async def update_ai_buddy_follow_up(
     request: Request,
     db: CurrentSessionTransaction,
-    pk: str,
-    followup_id: int,
+    pk: Annotated[str, Path(description='对话 ID')],
+    followup_id: Annotated[int, Path(description='跟进 ID')],
     obj: UpdateAIBuddyFollowUpParam,
 ) -> ResponseSchemaModel[GetAIBuddyFollowUpDetail]:
     data = await ai_buddy_follow_up_service.update(
@@ -387,8 +387,8 @@ async def update_ai_buddy_follow_up(
 async def delete_ai_buddy_follow_up(
     request: Request,
     db: CurrentSessionTransaction,
-    pk: str,
-    followup_id: int,
+    pk: Annotated[str, Path(description='对话 ID')],
+    followup_id: Annotated[int, Path(description='跟进 ID')],
 ) -> ResponseModel:
     await ai_buddy_follow_up_service.delete(
         db=db,
