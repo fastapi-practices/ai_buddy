@@ -54,6 +54,14 @@ def resolve_tool_policy(
     """
     if not policies:
         return default
+    global_raw = policies.get('*')
+    if global_raw is not None:
+        try:
+            global_policy = AIBuddyToolPolicy(str(global_raw).strip().lower())
+        except ValueError:
+            global_policy = None
+        if global_policy == AIBuddyToolPolicy.deny:
+            return AIBuddyToolPolicy.deny
     candidates = [tool_name]
     if '_' in tool_name:
         candidates.append(tool_name.rsplit('_', 1)[-1])
@@ -68,6 +76,11 @@ def resolve_tool_policy(
             return AIBuddyToolPolicy(str(raw).strip().lower())
         except ValueError:
             continue
+    if global_raw is not None:
+        try:
+            return AIBuddyToolPolicy(str(global_raw).strip().lower())
+        except ValueError:
+            return default
     return default
 
 

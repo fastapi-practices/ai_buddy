@@ -25,6 +25,7 @@ from backend.plugin.ai_buddy.api.v1.message import router as message_router
 from backend.plugin.ai_buddy.api.v1.model import router as model_router
 from backend.plugin.ai_buddy.api.v1.model_option import router as model_option_router
 from backend.plugin.ai_buddy.api.v1.object import router as object_router
+from backend.plugin.ai_buddy.api.v1.permission import router as permission_router
 from backend.plugin.ai_buddy.api.v1.project import router as project_router
 from backend.plugin.ai_buddy.api.v1.provider import router as provider_router
 from backend.plugin.ai_buddy.api.v1.quick_phrase import router as quick_phrase_router
@@ -63,6 +64,7 @@ v1.include_router(expert_router, prefix='/experts', tags=['AI 专家模板'])
 v1.include_router(subagent_router, prefix='/subagents', tags=['AI 子代理'])
 v1.include_router(channel_router, prefix='/channels', tags=['AI 通道'])
 v1.include_router(cron_router, prefix='/crons', tags=['AI 定时任务'])
+v1.include_router(permission_router, prefix='/permission-profiles', tags=['AI 权限预设'])
 v1.include_router(slash_router, prefix='/slash', tags=['AI 斜杠指令'])
 v1.include_router(workspace_router, prefix='/workspaces', tags=['AI 工作区'])
 v1.include_router(object_router, prefix='/objects', tags=['AI 统一对象'])

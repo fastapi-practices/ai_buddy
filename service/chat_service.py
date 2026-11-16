@@ -33,6 +33,7 @@ from backend.plugin.ai_buddy.schema.chat import (
     AIBuddyChatForwardedPropsParam,
     AIBuddyForwardedPropsParam,
 )
+from backend.plugin.ai_buddy.security.permission_resolver import merge_tool_policies
 from backend.plugin.ai_buddy.service.conversation_service import ai_buddy_conversation_service
 from backend.plugin.ai_buddy.service.media_service import dump_model_message_payloads, encode_model_message_payloads
 from backend.plugin.ai_buddy.service.message_converter import (
@@ -40,6 +41,7 @@ from backend.plugin.ai_buddy.service.message_converter import (
     filter_history_model_messages,
     parse_current_turn_input,
 )
+from backend.plugin.ai_buddy.service.permission_service import ai_buddy_permission_service
 from backend.plugin.ai_buddy.service.workspace_service import ai_buddy_workspace_service
 from backend.plugin.ai_buddy.utils.turn_context import build_turn_context
 from backend.plugin.ai_buddy.utils.workspace import validate_workspace_id
@@ -109,6 +111,7 @@ class AIBuddyChatService:
                 forwarded_props = await self._resolve_conversation_binding(
                     db=db,
                     user_id=user_id,
+                    is_superuser=ctx.is_superuser,
                     conversation_id=conversation_id,
                     forwarded_props=forwarded_props,
                 )
@@ -188,6 +191,7 @@ class AIBuddyChatService:
                     forwarded_props = await self._resolve_conversation_binding(
                         db=session,
                         user_id=user_id,
+                        is_superuser=ctx.is_superuser,
                         conversation_id=conversation_id,
                         forwarded_props=forwarded_props,
                     )
@@ -381,14 +385,20 @@ class AIBuddyChatService:
         )
 
     @staticmethod
-    async def _resolve_conversation_binding(
-        *, db: AsyncSession, user_id: int, conversation_id: str, forwarded_props: AIBuddyChatForwardedPropsParam
+    async def _resolve_conversation_binding(  # ruff: ignore[complex-structure]
+        *,
+        db: AsyncSession,
+        user_id: int,
+        is_superuser: bool,
+        conversation_id: str,
+        forwarded_props: AIBuddyChatForwardedPropsParam,
     ) -> AIBuddyChatForwardedPropsParam:
         """
-        校验会话模式、固定工作位置并解析编码工作区绑定
+        校验会话模式、固定工作位置并解析编码工作区与工具权限预设
 
         :param db: 数据库会话
         :param user_id: 用户 ID
+        :param is_superuser: 是否为超级管理员
         :param conversation_id: 对话 ID
         :param forwarded_props: 本轮扩展参数
         :return:
@@ -411,6 +421,21 @@ class AIBuddyChatService:
         forwarded_props = ai_buddy_conversation_service.resolve_work_location(
             forwarded_props=forwarded_props, message_rows=message_rows
         )
+        if forwarded_props.permission_profile_id is not None:
+            profile_policies = await ai_buddy_permission_service.resolve_runtime_policies(
+                db=db,
+                profile_id=forwarded_props.permission_profile_id,
+                user_id=user_id,
+                is_superuser=is_superuser,
+            )
+            forwarded_props = forwarded_props.model_copy(
+                update={
+                    'tool_policies': merge_tool_policies(
+                        profile_policies=profile_policies,
+                        runtime_policies=forwarded_props.tool_policies,
+                    )
+                }
+            )
         if (
             not forwarded_props.acp_runner
             and forwarded_props.execution_backend == AIBuddyExecutionBackend.sandbox

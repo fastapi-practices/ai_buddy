@@ -38,7 +38,11 @@ where name in (
     'AIBuddySubagentManage',
     'AddAIBuddySubagent',
     'EditAIBuddySubagent',
-    'DeleteAIBuddySubagent'
+    'DeleteAIBuddySubagent',
+    'AIBuddyPermissionProfileManage',
+    'AddAIBuddyPermissionProfile',
+    'EditAIBuddyPermissionProfile',
+    'DeleteAIBuddyPermissionProfile'
 );
 
 delete from sys_menu where name = 'PluginAIBuddy';
@@ -102,6 +106,8 @@ drop table if exists ai_buddy_channel_user;
 drop table if exists ai_buddy_channel;
 drop table if exists ai_buddy_cron;
 drop table if exists ai_buddy_quick_phrase;
+drop table if exists ai_buddy_permission_rule;
+drop table if exists ai_buddy_permission_profile;
 drop table if exists ai_buddy_default_model;
 drop table if exists ai_buddy_model;
 drop table if exists ai_buddy_provider;

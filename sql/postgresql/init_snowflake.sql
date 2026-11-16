@@ -41,7 +41,11 @@ values
 (2147098509659213873, 'ai-buddy.subagent', 'AIBuddySubagentManage', '/plugins/ai-buddy/subagent', 10, 'mdi:sitemap-outline', 1, '/plugins/ai-buddy/views/subagent/index', 'ai:subagent:list', 1, 1, 1, '', null, 2147098509659213824, now(), null),
 (2147098509659213874, '新增子代理', 'AddAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:add', 1, 0, 1, '', null, 2147098509659213873, now(), null),
 (2147098509659213875, '修改子代理', 'EditAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:edit', 1, 0, 1, '', null, 2147098509659213873, now(), null),
-(2147098509659213876, '删除子代理', 'DeleteAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:del', 1, 0, 1, '', null, 2147098509659213873, now(), null);
+(2147098509659213876, '删除子代理', 'DeleteAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:del', 1, 0, 1, '', null, 2147098509659213873, now(), null),
+(2147098509659213930, 'ai-buddy.permission_profile', 'AIBuddyPermissionProfileManage', '/plugins/ai-buddy/permission-profile', 11, 'mdi:shield-account-outline', 1, '/plugins/ai-buddy/views/permission-profile/index', 'ai:permission-profile:list', 1, 1, 1, '', null, 2147098509659213824, now(), null),
+(2147098509659213931, '新增权限预设', 'AddAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:add', 1, 0, 1, '', null, 2147098509659213930, now(), null),
+(2147098509659213932, '修改权限预设', 'EditAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:edit', 1, 0, 1, '', null, 2147098509659213930, now(), null),
+(2147098509659213933, '删除权限预设', 'DeleteAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:del', 1, 0, 1, '', null, 2147098509659213930, now(), null);
 
 insert into sys_config (id, name, type, "key", value, is_frontend, remark, created_time, updated_time)
 values

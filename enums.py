@@ -305,6 +305,16 @@ class AIBuddyToolPolicy(StrEnum):
         }[self]
 
 
+class AIBuddyPermissionMatchKind(StrEnum):
+    """权限规则匹配方式，首版仅 any 参与运行时求值"""
+
+    any = 'any'
+    command_exact = 'command_exact'
+    command_prefix = 'command_prefix'
+    path_glob = 'path_glob'
+    argument = 'argument'
+
+
 class AIBuddySlashEntry(StrEnum):
     """斜杠指令入口"""
 

@@ -48,6 +48,7 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
     mcp_approve_writes: bool = Field(default=False, description='MCP 工具默认询问')
     memory_enabled: bool | None = Field(default=True, description='是否启用跨会话记忆，空值沿用默认（开启）')
     tool_policies: dict[str, AIBuddyToolPolicy] | None = Field(None, description='本轮工具策略覆盖，allow/ask/deny')
+    permission_profile_id: int | None = Field(None, description='服务端工具权限预设 ID')
     web_search: AIBuddyWebSearchType = Field(default=AIBuddyWebSearchType.off, description='网络搜索模式')
     workspace_ref: AIBuddyChatWorkspaceRefParam | None = Field(None, description='工作区引用')
     workspace_id: str | None = Field(None, description='编码工作区 ID')

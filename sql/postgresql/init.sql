@@ -11,6 +11,7 @@ declare
     ai_buddy_assistant_menu_id bigint;
     ai_buddy_expert_menu_id bigint;
     ai_buddy_subagent_menu_id bigint;
+    ai_buddy_permission_profile_menu_id bigint;
 begin
     insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
     values ('ai-buddy.menu', 'PluginAIBuddy', '/plugins/ai-buddy', 11, 'tabler:robot', 0, null, null, 1, 1, 1, '', null, null, now(), null)
@@ -57,6 +58,10 @@ begin
     returning id into ai_buddy_subagent_menu_id;
 
     insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
+    values ('ai-buddy.permission_profile', 'AIBuddyPermissionProfileManage', '/plugins/ai-buddy/permission-profile', 11, 'mdi:shield-account-outline', 1, '/plugins/ai-buddy/views/permission-profile/index', 'ai:permission-profile:list', 1, 1, 1, '', null, ai_buddy_menu_id, now(), null)
+    returning id into ai_buddy_permission_profile_menu_id;
+
+    insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
     values
     ('设置默认模型', 'EditAIBuddyDefaultModel', null, 0, null, 2, null, 'ai:default-model:edit', 1, 0, 1, '', null, ai_buddy_default_model_menu_id, now(), null),
     ('新增供应商', 'AddAIBuddyProvider', null, 0, null, 2, null, 'ai:provider:add', 1, 0, 1, '', null, ai_buddy_model_service_menu_id, now(), null),
@@ -86,7 +91,10 @@ begin
     ('删除专家', 'DeleteAIBuddyExpert', null, 0, null, 2, null, 'ai:expert:del', 1, 0, 1, '', null, ai_buddy_expert_menu_id, now(), null),
     ('新增子代理', 'AddAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:add', 1, 0, 1, '', null, ai_buddy_subagent_menu_id, now(), null),
     ('修改子代理', 'EditAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:edit', 1, 0, 1, '', null, ai_buddy_subagent_menu_id, now(), null),
-    ('删除子代理', 'DeleteAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:del', 1, 0, 1, '', null, ai_buddy_subagent_menu_id, now(), null);
+    ('删除子代理', 'DeleteAIBuddySubagent', null, 0, null, 2, null, 'ai:subagent:del', 1, 0, 1, '', null, ai_buddy_subagent_menu_id, now(), null),
+    ('新增权限预设', 'AddAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:add', 1, 0, 1, '', null, ai_buddy_permission_profile_menu_id, now(), null),
+    ('修改权限预设', 'EditAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:edit', 1, 0, 1, '', null, ai_buddy_permission_profile_menu_id, now(), null),
+    ('删除权限预设', 'DeleteAIBuddyPermissionProfile', null, 0, null, 2, null, 'ai:permission-profile:del', 1, 0, 1, '', null, ai_buddy_permission_profile_menu_id, now(), null);
 end $$;
 
 select setval(pg_get_serial_sequence('sys_menu', 'id'), coalesce(max(id), 0) + 1, true) from sys_menu;

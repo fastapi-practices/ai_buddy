@@ -20,6 +20,8 @@ from backend.plugin.ai_buddy.model.model import AIBuddyModel as AIBuddyModel
 from backend.plugin.ai_buddy.model.object import AIBuddyObject as AIBuddyObject
 from backend.plugin.ai_buddy.model.object_audit import AIBuddyObjectAudit as AIBuddyObjectAudit
 from backend.plugin.ai_buddy.model.object_ref import AIBuddyObjectRef as AIBuddyObjectRef
+from backend.plugin.ai_buddy.model.permission_profile import AIBuddyPermissionProfile as AIBuddyPermissionProfile
+from backend.plugin.ai_buddy.model.permission_rule import AIBuddyPermissionRule as AIBuddyPermissionRule
 from backend.plugin.ai_buddy.model.project import AIBuddyProject as AIBuddyProject
 from backend.plugin.ai_buddy.model.provider import AIBuddyProvider as AIBuddyProvider
 from backend.plugin.ai_buddy.model.quick_phrase import AIBuddyQuickPhrase as AIBuddyQuickPhrase
