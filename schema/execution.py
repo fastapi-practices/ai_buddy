@@ -8,34 +8,17 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyExecutionBackend,
     AIBuddyExecutionCapability,
     AIBuddyPermissionMode,
-    AIBuddySandboxProvider,
 )
 
 AIBuddyDesktopExecutionBackend = Literal[AIBuddyExecutionBackend.local]
-
-
-class GetAIBuddySandboxProviderDetail(SchemaBase):
-    """服务端沙箱服务商可用性"""
-
-    provider: AIBuddySandboxProvider = Field(description='沙箱服务商标识')
-    label: str = Field(description='沙箱服务商展示名称')
-    available: bool = Field(description='当前主机是否可以直接创建该服务商的沙箱')
-    local: bool = Field(description='是否在服务端主机本地运行，否则为远程沙箱')
-    platforms: list[str] = Field(default_factory=list, description='支持的操作系统，all 表示全部')
-    reason: str | None = Field(None, description='不可用原因，可用时为空')
 
 
 class GetAIBuddyExecutionOptionsDetail(SchemaBase):
     """客户端默认执行配置，不包含远程凭据或本机目录"""
 
     default_backend: AIBuddyExecutionBackend = Field(description='未设置客户端执行后端时的默认值')
-    default_sandbox_provider: AIBuddySandboxProvider | None = Field(
-        None, description='未设置时使用的沙箱服务商，服务端未提供沙箱时为空'
-    )
-    sandbox_enabled: bool = Field(False, description='服务端是否提供了至少一个当前可用的沙箱')
-    sandbox_providers: list[GetAIBuddySandboxProviderDetail] = Field(
-        default_factory=list, description='服务端实际提供的沙箱服务商及当前主机可用性'
-    )
+    sandbox_enabled: bool = Field(False, description='服务端是否已配置可用的 OpenSandbox')
+    sandbox_reason: str | None = Field(None, description='服务端沙箱不可用原因，可用时为空')
     capabilities: list[AIBuddyExecutionCapability] = Field(
         default_factory=list, description='服务端支持的可协商执行能力'
     )

@@ -20,7 +20,7 @@ from backend.plugin.ai_buddy.agent.capabilities.base import function_tools_allow
 from backend.plugin.ai_buddy.agent.coding.attachments import input_attachment_path
 from backend.plugin.ai_buddy.agent.coding.delivery import deliver_sandbox_file
 from backend.plugin.ai_buddy.agent.coding.sandbox import CodingSandbox
-from backend.plugin.ai_buddy.agent.coding.sandbox_providers import create_coding_sandbox, has_server_sandbox
+from backend.plugin.ai_buddy.agent.coding.sandbox_runtime import create_coding_sandbox, has_server_sandbox
 from backend.plugin.ai_buddy.dataclasses import CapabilityContext, CapabilityResult, ChatAgentDeps
 from backend.plugin.ai_buddy.enums import (
     AIBuddyAgentMode,

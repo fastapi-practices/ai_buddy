@@ -55,7 +55,7 @@ values
 (2147098509659213866, 'MCP 调用重试次数', 'AI', 'AI_BUDDY_MCP_MAX_RETRIES', '1', false, '用于 MCP 工具调用的最大重试次数', now(), null),
 (2147098509659213867, '压缩保留消息数', 'AI', 'AI_BUDDY_COMPACTION_KEEP_MESSAGES', '40', false, '控制压缩后保留的最近消息数', now(), null),
 (2147098509659213868, '压缩触发阈值', 'AI', 'AI_BUDDY_COMPACTION_MAX_MESSAGES', '80', false, '控制触发历史压缩的消息数阈值', now(), null),
-(2147098509659213912, '默认执行后端', 'AI', 'AI_BUDDY_AGENT_EXECUTION_BACKEND', 'local', false, '桌面 OS 沙箱 local 或远程 opensandbox', now(), null),
+(2147098509659213912, '默认执行后端', 'AI', 'AI_BUDDY_AGENT_EXECUTION_BACKEND', 'local', false, '桌面 OS 沙箱 local 或远程 OpenSandbox', now(), null),
 (2147098509659213890, '文档抽取', 'AI', 'AI_BUDDY_DOCUMENT_EXTRACT_BACKEND', 'native', false, '知识文档抽取后端：native、markitdown 或 unstructured', now(), null),
 (2147098509659213895, 'Unstructured API URL', 'AI', 'AI_BUDDY_UNSTRUCTURED_API_URL', 'https://api.unstructuredapp.io/general/v0/general', false, 'Unstructured 托管或自建 API 地址', now(), null),
 (2147098509659213896, 'Unstructured API Key', 'AI', 'AI_BUDDY_UNSTRUCTURED_API_KEY', '', false, 'Unstructured API Key，选 Unstructured 抽取时必填', now(), null),

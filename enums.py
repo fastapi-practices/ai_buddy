@@ -534,37 +534,10 @@ class AIBuddyApprovalStatus(StrEnum):
 
 
 class AIBuddyExecutionBackend(StrEnum):
-    """编码助手执行后端，local 为桌面本机，sandbox 为服务端沙箱，具体沙箱服务商见 AIBuddySandboxProvider"""
+    """编码助手执行后端，local 为桌面本机，sandbox 为服务器自部署的 OpenSandbox"""
 
     local = 'local'
     sandbox = 'sandbox'
-
-
-class AIBuddySandboxProvider(StrEnum):
-    """服务端沙箱服务商，均实现 Pydantic AI 的 Workspace 抽象，可随时切换"""
-
-    opensandbox = 'opensandbox'
-    docker = 'docker'
-    e2b = 'e2b'
-    modal = 'modal'
-    daytona = 'daytona'
-    sprites = 'sprites'
-    smol = 'smol'
-    boxlite = 'boxlite'
-
-    @property
-    def label(self) -> str:
-        """展示名称"""
-        return {
-            AIBuddySandboxProvider.opensandbox: 'OpenSandbox',
-            AIBuddySandboxProvider.docker: 'Docker / Podman',
-            AIBuddySandboxProvider.e2b: 'E2B',
-            AIBuddySandboxProvider.modal: 'Modal',
-            AIBuddySandboxProvider.daytona: 'Daytona',
-            AIBuddySandboxProvider.sprites: 'Sprites',
-            AIBuddySandboxProvider.smol: 'smolvm',
-            AIBuddySandboxProvider.boxlite: 'BoxLite',
-        }[self]
 
 
 class AIBuddyExecutionCapability(StrEnum):

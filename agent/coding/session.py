@@ -8,7 +8,7 @@ from backend.common.context import ctx as request_ctx
 from backend.common.exception import errors
 from backend.plugin.ai_buddy.agent.coding.protocol.acp.bridge import get_bridge
 from backend.plugin.ai_buddy.agent.coding.protocol.pydantic_ai.adapter import pydantic_ai_coding_protocol_adapter
-from backend.plugin.ai_buddy.agent.coding.sandbox_providers import create_coding_sandbox, has_server_sandbox
+from backend.plugin.ai_buddy.agent.coding.sandbox_runtime import create_coding_sandbox, has_server_sandbox
 from backend.plugin.ai_buddy.agent.coding.tools import build_buddy_resource_tools
 from backend.plugin.ai_buddy.crud.crud_model import ai_buddy_model_dao
 from backend.plugin.ai_buddy.crud.crud_project import ai_buddy_project_dao
@@ -172,7 +172,7 @@ async def resolve_coding_invocation(
         and forwarded_props.execution_backend == AIBuddyExecutionBackend.sandbox
         and not has_server_sandbox()
     ):
-        raise errors.RequestError(msg='服务端未提供可用沙箱，请使用本地沙箱')
+        raise errors.RequestError(msg='服务端未配置可用的 OpenSandbox，请使用本地沙箱')
     provider = await ai_buddy_provider_dao.get_visible(db, forwarded_props.provider_id, user_id)
     if not provider:
         raise errors.NotFoundError(msg='供应商不存在')
@@ -287,7 +287,6 @@ async def open_coding_session(
                 permission_mode=permission_mode,
                 execution_backend=forwarded_props.execution_backend,
                 execution_bridge_id=forwarded_props.execution_bridge_id,
-                sandbox_provider=forwarded_props.sandbox_provider,
             )
         run_context = AgentRunContext(
             user_id=user_id,

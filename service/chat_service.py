@@ -13,7 +13,7 @@ from backend.common.exception import errors
 from backend.common.log import log
 from backend.database.db import async_db_session, uuid4_str
 from backend.plugin.ai_buddy.agent.coding.conversation_run import run_conversation_coding
-from backend.plugin.ai_buddy.agent.coding.sandbox_providers import has_server_sandbox
+from backend.plugin.ai_buddy.agent.coding.sandbox_runtime import has_server_sandbox
 from backend.plugin.ai_buddy.agent.coding.session import resolve_coding_invocation
 from backend.plugin.ai_buddy.agent.work.inputs import build_run_context, decode_input_messages, sanitize_input_messages
 from backend.plugin.ai_buddy.agent.work.runs import abort_prepared_run, activate_run
@@ -417,7 +417,7 @@ class AIBuddyChatService:
             and not has_server_sandbox()
         ):
             if forwarded_props.agent_mode == AIBuddyAgentMode.coding:
-                raise errors.RequestError(msg='服务端未提供可用沙箱，请使用本地沙箱')
+                raise errors.RequestError(msg='服务端未配置可用的 OpenSandbox，请使用本地沙箱')
             forwarded_props = forwarded_props.model_copy(update={'execution_backend': AIBuddyExecutionBackend.local})
         if forwarded_props.agent_mode != AIBuddyAgentMode.coding:
             return forwarded_props

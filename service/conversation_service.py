@@ -11,7 +11,7 @@ from backend.common.log import log
 from backend.common.pagination import cursor_paging_data
 from backend.database.db import async_db_session, uuid4_str
 from backend.plugin.ai_buddy.agent.coding.approvals import resolve_approval
-from backend.plugin.ai_buddy.agent.coding.sandbox_providers import destroy_conversation_sandbox
+from backend.plugin.ai_buddy.agent.coding.sandbox_runtime import destroy_conversation_sandbox
 from backend.plugin.ai_buddy.agent.work.runs import (
     attach_event_stream,
     has_active_run,

@@ -11,7 +11,6 @@ from backend.plugin.ai_buddy.enums import (
     AIBuddyConversationSurface,
     AIBuddyExecutionBackend,
     AIBuddyPermissionMode,
-    AIBuddySandboxProvider,
     AIBuddyToolPolicy,
     AIBuddyWebSearchType,
     AIBuddyWorkspaceRefKind,
@@ -82,13 +81,8 @@ class AIBuddyChatRuntimeParam(AIBuddyChatSchemaBase):
     )
     execution_backend: AIBuddyExecutionBackend = Field(
         default=AIBuddyExecutionBackend.local,
-        description=('工作与编码模式的工作位置，local 为在你的计算机上，sandbox 为服务端沙箱，首轮确定后不可更改'),
-    )
-    sandbox_provider: AIBuddySandboxProvider | None = Field(
-        None,
         description=(
-            '服务端沙箱服务商，仅 execution_backend=sandbox 时生效，不传使用服务端默认服务商，'
-            '切换后旧沙箱会被销毁并重建，工作区文件不会迁移'
+            '工作与编码模式的工作位置，local 为在你的计算机上，sandbox 为服务端 OpenSandbox，首轮确定后不可更改'
         ),
     )
     execution_bridge_id: str | None = Field(

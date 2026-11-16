@@ -33,7 +33,6 @@ class CRUDAIBuddySandboxWorkspace(CRUDPlus[AIBuddySandboxWorkspace]):
         *,
         user_id: int,
         conversation_id: str,
-        provider: str,
         sandbox_ref: str,
         permission_mode: str,
     ) -> AIBuddySandboxWorkspace:
@@ -44,7 +43,6 @@ class CRUDAIBuddySandboxWorkspace(CRUDPlus[AIBuddySandboxWorkspace]):
         :param record: 已有登记
         :param user_id: 用户 ID
         :param conversation_id: 对话 ID
-        :param provider: 沙箱服务商
         :param sandbox_ref: 沙箱引用
         :param permission_mode: 权限模式
         :return:
@@ -53,13 +51,11 @@ class CRUDAIBuddySandboxWorkspace(CRUDPlus[AIBuddySandboxWorkspace]):
             record = AIBuddySandboxWorkspace(
                 user_id=user_id,
                 conversation_id=conversation_id,
-                provider=provider,
                 sandbox_ref=sandbox_ref,
                 permission_mode=permission_mode,
             )
             rows = await self.bulk_create_models(db, [orm_values(record)], flush=True)
             return rows[0]
-        record.provider = provider
         record.sandbox_ref = sandbox_ref
         record.permission_mode = permission_mode
         await db.flush()

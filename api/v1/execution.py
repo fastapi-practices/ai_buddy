@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get(
     '/options',
     summary='获取编码默认执行配置',
-    description='返回默认执行后端、沙箱服务商及当前主机可用性',
+    description='返回默认执行后端、服务端 OpenSandbox 可用性及可协商执行能力',
     dependencies=[DependsJwtAuth],
 )
 async def get_ai_buddy_execution_options(db: CurrentSession) -> ResponseSchemaModel[GetAIBuddyExecutionOptionsDetail]:
