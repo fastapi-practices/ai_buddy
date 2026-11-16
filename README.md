@@ -10,6 +10,15 @@
 
 - 应用级插件
 
+## 工具权限预设
+
+- 内置 `strict`、`balanced`、`convenience` 三个预设，由幂等 SQL 初始化
+- 普通用户只能使用系统预设，复制为自己的预设后可按工具修改 `allow / ask / deny`
+- 未知工具默认 `ask`，不会因为未配置规则而自动放行
+- 客户端可以覆盖本轮工具策略，但任何 `deny` 都不能被绕过
+- `permission_mode` 与工具权限预设有各自的作用域，前者控制编码审批模式，后者按工具名解析本轮策略
+- 首版只支持工具级 `match_kind=any`，命令内容和参数不参与预设匹配
+
 ## 配置说明
 
 在 `backend/.env` 中添加以下内容：
@@ -18,11 +27,10 @@
 # [ Plugin ] ai_buddy
 AI_BUDDY_QDRANT_URL='http://127.0.0.1:6333'
 AI_BUDDY_QDRANT_API_KEY=''
+# 服务端沙箱固定使用服务器自部署的 OpenSandbox，留空服务地址则只使用本地执行
 AI_BUDDY_OPENSANDBOX_DOMAIN='127.0.0.1:8090'
 AI_BUDDY_OPENSANDBOX_API_KEY='ai-buddy-opensandbox-local'
 AI_BUDDY_OPENSANDBOX_PROTOCOL='http'
-AI_BUDDY_AGENT_SANDBOX_PROVIDERS=''
-AI_BUDDY_AGENT_SANDBOX_PROVIDER=''
 AI_BUDDY_EXA_API_KEY=''
 AI_BUDDY_KEENABLE_API_KEY=''
 AI_BUDDY_TAVILY_API_KEY=''
@@ -106,8 +114,6 @@ AI_BUDDY_QDRANT_API_KEY: str = ''
 AI_BUDDY_OPENSANDBOX_DOMAIN: str = '127.0.0.1:8090'
 AI_BUDDY_OPENSANDBOX_API_KEY: str = 'ai-buddy-opensandbox-local'
 AI_BUDDY_OPENSANDBOX_PROTOCOL: str = 'http'
-AI_BUDDY_AGENT_SANDBOX_PROVIDERS: str = ''
-AI_BUDDY_AGENT_SANDBOX_PROVIDER: str = ''
 AI_BUDDY_EXA_API_KEY: str = ''
 AI_BUDDY_KEENABLE_API_KEY: str = ''
 AI_BUDDY_TAVILY_API_KEY: str = ''
@@ -166,11 +172,11 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 - `AI_BUDDY_OCR_TIMEOUT_SECONDS`：控制服务端 OCR 的超时秒数
 - `AI_BUDDY_AGENT_BASH_TIMEOUT_SECONDS`：控制工作区命令的执行超时
 - `AI_BUDDY_AGENT_MAX_FILE_BYTES`：控制工作区单文件读写大小上限
-- `AI_BUDDY_AGENT_EXECUTION_BACKEND`：控制客户端未显式选择执行后端时的默认值，`local` 为桌面本机，`sandbox` 为服务端沙箱；服务端没有可用沙箱时会强制回落到 `local`
-- `AI_BUDDY_AGENT_SANDBOX_IMAGE`：控制新建沙箱使用的镜像或模板，E2B 为模板名，Daytona 为快照名，Sprites 不使用
-- `AI_BUDDY_AGENT_SANDBOX_CPU`：控制 OpenSandbox 沙箱 CPU 限额，其他服务商不使用
-- `AI_BUDDY_AGENT_SANDBOX_MEMORY`：控制 OpenSandbox 沙箱内存限额，其他服务商不使用
-- `AI_BUDDY_AGENT_SANDBOX_TIMEOUT_MINUTES`：控制 OpenSandbox 沙箱存活时间，其他服务商由其自身的寿命与空闲策略决定
+- `AI_BUDDY_AGENT_EXECUTION_BACKEND`：控制客户端未显式选择执行后端时的默认值，`local` 为桌面本机，`sandbox` 为服务端沙箱；未配置 OpenSandbox 时强制回落到 `local`
+- `AI_BUDDY_AGENT_SANDBOX_IMAGE`：控制新建 OpenSandbox 沙箱使用的镜像，升级沙箱镜像后必须重新构建，旧镜像缺少文档处理依赖
+- `AI_BUDDY_AGENT_SANDBOX_CPU`：控制 OpenSandbox 沙箱 CPU 限额
+- `AI_BUDDY_AGENT_SANDBOX_MEMORY`：控制 OpenSandbox 沙箱内存限额
+- `AI_BUDDY_AGENT_SANDBOX_TIMEOUT_MINUTES`：控制 OpenSandbox 沙箱存活时间
 - `AI_BUDDY_WORKSPACE_GC_GRACE_HOURS`：控制工作区孤立对象清理前的最短保留时间
 - `AI_BUDDY_MCP_OAUTH_REDIRECT_URI`：控制 MCP OAuth 授权回调地址
 - `AI_BUDDY_JEV_MODEL`：控制工作、编码、生图输入和高风险工具护栏使用的 Jev 模型
@@ -178,14 +184,14 @@ AI_BUDDY_PADDLEOCR_API_URL: str = ''
 
 ## 使用方式
 
-1. 安装并启用参数配置、S3 和 AI Buddy 插件，完成数据库初始化后重启后端服务
+1. 安装并启用参数配置、S3 和 AI Buddy 插件，完成数据库初始化并执行 `sql/postgresql/init_permission.sql` 后重启后端服务；雪花主键使用 `init_snowflake_permission.sql`
 2. 安装配套前端插件，在后台配置默认 S3 存储、供应商、模型和默认模型，并维护系统内置资源
 3. 在客户端选择模型和助手，发起对话或工作任务，管理个人 MCP、知识、技能与产物；通道绑定和对话定时也在客户端完成
 4. 知识库支持 Markdown、TXT、CSV、JSON、HTML、XML、YAML、常见源码、PDF、Word、PowerPoint、Excel、图片和 zip；客户端在本地完成 OCR，并通过 `texts`（JSON，键为文件名或 zip 内路径）提交文本，客户端入口不接受服务端 OCR；后台管理入口使用 `AI_BUDDY_OCR_BACKEND` 指定的服务端引擎处理图片和扫描页，不再提供服务器系统 OCR，也没有自动回退
 5. 上传的原始文件始终保留在 S3，图片仍以图片保存，OCR 只生成用于检索的抽取正文；知识详情的原始文件入口可读取原始文件
 6. 编码任务使用独立会话，选择桌面本机工作区或服务端沙箱；使用 ACP 外部助手前，先在本机安装并登录对应 Agent，再通过桌面连接
-7. 服务端只允许选择 `AI_BUDDY_AGENT_SANDBOX_PROVIDERS` 中显式提供的沙箱，例如 `opensandbox` 或 `opensandbox,docker`；没有提供时执行选项接口返回空的沙箱列表并强制使用本地执行。macOS Apple 芯片可用 BoxLite（基于 Apple Hypervisor，作为原生 Container 的稳定替代），Linux 可用 Docker/Podman，Windows 建议在 WSL2 中运行后端并使用 Docker
-8. 工作模式只有服务端实际提供可用沙箱时才装配沙箱工具，用于生成和编辑 Excel、PPT、Word、PDF；没有提供沙箱时禁用这些工具。使用沙箱镜像时升级后必须重新构建，旧镜像缺少文档处理依赖
+7. 服务端沙箱只提供 OpenSandbox，必须由运维在服务器自部署 OpenSandbox 服务端并远程运行，不在用户本机启动；配置 `AI_BUDDY_OPENSANDBOX_DOMAIN` 后执行选项接口标记沙箱可用，未配置时标记不可用并强制使用本地执行
+8. 工作模式只有已配置可用服务端沙箱时才装配沙箱工具，用于生成和编辑 Excel、PPT、Word、PDF；未配置沙箱时禁用这些工具
 9. 需要容灾时开启 `AI_BUDDY_AGENT_DURABILITY_ENABLED`，被中断的对话会由后台任务按步骤快照自动续跑
 10. 运行机制与执行环境准备见 [架构文档](架构.md)
 

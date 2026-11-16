@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1180" viewBox="0 0 1720 1180" role="img" aria-labelledby="architecture-title architecture-description" lang="zh-CN">
 <title id="architecture-title">AI Buddy 系统架构</title>
-<desc id="architecture-description">桌面、Web、IM 与定时任务经后端进入对话、工作或编码运行时。编码仅在服务端沙箱启用 Pydantic AI Coder，桌面 local 使用 Buddy Bridge，ACP 连接外部 Agent。Coder 文件工具经 CodingWorkspace 的 Shell fallback 执行，Workspace 可接 OpenSandbox、Docker、E2B、Modal、Daytona、Sprites、Smol 或 BoxLite。关系库、Redis、S3 和 Qdrant 分别承担业务持久化、运行协调、对象存储和知识向量索引</desc>
+<desc id="architecture-description">桌面、Web、IM 与定时任务经后端进入对话、工作或编码运行时。编码仅在服务端沙箱启用 Pydantic AI Coder，桌面 local 使用 Buddy Bridge，ACP 连接外部 Agent。Coder 文件工具经 CodingWorkspace 的 Shell fallback 执行，Workspace 固定接服务器自部署的 OpenSandbox，沙箱只在服务端远程运行。关系库、Redis、S3 和 Qdrant 分别承担业务持久化、运行协调、对象存储和知识向量索引</desc>
 <defs>
   <g id="i-monitor"><rect x="2" y="4" width="20" height="13" rx="2" fill="#3b82f6"/><rect x="4" y="6" width="16" height="9" rx="1" fill="#dbeafe"/><path d="M1 18 h22 l-2 3 H3 z" fill="#3b82f6"/></g>
   <g id="i-gear"><circle cx="12" cy="12" r="5" fill="#f97316"/><circle cx="12" cy="12" r="2.2" fill="#fff7ed"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(0 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(45 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(90 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(135 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(180 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(225 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(270 12 12)"/><rect x="11" y="1.6" width="2" height="4" rx="0.6" fill="#f97316" transform="rotate(315 12 12)"/></g>
@@ -228,8 +228,8 @@
 <text x="1190" y="714" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Coder → _ShellFilesystem → run()</text>
 <rect x="854" y="742" width="572" height="42" rx="12" fill="#faf5ff" stroke="#ede9fe" stroke-width="1"/>
 <use href="#i-key" transform="translate(866,751) scale(1.0)"/>
-<text x="896" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">Workspace 服务商</text>
-<text x="896" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">OpenSandbox · Docker · E2B · Modal · Daytona · Sprites · Smol · BoxLite</text>
+<text x="896" y="761" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="700" fill="#1f2937" text-anchor="start">服务端沙箱</text>
+<text x="896" y="776" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">OpenSandbox（服务器自部署）</text>
 <g transform="translate(830,825)">
   <polygon points="-138,-7 -122,-7 -130,7" fill="#3b82f6"/>
   <text x="-114" y="5" font-family="system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="600" fill="#1d4ed8" text-anchor="start">读写会话、对象存储、沙箱、定时与模型供应商</text>
